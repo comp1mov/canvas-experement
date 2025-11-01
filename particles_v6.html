@@ -1,0 +1,172 @@
+<script>
+(() => {
+  const CONFIG = {
+    numParticles: 320,
+    color: 'rgba(255,255,255,1)',
+    sizeMin: 0.2,
+    sizeMax: 3.4,
+    mouseForce: 0.01,
+    clickRadius: 200,
+    explosionPower: 6.5,    // мощность разлёта
+    baseReturn: 0.0006,
+    noiseAmp: 0.015,
+    noiseFreq: 3.2,
+    friction: 0.94,
+    connectionDist: 80,
+    lineOpacity: 0.65,
+    scrollInfluence: 0.5,
+    fadeSpeed: 0.02,         // скорость исчезновения после клика
+    growFactor: 2.5,         // насколько увеличиваются при разлёте
+    respawnDelay: 600        // через сколько мс появляются новые
+  };
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  document.body.appendChild(canvas);
+
+  Object.assign(canvas.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '100%',
+    height: '100%',
+    zIndex: '-1',
+    pointerEvents: 'none',
+    background: 'transparent'
+  });
+
+  let width = (canvas.width = window.innerWidth);
+  let height = (canvas.height = window.innerHeight);
+
+  const particles = [];
+  const mouse = { x: width / 2, y: height / 2 };
+  let scroll = 0;
+  let time = 0;
+
+  function makeParticle(x, y) {
+    return {
+      x: x ?? Math.random() * width,
+      y: y ?? Math.random() * height,
+      baseX: Math.random() * width,
+      baseY: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      size: CONFIG.sizeMin + Math.random() * (CONFIG.sizeMax - CONFIG.sizeMin),
+      baseSize: 0,
+      alpha: 1,
+      dead: false,
+      pulseSpeed: 0.5 + Math.random() * 1.5,
+      pulseOffset: Math.random() * Math.PI * 2
+    };
+  }
+
+  for (let i = 0; i < CONFIG.numParticles; i++) particles.push(makeParticle());
+
+  window.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  window.addEventListener('scroll', () => {
+    scroll = window.scrollY * CONFIG.scrollInfluence;
+  });
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+
+  window.addEventListener('click', e => {
+    const cx = e.clientX;
+    const cy = e.clientY;
+    particles.forEach(p => {
+      const dx = cx - p.x;
+      const dy = cy - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < CONFIG.clickRadius) {
+        const angle = Math.atan2(dy, dx);
+        const force = (CONFIG.clickRadius - dist) / CONFIG.clickRadius * CONFIG.explosionPower;
+        p.vx = -Math.cos(angle) * force;
+        p.vy = -Math.sin(angle) * force;
+        p.dead = true;
+        p.grow = 1;
+      }
+    });
+  });
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+    time += 0.01;
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      const dx = mouse.x - p.x;
+      const dy = mouse.y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const force = Math.max(0, 150 - dist) / 150;
+
+      // Притяжение к мыши
+      p.vx += dx * force * CONFIG.mouseForce;
+      p.vy += dy * force * CONFIG.mouseForce;
+
+      // Жидкость
+      p.vx += Math.sin(time * CONFIG.noiseFreq + p.y * 0.05) * CONFIG.noiseAmp;
+      p.vy += Math.cos(time * CONFIG.noiseFreq + p.x * 0.05) * CONFIG.noiseAmp + Math.sin(scroll) * 0.05;
+
+      // Возврат
+      p.vx += (p.baseX - p.x) * CONFIG.baseReturn;
+      p.vy += (p.baseY - p.y) * CONFIG.baseReturn;
+
+      p.vx *= CONFIG.friction;
+      p.vy *= CONFIG.friction;
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Если "взрыв" активен
+      if (p.dead) {
+        p.size += CONFIG.growFactor * 0.1;
+        p.alpha -= CONFIG.fadeSpeed;
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+          setTimeout(() => particles.push(makeParticle()), CONFIG.respawnDelay);
+          continue;
+        }
+      }
+
+      // Мерцание (дыхание)
+      const pulse = 0.5 + 0.5 * Math.sin(time * p.pulseSpeed + p.pulseOffset);
+      const sizeNow = p.size * (0.8 + 0.4 * pulse);
+
+      // Рендер частицы
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, sizeNow, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${p.alpha})`;
+      ctx.fill();
+    }
+
+    // Соединения линиями
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const dx = q.x - p.x;
+        const dy = q.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < CONFIG.connectionDist) {
+          const alpha = (1 - dist / CONFIG.connectionDist) * CONFIG.lineOpacity * Math.min(p.alpha, q.alpha);
+          ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+})();
+</script>
