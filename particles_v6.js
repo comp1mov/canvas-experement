@@ -1,4 +1,3 @@
-<script>
 (() => {
   if (window.__particleSystemActive) return;
   window.__particleSystemActive = true;
@@ -405,5 +404,4 @@
   }
   step();
 })();
-</script>
 
