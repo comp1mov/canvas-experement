@@ -10,39 +10,11 @@
       height: 100%;
       background: #000;
     }
-    #log {
-      position: fixed;
-      left: 0;
-      bottom: 0;
-      color: #f55;
-      background: rgba(0,0,0,0.6);
-      font: 12px/1.4 monospace;
-      padding: 6px 10px;
-      max-width: 100%;
-      white-space: pre-wrap;
-      z-index: 9999;
-    }
   </style>
 
-  <!-- грузим твой js с принудительным обновлением -->
-  <script>
-    (function() {
-      var s = document.createElement('script');
-      s.defer = true;
-      // если поменяешь код, просто измени число после v=
-      s.src = './particles_v6.js?v=100';
-      document.head.appendChild(s);
-    })();
-
-    // если что-то сломается внутри particles_v6.js, выведем на экран
-    window.addEventListener('error', function(e) {
-      var el = document.getElementById('log') || document.createElement('div');
-      el.id = 'log';
-      el.textContent += e.message + '\n';
-      document.body.appendChild(el);
-    });
-  </script>
+  <!-- подгружаем твой файл из репозитория через jsDelivr -->
+  <script defer src="https://cdn.jsdelivr.net/gh/comp1mov/canvas-experement@main/particles_v6.js?v=1"></script>
 </head>
-<body>
-</body>
+<body></body>
 </html>
+
