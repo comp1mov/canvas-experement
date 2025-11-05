@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Reactive Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      overflow: hidden; 
+      font-family: system-ui, sans-serif;
+      background: #000;
+    }
+    canvas { 
+      display: block; 
+      width: 100vw; 
+      height: 100vh;
+    }
+    #controls {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(0,0,0,0.7);
+      padding: 20px;
+      border-radius: 10px;
+      color: white;
+      text-align: center;
+    }
+    button {
+      background: #4CAF50;
+      border: none;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: 0.3s;
+    }
+    button:hover { background: #45a049; }
+    button:disabled { 
+      background: #666; 
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #aaa;
+    }
+    .info {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  
+  <div id="controls">
+    <h2>🎵 Audio Reactive Test</h2>
+    <button id="micBtn">Start Microphone</button>
+    <button id="fileBtn">Load Audio File</button>
+    <input type="file" id="fileInput" accept="audio/*" style="display:none">
+    <div id="status">Click button to start</div>
+    <div class="info">
+      🎤 Microphone: Real-time audio from your mic<br>
+      📁 Audio File: Load MP3/WAV to visualize
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const micBtn = document.getElementById('micBtn');
+    const fileBtn = document.getElementById('fileBtn');
+    const fileInput = document.getElementById('fileInput');
+    const status = document.getElementById('status');
+
+    let audioContext = null;
+    let analyser = null;
+    let dataArray = null;
+    let bufferLength = 0;
+    let isPlaying = false;
+    let audioSource = null;
+
+    // Canvas setup
+    function resizeCanvas() {
+      canvas.width = window.innerWidth * window.devicePixelRatio;
+      canvas.height = window.innerHeight * window.devicePixelRatio;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initialize Audio Context
+    function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 512; // Bigger = more frequency detail
+        analyser.smoothingTimeConstant = 0.8;
+        bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+      }
+    }
+
+    // Start Microphone
+    micBtn.addEventListener('click', async () => {
+      try {
+        initAudio();
+        
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioSource = audioContext.createMediaStreamSource(stream);
+        audioSource.connect(analyser);
+        
+        isPlaying = true;
+        micBtn.disabled = true;
+        fileBtn.disabled = true;
+        status.textContent = '🎤 Microphone active - make some noise!';
+        
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        
+        animate();
+      } catch (err) {
+        console.error('Microphone error:', err);
+        status.textContent = '❌ Microphone access denied';
+      }
+    });
+
+    // Load Audio File
+    fileBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        initAudio();
+        
+        const arrayBuffer = await file.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        // Stop previous source if exists
+        if (audioSource) {
+          audioSource.stop();
+        }
+        
+        audioSource = audioContext.createBufferSource();
+        audioSource.buffer = audioBuffer;
+        audioSource.loop = true;
+        audioSource.connect(analyser);
+        analyser.connect(audioContext.destination); // Play audio
+        audioSource.start(0);
+        
+        isPlaying = true;
+        micBtn.disabled = true;
+        fileBtn.disabled = true;
+        status.textContent = `🎵 Playing: ${file.name}`;
+        
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        
+        animate();
+      } catch (err) {
+        console.error('Audio file error:', err);
+        status.textContent = '❌ Could not load audio file';
+      }
+    });
+
+    // Calculate bass energy (low frequencies)
+    function getBassEnergy() {
+      let sum = 0;
+      const bassRange = Math.floor(bufferLength * 0.1); // First 10% = bass
+      for (let i = 0; i < bassRange; i++) {
+        sum += dataArray[i];
+      }
+      return sum / (bassRange * 255); // Normalize 0-1
+    }
+
+    // Animation loop
+    function animate() {
+      if (!isPlaying) return;
+      requestAnimationFrame(animate);
+
+      // Get frequency data
+      analyser.getByteFrequencyData(dataArray);
+
+      const w = canvas.width / window.devicePixelRatio;
+      const h = canvas.height / window.devicePixelRatio;
+      const centerX = w / 2;
+      const centerY = h / 2;
+
+      // Background pulsation from bass
+      const bass = getBassEnergy();
+      const bgIntensity = Math.floor(bass * 50); // 0-50
+      ctx.fillStyle = `rgb(${bgIntensity}, ${bgIntensity * 0.3}, ${bgIntensity * 0.5})`;
+      ctx.fillRect(0, 0, w, h);
+
+      // Draw mirrored equalizer bars
+      const barCount = 64; // Number of bars per side
+      const barWidth = (w / 2) / barCount;
+      const maxBarHeight = h * 0.4;
+
+      for (let i = 0; i < barCount; i++) {
+        // Sample frequency data (spread across full spectrum)
+        const dataIndex = Math.floor((i / barCount) * bufferLength);
+        const value = dataArray[dataIndex] / 255; // 0-1
+        const barHeight = value * maxBarHeight;
+
+        // Color based on frequency (low=red, mid=green, high=blue)
+        const hue = (i / barCount) * 180 + 180; // 180-360 degrees
+        const color = `hsl(${hue}, 80%, ${50 + value * 30}%)`;
+
+        // Right side bars (from center outward)
+        ctx.fillStyle = color;
+        ctx.fillRect(
+          centerX + i * barWidth,
+          centerY - barHeight / 2,
+          barWidth - 2,
+          barHeight
+        );
+
+        // Left side bars (mirrored)
+        ctx.fillRect(
+          centerX - (i + 1) * barWidth,
+          centerY - barHeight / 2,
+          barWidth - 2,
+          barHeight
+        );
+
+        // Vertical mirror (top and bottom)
+        ctx.globalAlpha = 0.3;
+        
+        // Top mirror
+        ctx.fillRect(
+          centerX + i * barWidth,
+          centerY - maxBarHeight - barHeight / 2,
+          barWidth - 2,
+          barHeight
+        );
+        ctx.fillRect(
+          centerX - (i + 1) * barWidth,
+          centerY - maxBarHeight - barHeight / 2,
+          barWidth - 2,
+          barHeight
+        );
+
+        // Bottom mirror
+        ctx.fillRect(
+          centerX + i * barWidth,
+          centerY + maxBarHeight - barHeight / 2,
+          barWidth - 2,
+          barHeight
+        );
+        ctx.fillRect(
+          centerX - (i + 1) * barWidth,
+          centerY + maxBarHeight - barHeight / 2,
+          barWidth - 2,
+          barHeight
+        );
+
+        ctx.globalAlpha = 1;
+      }
+
+      // Center glow from bass
+      const glowSize = 50 + bass * 200;
+      const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowSize);
+      gradient.addColorStop(0, `rgba(255, 100, 150, ${bass * 0.6})`);
+      gradient.addColorStop(1, 'rgba(255, 100, 150, 0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(centerX - glowSize, centerY - glowSize, glowSize * 2, glowSize * 2);
+
+      // Bass indicator text
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`BASS: ${(bass * 100).toFixed(0)}%`, centerX, h - 30);
+    }
+  </script>
+</body>
+</html>
