@@ -1,21 +1,52 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>canvas-experiment</title>
-    <style>
-      html,body {
-        margin: 0;
-        height: 100%;
-        background: #000;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- подгружаем твой файл из этого же каталога -->
-    <script src="particles_v6.js?v=123"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>particles_v6 demo</title>
+
+  <!-- Базовая стилизация под полноэкранный рендер -->
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      color: #ccc;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden; /* если внутри скрипта есть собственный скролл, убери это */
+    }
+    /* контейнер под любой возможный UI из скрипта */
+    #app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    /* полезно при абсолютном позиционировании канваса внутри скрипта */
+    .fullscreen {
+      position: absolute;
+      inset: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="fullscreen"></div>
+
+  <!-- Подключение скрипта из того же репозитория. 
+       ?v=... помогает сбросить кэш браузера при апдейтах -->
+  <script src="./particles_v6.js?v=1111" defer></script>
+
+  <!-- Если твой файл является ES-модулем, вместо строки выше используй: -->
+  <!-- <script type="module" src="./particles_v6.js?v=2025-11-05"></script> -->
+
+  <!-- Если скрипт ожидает существующий контейнер, можно передать ссылку глобально: -->
+  <script>
+    // Необязательно. Оставлено на случай, если particles_v6.js читает эту переменную.
+    window.__PARTICLES_MOUNT = document.getElementById('app');
+  </script>
+</body>
 </html>
+
 
 
