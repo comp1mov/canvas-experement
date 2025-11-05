@@ -4,49 +4,71 @@
   <meta charset="utf-8">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>particles_v6 demo</title>
-
-  <!-- Базовая стилизация под полноэкранный рендер -->
+  <title>particles_v6 probe</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #000;
-      color: #ccc;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      overflow: hidden; /* если внутри скрипта есть собственный скролл, убери это */
-    }
-    /* контейнер под любой возможный UI из скрипта */
-    #app {
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
-    /* полезно при абсолютном позиционировании канваса внутри скрипта */
-    .fullscreen {
-      position: absolute;
-      inset: 0;
+    html, body { height: 100%; margin: 0; background: #000; color: #ccc; }
+    #app { position: relative; width: 100%; height: 100%; }
+    /* Канвас, к которому может привязаться твой скрипт */
+    #scene { position: absolute; inset: 0; display: block; outline: 1px solid #333; }
+    /* Тестовый оверлей, чтобы понимать, что страница живая */
+    #hud {
+      position: absolute; left: 8px; top: 8px; z-index: 10;
+      font: 12px/1.3 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: rgba(0,0,0,.4); padding: 6px 8px; border-radius: 4px;
     }
   </style>
 </head>
 <body>
-  <div id="app" class="fullscreen"></div>
+  <div id="app">
+    <canvas id="scene"></canvas>
+    <div id="hud">boot…</div>
+  </div>
 
-  <!-- Подключение скрипта из того же репозитория. 
-       ?v=... помогает сбросить кэш браузера при апдейтах -->
-  <script src="./particles_v6.js?v=1111" defer></script>
-
-  <!-- Если твой файл является ES-модулем, вместо строки выше используй: -->
-  <!-- <script type="module" src="./particles_v6.js?v=2025-11-05"></script> -->
-
-  <!-- Если скрипт ожидает существующий контейнер, можно передать ссылку глобально: -->
+  <!-- Мини-проверка канваса: двигающийся кружок -->
   <script>
-    // Необязательно. Оставлено на случай, если particles_v6.js читает эту переменную.
-    window.__PARTICLES_MOUNT = document.getElementById('app');
+    (function testCanvas() {
+      const c = document.getElementById('scene');
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      function resize() {
+        c.width  = Math.floor(c.clientWidth  * dpr);
+        c.height = Math.floor(c.clientHeight * dpr);
+      }
+      // растягиваем канвас на весь экран
+      function fillParent() {
+        const rect = c.parentElement.getBoundingClientRect();
+        c.style.width = rect.width + 'px';
+        c.style.height = rect.height + 'px';
+        resize();
+      }
+      window.addEventListener('resize', fillParent);
+      fillParent();
+
+      const ctx = c.getContext('2d');
+      let t = 0;
+      function loop() {
+        t += 0.02;
+        ctx.clearRect(0,0,c.width,c.height);
+        ctx.beginPath();
+        const x = (c.width  * 0.5) + Math.cos(t) * (c.width * 0.25);
+        const y = (c.height * 0.5) + Math.sin(t * 1.3) * (c.height * 0.25);
+        ctx.arc(x, y, 10 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        requestAnimationFrame(loop);
+      }
+      loop();
+      document.getElementById('hud').textContent = 'canvas OK · moving dot';
+      // Передаём возможные «якоря» твоему скрипту
+      window.__PARTICLES_MOUNT = document.getElementById('app');
+      window.__PARTICLES_CANVAS = c;
+    })();
   </script>
+
+  <!-- Подключаем твой файл. Меняй хвост для сброса кэша -->
+  <script src="./particles_v6.js?v=probe1" defer></script>
 </body>
 </html>
+
 
 
 
