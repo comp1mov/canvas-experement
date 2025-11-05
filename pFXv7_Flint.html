@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flint v06 - Advanced Particle System</title>
+</head>
+<body>
+
+<script>
+(() => {
+  if (window.__particleSystemDestroy) {
+    try { window.__particleSystemDestroy(); } catch(e){}
+  }
+  if (window.__particleSystemActive) return;
+  window.__particleSystemActive = true;
+
+  // === PRESETS SECTION ===
+  // INSERT YOUR PRESETS HERE (Line 20)
+  // Format: const BUILT_IN_PRESETS = { "Name": {...config...}, "Name2": {...config...} };
+  const BUILT_IN_PRESETS = {
+    "BW Rock": {
+      "numParticles": 120,
+      "pixelRatioClamp": 1.5,
+      "sizeMin": 0.6,
+      "sizeMax": 5.4,
+      "baseColor": [120, 143, 246],
+      "particleBlend": "difference",
+      "globalOpacity": 0.95,
+      "minAlpha": 1,
+      "particleColorRandom": false,
+      "particleHueRange": 30,
+      "particleLightRange": 0.1,
+      "particleSatRange": 0.1,
+      "particleFillEnabled": true,
+      "particleStrokeEnabled": false,
+      "particleStrokeBase": 2.488950340223151,
+      "lifeMean": 60,
+      "lifeJitter": 4,
+      "fadeInSec": 3,
+      "fadeOutSec": 3,
+      "friction": 0.921,
+      "baseReturn": 0.000001,
+      "jitterAmp": 1.1917494408454672,
+      "jitterFreq": 0.1,
+      "scrollKickStrength": 0.03,
+      "scrollKickHalflife": 0.5,
+      "fieldCurlNoise": 1,
+      "fieldCurlNoiseScale": 0.002,
+      "fieldCurlNoiseSpeed": 0.3,
+      "pointerEnabled": true,
+      "pointerInfluenceRadius": 430,
+      "pointerSwirlStrength": 0,
+      "pointerSwirlFalloffExp": 5.1,
+      "pointerNoiseAmp": 0,
+      "pointerNoiseHz": 0.05,
+      "pointerNoiseSmooth": 0.95,
+      "pointerAffectSize": true,
+      "pointerSizeMultiplier": 5,
+      "pointerCurlNoise": 6.8,
+      "pointerCurlNoiseScale": 0.003,
+      "clickEnabled": true,
+      "clickRadius": 200,
+      "prePullSec": 6.65,
+      "pullShrinkFactor": 0.35,
+      "burstLife": 2.1,
+      "burstShrinkFactor": 0.1,
+      "explodeTimeJitter": 0.35,
+      "explosionPower": 20,
+      "explosionRandomness": 1.1,
+      "frictionBurst": 0.8,
+      "explodeGrowMul": 50,
+      "particleStrokePeak": 0,
+      "particleStrokeEnd": 0,
+      "explodeTurbulence": 80,
+      "explodeTurbulenceHz": 0.09,
+      "explodeTurbulenceSmooth": 0.99,
+      "explodeAlphaBoost": 1,
+      "trailEnabled": false,
+      "trailLength": 30,
+      "trailFade": 0.03,
+      "linkLines": true,
+      "linesMinDist": 20,
+      "linesMaxDist": 312.88273253513034,
+      "linesFadeDistance": 30,
+      "linesOpacity": 1,
+      "linesWidth": 1.9,
+      "linesBlend": "difference",
+      "linesMaxConnections": 2,
+      "linesColorA": [166, 255, 0],
+      "linesColorB": [255, 255, 255],
+      "linesGradientInvert": false,
+      "linesBezier": false,
+      "linesBezierBend": 0,
+      "linesColorRandom": false,
+      "linesHueRange": 20,
+      "linesLightRange": 0.1,
+      "linesSatRange": 0.1,
+      "linkLinesInvert": true,
+      "linesInvertMinDist": 330,
+      "linesInvertMaxDist": 370,
+      "linesInvertFadeDistance": 0,
+      "linesInvertOpacity": 1,
+      "linesInvertWidth": 0.6,
+      "linesInvertBlend": "screen",
+      "linesInvertMaxConnections": 2,
+      "linesInvertColorA": [152, 62, 230],
+      "linesInvertColorB": [228, 147, 166],
+      "linesInvertGradientInvert": false,
+      "linesInvertBezier": true,
+      "linesInvertBezierBend": 1.5,
+      "linesInvertColorRandom": false,
+      "linesInvertHueRange": 20,
+      "linesInvertLightRange": 0.1,
+      "linesInvertSatRange": 0.1,
+      "pointerCurves": false,
+      "pointerLinesMinDist": 200,
+      "pointerLinesMaxDist": 280,
+      "pointerLinesFadeDistance": 25,
+      "pointerLinesCount": 6,
+      "pointerLinesBend": 0.12,
+      "pointerLinesOpacity": 0.85,
+      "pointerLinesWidth": 4.228672421960559,
+      "pointerLinesBlend": "difference",
+      "pointerLinesColorA": [112, 136, 247],
+      "pointerLinesColorB": [179, 133, 229],
+      "pointerLinesGradientInvert": false,
+      "pointerLinesColorRandom": false,
+      "pointerLinesHueRange": 20,
+      "pointerLinesLightRange": 0.1,
+      "pointerLinesSatRange": 0.1,
+      "parallaxEnabled": true,
+      "parallaxStrength": 0.15,
+      "parallaxSmooth": 0.08,
+      "parallaxRangeMin": 0.01,
+      "parallaxRangeMax": 0.25,
+      "parallaxRand": 0.25,
+      "canvasBlendMode": "lighten",
+      "canvasBgColor": [0, 0, 0],
+      "canvasBgOpacity": 0,
+      "qualityPreset": "medium"
+    }
+  };
+  // === END PRESETS SECTION ===
+
+  const CONFIG = Object.assign({}, BUILT_IN_PRESETS["BW Rock"]);
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { alpha: true });
+  document.body.appendChild(canvas);
+  
+  let trailCanvas = null;
+  let trailCtx = null;
+  
+  function initTrailCanvas() {
+    if (!trailCanvas) {
+      trailCanvas = document.createElement('canvas');
+      trailCtx = trailCanvas.getContext('2d', { alpha: true });
+    }
+    trailCanvas.width = canvas.width;
+    trailCanvas.height = canvas.height;
+    trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+  }
+  
+  function updateCanvasStyle() {
+    Object.assign(canvas.style, {
+      position: 'fixed',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      zIndex: '0',
+      pointerEvents: 'none',
+      mixBlendMode: CONFIG.canvasBlendMode,
+      backgroundColor: CONFIG.canvasBgOpacity > 0 
+        ? `rgba(${CONFIG.canvasBgColor[0]},${CONFIG.canvasBgColor[1]},${CONFIG.canvasBgColor[2]},${CONFIG.canvasBgOpacity})` 
+        : 'transparent'
+    });
+  }
+  updateCanvasStyle();
+
+  let systemEnabled = true;
+  let systemRunning = true;
+  let dpr = 1, w = 0, h = 0;
+  
+  function applyQualityPreset() {
+    const presets = {
+      'pixel': 0.5,
+      'low': 0.75,
+      'medium': 1,
+      'high': 1.5,
+      'ultra': 2
+    };
+    const targetDPR = presets[CONFIG.qualityPreset] || 1;
+    CONFIG.pixelRatioClamp = targetDPR;
+  }
+  
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, CONFIG.pixelRatioClamp);
+    w = Math.floor(window.innerWidth * dpr);
+    h = Math.floor(window.innerHeight * dpr);
+    canvas.width = w;
+    canvas.height = h;
+    if (CONFIG.trailEnabled) initTrailCanvas();
+  }
+  resize();
+  addEventListener('resize', resize, { passive: true });
+
+  const rand = Math.random, TAU = Math.PI * 2;
+  const mix = (a, b, t) => a + (b - a) * t;
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const nowSec = () => performance.now() / 1000;
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+  const easeInCubic = t => t * t * t;
+  const easeInOutQuad = t => (t < 0.5) ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+  const rgba = (c, a=1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+  const hexToRgb = (hex) => {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : [255,255,255];
+  };
+  const rgbToHex = (c)=> '#'+c.map(v=>('0'+v.toString(16)).slice(-2)).join('');
+  
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return [h * 360, s, l];
+  }
+
+  function hslToRgb(h,s,l){
+    h=((h%360)+360)%360; s=clamp(s,0,1); l=clamp(l,0,1);
+    const c=(1-Math.abs(2*l-1))*s, hp=h/60, x=c*(1-Math.abs(hp%2-1));
+    let r=0,g=0,b=0;
+    if (0<=hp&&hp<1){r=c;g=x}
+    else if (1<=hp&&hp<2){r=x;g=c}
+    else if (2<=hp&&hp<3){g=c;b=x}
+    else if (3<=hp&&hp<4){g=x;b=c}
+    else if (4<=hp&&hp<5){r=x;b=c}
+    else if (5<=hp&&hp<6){r=c;b=x}
+    const m=l-c/2; 
+    return [Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];
+  }
+
+  function randomizeColor(baseRgb, seed, hueRange, lightRange, satRange) {
+    if (!hueRange && !lightRange && !satRange) return baseRgb;
+    let [h, s, l] = rgbToHsl(baseRgb[0], baseRgb[1], baseRgb[2]);
+    const hash = (n) => {
+      let x = Math.sin(n) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    h += (hash(seed) * 2 - 1) * hueRange;
+    l = clamp(l + (hash(seed * 1.3) * 2 - 1) * lightRange, 0, 1);
+    s = clamp(s + (hash(seed * 1.7) * 2 - 1) * satRange, 0, 1);
+    return hslToRgb(h, s, l);
+  }
+
+  function curlNoise(x, y, t, scale, speed) {
+    const s = scale;
+    const ax = x * s + t * speed * 3;
+    const ay = y * s + t * speed * 2.4;
+    const bx = x * s * 1.7 - t * speed * 3.3;
+    const by = y * s * 1.7 + t * speed * 2.7;
+    
+    const dpdx = Math.cos(ax) * s + 0.6 * Math.cos(bx + by) * s * 1.7;
+    const dpdy = -Math.sin(ay) * s + 0.6 * Math.cos(bx + by) * s * 1.7;
+    
+    return [-dpdy, dpdx];
+  }
+
+  function strokeGradientLine(x1,y1,x2,y2, alpha, widthPx, seed, colorA, colorB, invert, colorRandom, hueRange, lightRange, satRange) {
+    let colA = colorA, colB = colorB;
+    if (colorRandom) {
+      colA = randomizeColor(colorA, seed, hueRange, lightRange, satRange);
+      colB = randomizeColor(colorB, seed * 1.3, hueRange, lightRange, satRange);
+    }
+    
+    const grad = ctx.createLinearGradient(x1,y1,x2,y2);
+    const c0 = rgba(invert ? colB : colA, alpha);
+    const c1 = rgba(invert ? colA : colB, alpha);
+    grad.addColorStop(0, c0);
+    grad.addColorStop(1, c1);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = widthPx;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+  }
+
+  function strokeBezierLine(x1,y1,x2,y2, alpha, widthPx, seed, colorA, colorB, invert, colorRandom, hueRange, lightRange, satRange, bend) {
+    let colA = colorA, colB = colorB;
+    if (colorRandom) {
+      colA = randomizeColor(colorA, seed, hueRange, lightRange, satRange);
+      colB = randomizeColor(colorB, seed * 1.3, hueRange, lightRange, satRange);
+    }
+    
+    const grad = ctx.createLinearGradient(x1,y1,x2,y2);
+    const c0 = rgba(invert ? colB : colA, alpha);
+    const c1 = rgba(invert ? colA : colB, alpha);
+    grad.addColorStop(0, c0);
+    grad.addColorStop(1, c1);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = widthPx;
+    ctx.lineCap = 'round';
+    
+    const dx = x2 - x1, dy = y2 - y1;
+    const dist = Math.hypot(dx, dy) || 1;
+    const nx = -dy / dist, ny = dx / dist;
+    const cpx = x1 + dx * 0.5 + nx * dist * bend;
+    const cpy = y1 + dy * 0.5 + ny * dist * bend;
+    
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.quadraticCurveTo(cpx, cpy, x2, y2);
+    ctx.stroke();
+  }
+
+  let count = clamp(CONFIG.numParticles, 10, 250);
+
+  function buildParallaxArray(n) {
+    const arr = new Array(n);
+    const min = CONFIG.parallaxRangeMin;
+    const max = CONFIG.parallaxRangeMax;
+    for (let i = 0; i < n; i++) {
+      const t = n > 1 ? i / (n - 1) : 0;
+      let val = mix(min, max, t);
+      val += (rand() - 0.5) * (max - min) * CONFIG.parallaxRand;
+      arr[i] = clamp(val, min, max);
+    }
+    for (let i = n - 1; i > 0; i--) {
+      const j = (rand() * (i + 1)) | 0;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  let parArray = buildParallaxArray(count);
+
+  const particles = [];
+  
+  function makeParticle(idx) {
+    const bx0 = rand() * w;
+    const by0 = rand() * h;
+    const life = Math.max(1.0, CONFIG.lifeMean + (rand()*2 - 1) * CONFIG.lifeJitter);
+    const t0 = nowSec() - rand() * life;
+    const seed = rand() * 10000;
+    
+    return {
+      x: bx0, y: by0,
+      bx0, by0,
+      vx: (rand() - 0.5) * 0.3,
+      vy: (rand() - 0.5) * 0.3,
+      baseSize: mix(CONFIG.sizeMin, CONFIG.sizeMax, rand()),
+      born: t0,
+      life,
+      pulse: rand() * TAU,
+      seed,
+      par: parArray[idx] || CONFIG.parallaxRangeMin,
+      mode: 0,
+      tapX: 0, tapY: 0,
+      pullStart: 0,
+      burstStart: 0,
+      burstDur: CONFIG.burstLife,
+      burstInitialSize: 1,
+      seedX: rand()*1000,
+      seedY: rand()*1000,
+      pnPhaseX: rand()*1000, pnPhaseY: rand()*1000,
+      pnVX: 0, pnVY: 0,
+      bnPhaseX: 0, bnPhaseY: 0,
+      bnVX: 0, bnVY: 0,
+      dnPhaseX: 0, dnPhaseY: 0,
+      dnVX: 0, dnVY: 0,
+      currentDisplaySize: 1
+    };
+  }
+  
+  function rebuildParticles() {
+    particles.length = 0;
+    count = clamp(CONFIG.numParticles, 10, 250);
+    parArray = buildParallaxArray(count);
+    for (let i = 0; i < count; i++) particles.push(makeParticle(i));
+    if (CONFIG.trailEnabled) initTrailCanvas();
+  }
+  rebuildParticles();
+
+  const pointer = { x: w*0.5, y: h*0.5, vx:0, vy:0, tPrev: nowSec() };
+  const pageToCanvas = (px,py) => [px*dpr, py*dpr];
+
+  function onPointerMove(e) {
+    const t = nowSec();
+    const dt = Math.max(1/120, t - pointer.tPrev);
+    const [mx, my] = pageToCanvas(e.clientX, e.clientY);
+    const vx = (mx - pointer.x) / dt;
+    const vy = (my - pointer.y) / dt;
+    const k = Math.pow(0.5, dt / 5.0);
+    pointer.vx = pointer.vx * k + vx * (1 - k);
+    pointer.vy = pointer.vy * k + vy * (1 - k);
+    pointer.x = mx; pointer.y = my; pointer.tPrev = t;
+  }
+  addEventListener('pointermove', onPointerMove, { passive: true });
+
+  function triggerTapSequence(cx, cy) {
+    if (!CONFIG.clickEnabled) return;
+    const tnow = nowSec();
+    const r = CONFIG.clickRadius * dpr, r2 = r*r;
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      const dx = p.x - cx, dy = p.y - cy;
+      if (dx*dx + dy*dy > r2) continue;
+
+      p.mode = 1;
+      p.tapX = cx; p.tapY = cy;
+      p.pullStart = tnow;
+      p.burstInitialSize = p.currentDisplaySize || 1;
+      const j = (rand()*2 - 1) * CONFIG.explodeTimeJitter;
+      p.burstDur = Math.max(0.35, CONFIG.burstLife * (1 + j));
+    }
+  }
+
+  addEventListener('pointerdown', e => {
+    const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
+    triggerTapSequence(cx, cy);
+  }, { passive: true });
+  
+  addEventListener('click', e => {
+    const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
+    triggerTapSequence(cx, cy);
+  }, { passive: true });
+
+  let lastScrollY = scrollY;
+  let scrollKickY = 0;
+  let parallaxOffsetY = 0;
+  let parallaxVelY = 0;
+  
+  addEventListener('scroll', () => {
+    const dy = scrollY - lastScrollY;
+    lastScrollY = scrollY;
+    scrollKickY += -dy * CONFIG.scrollKickStrength * dpr;
+    
+    if (CONFIG.parallaxEnabled) {
+      parallaxVelY += -dy * CONFIG.parallaxStrength;
+    }
+  }, { passive: true });
+
+  // FPS Counter
+  let fpsFrames = 0;
+  let fpsLastTime = performance.now();
+  let currentFPS = 60;
+  let fpsDisplay = null;
+  
+  function updateFPS() {
+    fpsFrames++;
+    const now = performance.now();
+    if (now >= fpsLastTime + 1000) {
+      currentFPS = Math.round((fpsFrames * 1000) / (now - fpsLastTime));
+      fpsFrames = 0;
+      fpsLastTime = now;
+      if (fpsDisplay) fpsDisplay.textContent = currentFPS + ' FPS';
+    }
+  }
+
+  let prevT = performance.now();
+
+  // === PARTICLE ANIMATION LOOP - CONTINUES IN NEXT MESSAGE ===
+  // PART 1 END - Continue to Part 2
+
+  // === PART 2: ANIMATION LOOP & RENDERING ===
+  // This continues from Part 1
+  
+  function step() {
+    if (!systemEnabled) {
+      requestAnimationFrame(step);
+      return;
+    }
+    
+    if (!systemRunning) {
+      requestAnimationFrame(step);
+      return;
+    }
+    
+    const tMs = performance.now();
+    const dtMs = tMs - prevT;
+    prevT = tMs;
+
+    const t = nowSec();
+    const dt = Math.min(0.05, dtMs / 1000);
+
+    updateFPS();
+
+    const kKick = Math.pow(0.5, dt / CONFIG.scrollKickHalflife);
+    scrollKickY *= kKick;
+    
+    if (CONFIG.parallaxEnabled) {
+      parallaxOffsetY += parallaxVelY * dt;
+      parallaxVelY *= (1 - CONFIG.parallaxSmooth);
+      parallaxOffsetY *= 0.98;
+    }
+
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, w, h);
+    
+    // Optimized Trail with offscreen canvas
+    if (CONFIG.trailEnabled && trailCtx) {
+      trailCtx.globalCompositeOperation = 'source-over';
+      trailCtx.fillStyle = `rgba(0,0,0,${CONFIG.trailFade})`;
+      trailCtx.fillRect(0, 0, trailCanvas.width, trailCanvas.height);
+      
+      trailCtx.globalCompositeOperation = CONFIG.particleBlend;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const pAge = t - p.born;
+        const aIn  = clamp(pAge / CONFIG.fadeInSec, 0, 1);
+        const aOut = clamp((p.life - pAge) / CONFIG.fadeOutSec, 0, 1);
+        let alpha = Math.min(aIn, aOut) * CONFIG.globalOpacity;
+        const fadeFactor = Math.min(aIn, aOut);
+        const sizeNow = p.baseSize * (p.currentDisplaySize || 1) * fadeFactor;
+        
+        let particleColor = CONFIG.baseColor;
+        if (CONFIG.particleColorRandom) {
+          particleColor = randomizeColor(CONFIG.baseColor, p.seed, CONFIG.particleHueRange, CONFIG.particleLightRange, CONFIG.particleSatRange);
+        }
+        
+        const drawY = p.y + parallaxOffsetY * p.par;
+        
+        trailCtx.beginPath();
+        trailCtx.arc(p.x, drawY, sizeNow, 0, TAU);
+        
+        if (CONFIG.particleFillEnabled) {
+          trailCtx.fillStyle = rgba(particleColor, alpha);
+          trailCtx.fill();
+        }
+        
+        if (CONFIG.particleStrokeEnabled) {
+          trailCtx.strokeStyle = rgba(particleColor, alpha);
+          trailCtx.lineWidth = CONFIG.particleStrokeBase * dpr * fadeFactor;
+          trailCtx.stroke();
+        }
+      }
+      
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.drawImage(trailCanvas, 0, 0);
+    }
+
+    ctx.globalCompositeOperation = CONFIG.particleBlend;
+
+    for (let i = 0; i < particles.length; i++) {
+      let p = particles[i];
+
+      const age = t - p.born;
+      if (p.mode === 0 && age >= p.life) {
+        const delay = 0.02;
+        particles[i] = p = makeParticle(i);
+        p.born = t - rand() * delay;
+      }
+      
+      const pAge = t - p.born;
+      const aIn  = clamp(pAge / CONFIG.fadeInSec, 0, 1);
+      const aOut = clamp((p.life - pAge) / CONFIG.fadeOutSec, 0, 1);
+      let alpha = Math.min(aIn, aOut) * CONFIG.globalOpacity;
+      alpha = Math.max(alpha, CONFIG.minAlpha / 255);
+
+      const fadeFactor = Math.min(aIn, aOut);
+      let sizeNow = p.baseSize * fadeFactor;
+      let strokeW = CONFIG.particleStrokeBase * dpr * fadeFactor;
+
+      if (p.mode === 0) {
+        p.vx += (p.bx0 - p.x) * CONFIG.baseReturn;
+        p.vy += (p.by0 - p.y) * CONFIG.baseReturn;
+        p.vy += scrollKickY * 0.001;
+
+        p.pulse += CONFIG.jitterFreq * 0.016;
+        p.vx += Math.sin(p.pulse + i) * CONFIG.jitterAmp * 0.02;
+        p.vy += Math.cos(p.pulse * 1.23 + i) * CONFIG.jitterAmp * 0.02;
+
+        if (CONFIG.fieldCurlNoise > 0) {
+          const [cx, cy] = curlNoise(p.x, p.y, t, CONFIG.fieldCurlNoiseScale, CONFIG.fieldCurlNoiseSpeed);
+          p.vx += cx * CONFIG.fieldCurlNoise * dt * 60;
+          p.vy += cy * CONFIG.fieldCurlNoise * dt * 60;
+        }
+
+        if (CONFIG.pointerEnabled) {
+          const dxm = pointer.x - p.x;
+          const dym = pointer.y - p.y;
+          const d2 = dxm*dxm + dym*dym;
+          const pr = CONFIG.pointerInfluenceRadius * dpr;
+          if (d2 < pr*pr) {
+            const d = Math.sqrt(d2) || 1;
+            const fall = Math.pow(1 - clamp(d / pr, 0, 1), CONFIG.pointerSwirlFalloffExp);
+            const speed = Math.hypot(pointer.vx, pointer.vy) / 1000;
+            const swirl = CONFIG.pointerSwirlStrength * fall * speed;
+            p.vx += (-dym / d) * swirl;
+            p.vy += ( dxm / d) * swirl;
+
+            if (CONFIG.pointerNoiseAmp > 0) {
+              const twoPi = TAU;
+              p.pnPhaseX += CONFIG.pointerNoiseHz * twoPi * dt;
+              p.pnPhaseY += CONFIG.pointerNoiseHz * twoPi * dt;
+              const nxRaw = Math.sin(p.seedX + p.pnPhaseX);
+              const nyRaw = Math.cos(p.seedY + p.pnPhaseY * 0.91);
+              const sm = clamp(CONFIG.pointerNoiseSmooth, 0, 0.999);
+              p.pnVX = p.pnVX * sm + nxRaw * (1 - sm);
+              p.pnVY = p.pnVY * sm + nyRaw * (1 - sm);
+              p.vx += p.pnVX * CONFIG.pointerNoiseAmp * fall * dt;
+              p.vy += p.pnVY * CONFIG.pointerNoiseAmp * fall * dt;
+            }
+            
+            if (CONFIG.pointerCurlNoise > 0) {
+              const [pcx, pcy] = curlNoise(p.x, p.y, t, CONFIG.pointerCurlNoiseScale, 0.5);
+              p.vx += pcx * CONFIG.pointerCurlNoise * fall * dt * 60;
+              p.vy += pcy * CONFIG.pointerCurlNoise * fall * dt * 60;
+            }
+            
+            if (CONFIG.pointerAffectSize) {
+              const sizeMultiplier = 1 + (CONFIG.pointerSizeMultiplier * fall);
+              sizeNow *= clamp(sizeMultiplier, 0, 6);
+            }
+          }
+        }
+
+        p.vx *= CONFIG.friction;
+        p.vy *= CONFIG.friction;
+        p.x += p.vx;
+        p.y += p.vy;
+        
+        p.currentDisplaySize = sizeNow / p.baseSize;
+
+      } else if (p.mode === 1) {
+        const pullElapsed = t - p.pullStart;
+        const dx = p.tapX - p.x;
+        const dy = p.tapY - p.y;
+        const distToCenter = Math.hypot(dx, dy);
+        
+        const pullForce = 0.01;
+        p.vx = p.vx * 0.9 + dx * pullForce;
+        p.vy = p.vy * 0.9 + dy * pullForce;
+        
+        p.x += p.vx;
+        p.y += p.vy;
+        
+        if (distToCenter < 3 * dpr) {
+          p.mode = 2;
+          p.burstStart = t;
+          const ang = rand() * TAU;
+          const randomFactor = 1 + (rand() - 0.5) * CONFIG.explosionRandomness;
+          p.vx = Math.cos(ang) * CONFIG.explosionPower * randomFactor;
+          p.vy = Math.sin(ang) * CONFIG.explosionPower * randomFactor;
+          p.bnPhaseX = 0; p.bnPhaseY = 0;
+          p.dnPhaseX = 0; p.dnPhaseY = 0;
+        } else if (pullElapsed >= CONFIG.prePullSec) {
+          p.mode = 2;
+          p.burstStart = t;
+          const ang = rand() * TAU;
+          const randomFactor = 1 + (rand() - 0.5) * CONFIG.explosionRandomness;
+          p.vx = Math.cos(ang) * CONFIG.explosionPower * randomFactor;
+          p.vy = Math.sin(ang) * CONFIG.explosionPower * randomFactor;
+          p.bnPhaseX = 0; p.bnPhaseY = 0;
+          p.dnPhaseX = 0; p.dnPhaseY = 0;
+        }
+        
+        const pullProgress = clamp(pullElapsed / CONFIG.prePullSec, 0, 1);
+        const shrinkT = easeInCubic(pullProgress);
+        sizeNow = p.baseSize * p.burstInitialSize * mix(1, CONFIG.pullShrinkFactor, shrinkT) * fadeFactor;
+        strokeW = CONFIG.particleStrokeBase * dpr * fadeFactor;
+        alpha = CONFIG.explodeAlphaBoost;
+
+      } else if (p.mode === 2) {
+        const k = clamp((t - p.burstStart) / p.burstDur, 0, 1);
+        
+        const shrinkStart = CONFIG.pullShrinkFactor;
+        const shrinkEnd = CONFIG.burstShrinkFactor;
+        const growPeak = CONFIG.explodeGrowMul;
+        
+        let grow;
+        if (k <= 0.7) {
+          grow = mix(shrinkStart, growPeak, easeInOutQuad(k / 0.7));
+        } else {
+          grow = mix(growPeak, shrinkEnd, easeOutCubic((k - 0.7) / 0.3));
+        }
+        
+        sizeNow = p.baseSize * p.burstInitialSize * grow * fadeFactor;
+
+        if (CONFIG.explodeTurbulence > 0) {
+          const twoPi = TAU;
+          
+          p.bnPhaseX += CONFIG.explodeTurbulenceHz * twoPi * dt;
+          p.bnPhaseY += CONFIG.explodeTurbulenceHz * twoPi * dt;
+          const nxRaw = Math.sin(p.seedX + p.bnPhaseX);
+          const nyRaw = Math.sin(p.seedY + p.bnPhaseY * 0.87);
+          const sm = clamp(CONFIG.explodeTurbulenceSmooth, 0, 0.999);
+          p.bnVX = p.bnVX * sm + nxRaw * (1 - sm);
+          p.bnVY = p.bnVY * sm + nyRaw * (1 - sm);
+          p.vx += p.bnVX * CONFIG.explodeTurbulence * dt;
+          p.vy += p.bnVY * CONFIG.explodeTurbulence * dt;
+          
+          const directNoiseStrength = CONFIG.explodeTurbulence * 0.33;
+          p.dnPhaseX += CONFIG.explodeTurbulenceHz * 0.6 * twoPi * dt;
+          p.dnPhaseY += CONFIG.explodeTurbulenceHz * 0.6 * twoPi * dt;
+          const dnxRaw = Math.cos(p.seedX * 1.3 + p.dnPhaseX);
+          const dnyRaw = Math.sin(p.seedY * 1.3 + p.dnPhaseY);
+          p.dnVX = p.dnVX * sm + dnxRaw * (1 - sm);
+          p.dnVY = p.dnVY * sm + dnyRaw * (1 - sm);
+          const angle = Math.atan2(p.vy, p.vx);
+          p.vx += Math.cos(angle) * p.dnVX * directNoiseStrength * dt;
+          p.vy += Math.sin(angle) * p.dnVY * directNoiseStrength * dt;
+        }
+
+        p.vx *= CONFIG.frictionBurst;
+        p.vy *= CONFIG.frictionBurst;
+        p.x += p.vx;
+        p.y += p.vy;
+
+        alpha = CONFIG.explodeAlphaBoost;
+        if (k < 0.7) strokeW = mix(CONFIG.particleStrokeBase, CONFIG.particleStrokePeak, k / 0.7) * dpr * fadeFactor;
+        else         strokeW = mix(CONFIG.particleStrokePeak, CONFIG.particleStrokeEnd, (k - 0.7) / 0.3) * dpr * fadeFactor;
+
+        if (k >= 1) {
+          p.mode = 0;
+          p.bx0 = p.x; p.by0 = p.y;
+          p.currentDisplaySize = 1;
+        }
+      }
+
+      let particleColor = CONFIG.baseColor;
+      if (CONFIG.particleColorRandom) {
+        particleColor = randomizeColor(CONFIG.baseColor, p.seed, CONFIG.particleHueRange, CONFIG.particleLightRange, CONFIG.particleSatRange);
+      }
+
+      const drawY = p.y + parallaxOffsetY * p.par;
+      
+      ctx.beginPath();
+      ctx.arc(p.x, drawY, sizeNow, 0, TAU);
+      
+      if (CONFIG.particleFillEnabled) {
+        ctx.fillStyle = rgba(particleColor, alpha);
+        ctx.fill();
+      }
+      
+      if (CONFIG.particleStrokeEnabled) {
+        ctx.strokeStyle = rgba(particleColor, alpha);
+        ctx.lineWidth = strokeW;
+        ctx.stroke();
+      }
+    }
+
+    // Lines A (closest) - optimized with fade from end
+    if (CONFIG.linkLines) {
+      ctx.globalCompositeOperation = CONFIG.linesBlend;
+      const minDist = CONFIG.linesMinDist * dpr;
+      const maxDist = CONFIG.linesMaxDist * dpr;
+      const fadeDist = CONFIG.linesFadeDistance * dpr;
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const py = p.y + parallaxOffsetY * p.par;
+        const pAge = t - p.born;
+        const pFadeIn = clamp(pAge / CONFIG.fadeInSec, 0, 1);
+        const pFadeOut = clamp((p.life - pAge) / CONFIG.fadeOutSec, 0, 1);
+        const pFade = Math.min(pFadeIn, pFadeOut);
+        
+        const neighbors = [];
+        for (let j = i + 1; j < particles.length; j++) {
+          const q = particles[j];
+          const qy = q.y + parallaxOffsetY * q.par;
+          const dx = q.x - p.x, dy = qy - py;
+          const d = Math.hypot(dx, dy);
+          
+          if (d >= minDist && d <= maxDist + fadeDist) {
+            neighbors.push({ j, qy, d });
+          }
+        }
+        
+        neighbors.sort((a, b) => a.d - b.d);
+        const maxConn = Math.min(CONFIG.linesMaxConnections, neighbors.length);
+        
+        for (let k = 0; k < maxConn; k++) {
+          const { j, qy, d } = neighbors[k];
+          const q = particles[j];
+          const qAge = t - q.born;
+          const qFadeIn = clamp(qAge / CONFIG.fadeInSec, 0, 1);
+          const qFadeOut = clamp((q.life - qAge) / CONFIG.fadeOutSec, 0, 1);
+          const qFade = Math.min(qFadeIn, qFadeOut);
+          const lineFade = Math.min(pFade, qFade);
+          
+          if (lineFade > 0.01) {
+            let opacityT = 1;
+            if (d > maxDist) {
+              opacityT = 1 - clamp((d - maxDist) / fadeDist, 0, 1);
+            }
+            const a = opacityT * CONFIG.linesOpacity * lineFade;
+            
+            let widthT = 1;
+            if (d > maxDist) {
+              widthT = 1 - clamp((d - maxDist) / fadeDist, 0, 1);
+            }
+            const lw = CONFIG.linesWidth * dpr * widthT * lineFade;
+            
+            if (lw > 0.01 && a > 0.01) {
+              const seed = p.seed + q.seed;
+              if (CONFIG.linesBezier) {
+                strokeBezierLine(p.x, py, q.x, qy, a, lw, seed, CONFIG.linesColorA, CONFIG.linesColorB, CONFIG.linesGradientInvert, CONFIG.linesColorRandom, CONFIG.linesHueRange, CONFIG.linesLightRange, CONFIG.linesSatRange, CONFIG.linesBezierBend);
+              } else {
+                strokeGradientLine(p.x, py, q.x, qy, a, lw, seed, CONFIG.linesColorA, CONFIG.linesColorB, CONFIG.linesGradientInvert, CONFIG.linesColorRandom, CONFIG.linesHueRange, CONFIG.linesLightRange, CONFIG.linesSatRange);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Lines B (farthest)
+    if (CONFIG.linkLinesInvert) {
+      ctx.globalCompositeOperation = CONFIG.linesInvertBlend;
+      const minDist = CONFIG.linesInvertMinDist * dpr;
+      const maxDist = CONFIG.linesInvertMaxDist * dpr;
+      const fadeDist = CONFIG.linesInvertFadeDistance * dpr;
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const py = p.y + parallaxOffsetY * p.par;
+        const pAge = t - p.born;
+        const pFadeIn = clamp(pAge / CONFIG.fadeInSec, 0, 1);
+        const pFadeOut = clamp((p.life - pAge) / CONFIG.fadeOutSec, 0, 1);
+        const pFade = Math.min(pFadeIn, pFadeOut);
+        
+        const neighbors = [];
+        for (let j = i + 1; j < particles.length; j++) {
+          const q = particles[j];
+          const qy = q.y + parallaxOffsetY * q.par;
+          const dx = q.x - p.x, dy = qy - py;
+          const d = Math.hypot(dx, dy);
+          
+          if (d >= minDist && d <= maxDist + fadeDist) {
+            neighbors.push({ j, qy, d });
+          }
+        }
+        
+        neighbors.sort((a, b) => b.d - a.d);
+        const maxConn = Math.min(CONFIG.linesInvertMaxConnections, neighbors.length);
+        
+        for (let k = 0; k < maxConn; k++) {
+          const { j, qy, d } = neighbors[k];
+          const q = particles[j];
+          const qAge = t - q.born;
+          const qFadeIn = clamp(qAge / CONFIG.fadeInSec, 0, 1);
+          const qFadeOut = clamp((q.life - qAge) / CONFIG.fadeOutSec, 0, 1);
+          const qFade = Math.min(qFadeIn, qFadeOut);
+          const lineFade = Math.min(pFade, qFade);
+          
+          if (lineFade > 0.01) {
+            let opacityT = 1;
+            if (d > maxDist) {
+              opacityT = 1 - clamp((d - maxDist) / fadeDist, 0, 1);
+            }
+            const a = opacityT * CONFIG.linesInvertOpacity * lineFade;
+            
+            let widthT = 1;
+            if (d > maxDist) {
+              widthT = 1 - clamp((d - maxDist) / fadeDist, 0, 1);
+            }
+            const lw = CONFIG.linesInvertWidth * dpr * widthT * lineFade;
+            
+            if (lw > 0.01 && a > 0.01) {
+              const seed = p.seed + q.seed;
+              if (CONFIG.linesInvertBezier) {
+                strokeBezierLine(p.x, py, q.x, qy, a, lw, seed, CONFIG.linesInvertColorA, CONFIG.linesInvertColorB, CONFIG.linesInvertGradientInvert, CONFIG.linesInvertColorRandom, CONFIG.linesInvertHueRange, CONFIG.linesInvertLightRange, CONFIG.linesInvertSatRange, CONFIG.linesInvertBezierBend);
+              } else {
+                strokeGradientLine(p.x, py, q.x, qy, a, lw, seed, CONFIG.linesInvertColorA, CONFIG.linesInvertColorB, CONFIG.linesInvertGradientInvert, CONFIG.linesInvertColorRandom, CONFIG.linesInvertHueRange, CONFIG.linesInvertLightRange, CONFIG.linesInvertSatRange);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Lines Pointer
+    if (CONFIG.pointerCurves) {
+      ctx.globalCompositeOperation = CONFIG.pointerLinesBlend;
+      const minD = CONFIG.pointerLinesMinDist * dpr;
+      const maxD = CONFIG.pointerLinesMaxDist * dpr;
+      const fadeD = CONFIG.pointerLinesFadeDistance * dpr;
+
+      const candidates = [];
+      for (let i = 0; i < particles.length; i++) {
+        const q = particles[i];
+        const qy = q.y + parallaxOffsetY * q.par;
+        const dx = q.x - pointer.x, dy = qy - pointer.y;
+        const d = Math.hypot(dx, dy);
+        if (d >= minD && d <= maxD + fadeD) candidates.push({ q, qy, d, i });
+      }
+      
+      candidates.sort((a,b)=>a.d-b.d);
+      const cnt = Math.min(CONFIG.pointerLinesCount, candidates.length);
+      const wCurve = CONFIG.pointerLinesWidth * dpr;
+
+      for (let k = 0; k < cnt; k++) {
+        const { q, qy, d, i } = candidates[k];
+        const qAge = t - q.born;
+        const qFadeIn = clamp(qAge / CONFIG.fadeInSec, 0, 1);
+        const qFadeOut = clamp((q.life - qAge) / CONFIG.fadeOutSec, 0, 1);
+        const qFade = Math.min(qFadeIn, qFadeOut);
+        
+        let distT = 1;
+        if (d > maxD) {
+          distT = 1 - clamp((d - maxD) / fadeD, 0, 1);
+        }
+        let widthT = 1;
+        if (d > maxD) {
+          widthT = 1 - clamp((d - maxD) / fadeD, 0, 1);
+        }
+        const alpha = distT * CONFIG.pointerLinesOpacity * qFade;
+        const lineW = wCurve * widthT * qFade;
+        
+        if (alpha > 0.01 && lineW > 0.01) {
+          let colA = CONFIG.pointerLinesColorA;
+          let colB = CONFIG.pointerLinesColorB;
+          if (CONFIG.pointerLinesColorRandom) {
+            const seed = q.seed;
+            colA = randomizeColor(colA, seed, CONFIG.pointerLinesHueRange, CONFIG.pointerLinesLightRange, CONFIG.pointerLinesSatRange);
+            colB = randomizeColor(colB, seed * 1.3, CONFIG.pointerLinesHueRange, CONFIG.pointerLinesLightRange, CONFIG.pointerLinesSatRange);
+          }
+          
+          const dx2 = q.x - pointer.x, dy2 = qy - pointer.y;
+          const d2 = Math.hypot(dx2, dy2) || 1;
+          const nx = -dy2/d2, ny = dx2/d2;
+          const cx = pointer.x + dx2*0.5 + nx * d2 * CONFIG.pointerLinesBend;
+          const cy = pointer.y + dy2*0.5 + ny * d2 * CONFIG.pointerLinesBend;
+
+          const grad = ctx.createLinearGradient(pointer.x,pointer.y,q.x,qy);
+          const c0 = rgba(CONFIG.pointerLinesGradientInvert ? colB : colA, alpha);
+          const c1 = rgba(CONFIG.pointerLinesGradientInvert ? colA : colB, alpha);
+          grad.addColorStop(0, c0);
+          grad.addColorStop(1, c1);
+
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = lineW;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(pointer.x, pointer.y);
+          ctx.quadraticCurveTo(cx, cy, q.x, qy);
+          ctx.stroke();
+        }
+      }
+    }
+
+    requestAnimationFrame(step);
+  }
+  step();
+
+  // === END PART 2 ===
+  // Continue to Part 3 for GUI
+// === PART 3: GUI SYSTEM ===
+
+  function el(tag, props={}, ...kids){
+    const n = document.createElement(tag);
+    Object.assign(n, props);
+    kids.forEach(k => n.append(k));
+    return n;
+  }
+  
+  function wrapSec(title, enabled = true){
+    const sec = el('div', { className:'pfx-sec' });
+    const hdr = el('div', { className:'pfx-sec-title' });
+    const cb = el('input', { type:'checkbox', checked: enabled, className:'pfx-sec-toggle' });
+    const titleSpan = el('span', { textContent: title });
+    hdr.append(cb, titleSpan);
+    const body = el('div', { className:'pfx-sec-body' });
+    
+    hdr.addEventListener('click', (e)=> {
+      if (e.target === cb) return;
+      body.classList.toggle('collapsed');
+    });
+    
+    sec.append(hdr, body);
+    return { sec, body, toggle: cb };
+  }
+  
+  function addCheckbox(parent, key, label){
+    const row = el('label', { className:'pfx-row' });
+    const cb  = el('input', { type:'checkbox', checked: !!CONFIG[key] });
+    cb.setAttribute('data-key', key);
+    cb.addEventListener('change', ()=> {
+      CONFIG[key] = cb.checked;
+      if (key === 'trailEnabled') {
+        if (cb.checked) initTrailCanvas();
+      }
+      if (key === 'canvasBgOpacity') updateCanvasStyle();
+      if (key === 'qualityPreset') {
+        applyQualityPreset();
+        resize();
+      }
+    });
+    row.append(cb, el('span',{textContent:label}));
+    parent.append(row);
+  }
+  
+  function addSlider(parent, key, label, min, max, step=0.01){
+    const row = el('div', { className:'pfx-row' });
+    row.append(el('span',{textContent:label, className:'pfx-label'}));
+    const val = el('span',{textContent:String(CONFIG[key]), className:'pfx-val'});
+    const rng = el('input', { type:'range', min, max, step, value: CONFIG[key], className:'pfx-range' });
+    rng.setAttribute('data-key', key);
+    rng.addEventListener('input', ()=> { 
+      CONFIG[key] = parseFloat(rng.value); 
+      val.textContent = rng.value;
+      if (key === 'numParticles') rebuildParticles();
+      if (key === 'canvasBgOpacity') updateCanvasStyle();
+      if (key === 'pixelRatioClamp') resize();
+    });
+    row.append(rng, val); 
+    parent.append(row);
+    return { rng, val };
+  }
+  
+  function addColor(parent, key, label){
+    const row = el('div', { className:'pfx-row' });
+    row.append(el('span',{textContent:label, className:'pfx-label'}));
+    const inp = el('input', { type:'color', className:'pfx-color' });
+    inp.value = rgbToHex(CONFIG[key]);
+    inp.addEventListener('input', ()=> {
+      CONFIG[key] = hexToRgb(inp.value);
+      if (key === 'canvasBgColor') updateCanvasStyle();
+    });
+    colorInputs[key] = inp;
+    row.append(inp); parent.append(row);
+  }
+  
+  function addSelect(parent, key, label, options){
+    const row = el('div', { className:'pfx-row' });
+    row.append(el('span',{textContent:label, className:'pfx-label'}));
+    const sel = el('select', { className:'pfx-select' });
+    options.forEach(opt => {
+      const o = el('option', { value:opt, textContent:opt });
+      if (CONFIG[key] === opt) o.selected = true;
+      sel.append(o);
+    });
+    sel.addEventListener('change', ()=> {
+      CONFIG[key] = sel.value;
+      if (key === 'canvasBlendMode') canvas.style.mixBlendMode = sel.value;
+      if (key === 'qualityPreset') {
+        applyQualityPreset();
+        resize();
+      }
+    });
+    row.append(sel); parent.append(row);
+    selectInputs[key] = sel;
+  }
+
+  const panel = el('div', { className:'pfx-panel' });
+  const panelContent = el('div', { className:'pfx-content collapsed' });
+  
+  const header = el('div', { className:'pfx-header' });
+  const titleBtn = el('button', { className:'pfx-title-btn', textContent:'Flint v06' });
+  titleBtn.addEventListener('click', ()=> {
+    panelContent.classList.toggle('collapsed');
+  });
+  
+  const headerBtns = el('div', { className:'pfx-header-btns' });
+  
+  fpsDisplay = el('span', { className:'pfx-fps', textContent:'60 FPS' });
+  headerBtns.append(fpsDisplay);
+  
+  const toggleSystemBtn = el('button', { className:'pfx-sys-btn', textContent:'ON' });
+  toggleSystemBtn.addEventListener('click', ()=> {
+    systemEnabled = !systemEnabled;
+    systemRunning = systemEnabled;
+    toggleSystemBtn.textContent = systemEnabled ? 'ON' : 'OFF';
+    toggleSystemBtn.style.opacity = systemEnabled ? '1' : '0.5';
+    if (!systemEnabled) {
+      ctx.clearRect(0, 0, w, h);
+    }
+  });
+  
+  const rebuildBtn = el('button', { className:'pfx-sys-btn', textContent:'⟳' });
+  rebuildBtn.addEventListener('click', rebuildParticles);
+  
+  headerBtns.append(toggleSystemBtn, rebuildBtn);
+  header.append(titleBtn, headerBtns);
+  panel.append(header);
+
+  const bar = el('div', { className:'pfx-bar' });
+  const btnJSON = el('button', { textContent:'JSON' });
+  const colorInputs = {};
+  const selectInputs = {};
+
+  function updateAllInputs() {
+    Object.keys(colorInputs).forEach(k => colorInputs[k].value = rgbToHex(CONFIG[k]));
+    Object.keys(selectInputs).forEach(k => selectInputs[k].value = CONFIG[k]);
+    document.querySelectorAll('.pfx-range').forEach(rng => {
+      const key = rng.getAttribute('data-key');
+      if (key && CONFIG[key] !== undefined) {
+        rng.value = CONFIG[key];
+        const val = rng.parentElement.querySelector('.pfx-val');
+        if (val) val.textContent = CONFIG[key];
+      }
+    });
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      const key = cb.getAttribute('data-key');
+      if (key && CONFIG[key] !== undefined) {
+        cb.checked = !!CONFIG[key];
+      }
+    });
+  }
+
+  btnJSON.onclick = ()=> {
+    const data = JSON.stringify(CONFIG, null, 2);
+    navigator.clipboard?.writeText(data);
+    alert('Config copied to clipboard');
+  };
+
+  // Preset System
+  const presetBar = el('div', { className:'pfx-preset-bar' });
+  const presetSelect = el('select', { className:'pfx-preset-select' });
+  const presetLoad = el('button', { textContent:'Load', className:'pfx-preset-btn' });
+  const presetSave = el('button', { textContent:'Save As...', className:'pfx-preset-btn' });
+  
+  function updatePresetList() {
+    presetSelect.innerHTML = '';
+    const allPresets = {...BUILT_IN_PRESETS, ...JSON.parse(localStorage.getItem('PFX_USER_PRESETS') || '{}')};
+    Object.keys(allPresets).forEach(name => {
+      const opt = el('option', { value: name, textContent: name });
+      presetSelect.append(opt);
+    });
+  }
+  updatePresetList();
+  
+  presetLoad.onclick = () => {
+    const name = presetSelect.value;
+    const allPresets = {...BUILT_IN_PRESETS, ...JSON.parse(localStorage.getItem('PFX_USER_PRESETS') || '{}')};
+    if (allPresets[name]) {
+      Object.assign(CONFIG, allPresets[name]);
+      updateCanvasStyle();
+      updateAllInputs();
+      applyQualityPreset();
+      resize();
+      rebuildParticles();
+    }
+  };
+  
+  presetSave.onclick = () => {
+    const name = prompt('Enter preset name:');
+    if (!name) return;
+    const userPresets = JSON.parse(localStorage.getItem('PFX_USER_PRESETS') || '{}');
+    userPresets[name] = {...CONFIG};
+    localStorage.setItem('PFX_USER_PRESETS', JSON.stringify(userPresets));
+    updatePresetList();
+    presetSelect.value = name;
+  };
+  
+  presetBar.append(presetSelect, presetLoad, presetSave);
+  panelContent.append(presetBar);
+
+  bar.append(btnJSON);
+  panelContent.append(bar);
+  
+  // Random Buttons
+  const barRandom = el('div', { className:'pfx-bar-random' });
+  const btnRandomColor = el('button', { textContent:'Color (A)', className:'pfx-rand-btn' });
+  const btnRandomStyle = el('button', { textContent:'Style (S)', className:'pfx-rand-btn' });
+  const btnRandomDynamic = el('button', { textContent:'Dynamic (D)', className:'pfx-rand-btn' });
+  
+  btnRandomColor.onclick = () => {
+    const h1 = Math.floor(rand()*360);
+    const s1 = 0.4 + rand()*0.5;
+    const l1 = 0.65 + rand()*0.3;
+    CONFIG.baseColor = hslToRgb(h1, s1, l1);
+    
+    const h2 = Math.floor(rand()*360);
+    CONFIG.linesColorA = hslToRgb(h2, 0.6 + rand()*0.4, 0.55 + rand()*0.35);
+    CONFIG.linesColorB = hslToRgb((h2 + 30 + Math.floor(rand()*120))%360, 0.6 + rand()*0.4, 0.55 + rand()*0.35);
+    CONFIG.linesInvertColorA = hslToRgb(h2, 0.6 + rand()*0.4, 0.55 + rand()*0.35);
+    CONFIG.linesInvertColorB = hslToRgb((h2 + 30 + Math.floor(rand()*120))%360, 0.6 + rand()*0.4, 0.55 + rand()*0.35);
+    CONFIG.pointerLinesColorA = hslToRgb(h1, 0.7 + rand()*0.3, 0.6 + rand()*0.3);
+    CONFIG.pointerLinesColorB = hslToRgb((h1 + 40)%360, 0.6 + rand()*0.4, 0.5 + rand()*0.4);
+    
+    updateAllInputs();
+  };
+  
+  btnRandomStyle.onclick = () => {
+    CONFIG.sizeMin = 1 + rand() * 4;
+    CONFIG.sizeMax = CONFIG.sizeMin + rand() * 8;
+    CONFIG.particleStrokeBase = 0.5 + rand() * 4;
+    CONFIG.linesMaxDist = 80 + rand() * 400;
+    CONFIG.linesWidth = 0.2 + rand() * 3;
+    CONFIG.linesBezier = rand() < 0.3;
+    CONFIG.linesBezierBend = rand() * 0.5;
+    CONFIG.linesInvertMaxDist = 80 + rand() * 400;
+    CONFIG.linesInvertWidth = 0.2 + rand() * 3;
+    CONFIG.linesInvertBezier = rand() < 0.3;
+    CONFIG.pointerCurves = rand() < 0.5;
+    CONFIG.pointerLinesWidth = 1 + rand() * 6;
+    CONFIG.particleColorRandom = rand() < 0.4;
+    CONFIG.linesColorRandom = rand() < 0.4;
+    const blends = ['difference','screen','lighten','overlay','normal'];
+    CONFIG.particleBlend = blends[Math.floor(rand() * blends.length)];
+    CONFIG.linesBlend = blends[Math.floor(rand() * blends.length)];
+    CONFIG.linesInvertBlend = blends[Math.floor(rand() * blends.length)];
+    CONFIG.canvasBlendMode = blends[Math.floor(rand() * blends.length)];
+    canvas.style.mixBlendMode = CONFIG.canvasBlendMode;
+    
+    updateAllInputs();
+    rebuildParticles();
+  };
+  
+  btnRandomDynamic.onclick = () => {
+    CONFIG.friction = 0.9 + rand() * 0.09;
+    CONFIG.jitterAmp = rand() * 2;
+    CONFIG.pointerSwirlStrength = rand() * 10;
+    CONFIG.pointerNoiseAmp = rand() * 15;
+    CONFIG.explosionPower = 1 + rand() * 200;
+    CONFIG.explodeGrowMul = 100 + rand() * 1000;
+    CONFIG.explodeTurbulence = 50 + rand() * 500;
+    CONFIG.fieldCurlNoise = rand() * 3;
+    CONFIG.pointerCurlNoise = rand() * 3;
+    
+    updateAllInputs();
+  };
+  
+  barRandom.append(btnRandomColor, btnRandomStyle, btnRandomDynamic);
+  panelContent.append(barRandom);
+
+  // Sections
+  const sCount = wrapSec('System');
+  addSlider(sCount.body,'numParticles','Particles', 10, 250, 1);
+  addSelect(sCount.body,'qualityPreset','Quality', ['pixel','low','medium','high','ultra']);
+  addSlider(sCount.body,'lifeMean','Life Mean (s)', 10, 360, 1);
+  addSlider(sCount.body,'lifeJitter','Life Jitter (s)', 0, 30, 0.1);
+  addSlider(sCount.body,'fadeInSec','Fade In (s)', 0, 30, 0.1);
+  addSlider(sCount.body,'fadeOutSec','Fade Out (s)', 0, 30, 0.1);
+  panelContent.append(sCount.sec);
+
+  const sVisual = wrapSec('Particles');
+  addSlider(sVisual.body,'sizeMin','Size Min', 1, 15, 0.1);
+  addSlider(sVisual.body,'sizeMax','Size Max', 1, 30, 0.1);
+  addSlider(sVisual.body,'globalOpacity','Opacity', 0.1, 1, 0.01);
+  addCheckbox(sVisual.body,'particleFillEnabled','Fill');
+  addCheckbox(sVisual.body,'particleStrokeEnabled','Stroke');
+  addSlider(sVisual.body,'particleStrokeBase','Stroke Width', 0, 15, 0.1);
+  addColor(sVisual.body,'baseColor','Color');
+  addCheckbox(sVisual.body,'particleColorRandom','Random Colors');
+  addSlider(sVisual.body,'particleHueRange','Hue Range', 0, 360, 1);
+  addSlider(sVisual.body,'particleLightRange','Light Range', 0, 1, 0.01);
+  addSlider(sVisual.body,'particleSatRange','Sat Range', 0, 1, 0.01);
+  addSelect(sVisual.body,'particleBlend','Blend', ['difference','screen','lighten','overlay','color-dodge','normal']);
+  panelContent.append(sVisual.sec);
+
+  const sTrail = wrapSec('Trail', false);
+  addCheckbox(sTrail.body,'trailEnabled','Enabled');
+  addSlider(sTrail.body,'trailLength','Length (frames)', 2, 60, 1);
+  addSlider(sTrail.body,'trailFade','Fade', 0, 1, 0.01);
+  sTrail.toggle.addEventListener('change', ()=> {
+    CONFIG.trailEnabled = sTrail.toggle.checked;
+    if (CONFIG.trailEnabled) initTrailCanvas();
+  });
+  panelContent.append(sTrail.sec);
+
+  const sField = wrapSec('Dynamic');
+  addSlider(sField.body,'friction','Friction', 0.8, 0.999, 0.001);
+  addSlider(sField.body,'jitterAmp','Jitter Amp', 0, 3, 0.01);
+  addSlider(sField.body,'jitterFreq','Jitter Freq', 0, 3, 0.01);
+  addSlider(sField.body,'fieldCurlNoise','Curl Noise', 0, 10, 0.1);
+  addSlider(sField.body,'fieldCurlNoiseScale','Curl Scale', 0.0001, 0.01, 0.0001);
+  addSlider(sField.body,'fieldCurlNoiseSpeed','Curl Speed', 0, 2, 0.05);
+  panelContent.append(sField.sec);
+
+  const sPointer = wrapSec('Pointer Dynamic');
+  addCheckbox(sPointer.body,'pointerEnabled','Enabled');
+  addSlider(sPointer.body,'pointerInfluenceRadius','Radius', 50, 2400, 10);
+  addSlider(sPointer.body,'pointerSwirlStrength','Swirl', 0, 30, 0.1);
+  addSlider(sPointer.body,'pointerSwirlFalloffExp','Falloff', 0.1, 9, 0.1);
+  addSlider(sPointer.body,'pointerNoiseAmp','Noise Amp', 0, 30, 0.1);
+  addSlider(sPointer.body,'pointerNoiseHz','Noise Hz', 0.01, 1.5, 0.01);
+  addCheckbox(sPointer.body,'pointerAffectSize','Affect Size');
+  addSlider(sPointer.body,'pointerSizeMultiplier','Size Mult', -1, 30, 0.1);
+  addSlider(sPointer.body,'pointerCurlNoise','Curl Noise', 0, 10, 0.1);
+  addSlider(sPointer.body,'pointerCurlNoiseScale','Curl Scale', 0.0001, 0.01, 0.0001);
+  panelContent.append(sPointer.sec);
+
+  const sClick = wrapSec('Click Burst');
+  addCheckbox(sClick.body,'clickEnabled','Enabled');
+  addSlider(sClick.body,'clickRadius','Radius', 50, 1200, 5);
+  addSlider(sClick.body,'prePullSec','Pull Time (s)', 0.1, 9, 0.05);
+  addSlider(sClick.body,'pullShrinkFactor','Pull Shrink', 0.1, 1, 0.05);
+  addSlider(sClick.body,'burstLife','Burst Time (s)', 0.5, 24, 0.1);
+  addSlider(sClick.body,'burstShrinkFactor','Burst End Size', 0.1, 2, 0.05);
+  addSlider(sClick.body,'explosionPower','Power', 1, 450, 5);
+  addSlider(sClick.body,'explosionRandomness','Randomness', 0, 2, 0.05);
+  addSlider(sClick.body,'explodeGrowMul','Size Peak', 50, 1800, 10);
+  addSlider(sClick.body,'particleStrokePeak','Stroke Peak', 0, 900, 5);
+  addSlider(sClick.body,'particleStrokeEnd','Stroke End', 0, 15, 0.1);
+  addSlider(sClick.body,'explodeTurbulence','Turbulence', 0, 1000, 5);
+  addSlider(sClick.body,'explodeTurbulenceHz','Turb Hz', 0.01, 0.5, 0.01);
+  addSlider(sClick.body,'explodeTurbulenceSmooth','Turb Smooth', 0.9, 0.999, 0.001);
+  panelContent.append(sClick.sec);
+
+  const sLines = wrapSec('Lines A (Closest)');
+  addCheckbox(sLines.body,'linkLines','Enabled');
+  addSlider(sLines.body,'linesMinDist','Min Distance', 0, 500, 5);
+  addSlider(sLines.body,'linesMaxDist','Max Distance', 50, 1500, 5);
+  addSlider(sLines.body,'linesFadeDistance','Fade Distance', 0, 200, 1);
+  addSlider(sLines.body,'linesOpacity','Opacity', 0, 1, 0.01);
+  addSlider(sLines.body,'linesWidth','Width', 0.1, 12, 0.1);
+  addSlider(sLines.body,'linesMaxConnections','Max Connections', 1, 10, 1);
+  addCheckbox(sLines.body,'linesBezier','Curved');
+  addSlider(sLines.body,'linesBezierBend','Curve Bend', 0, 1.5, 0.01);
+  addColor(sLines.body,'linesColorA','Color A');
+  addColor(sLines.body,'linesColorB','Color B');
+  addCheckbox(sLines.body,'linesGradientInvert','Invert');
+  addCheckbox(sLines.body,'linesColorRandom','Random Colors');
+  addSlider(sLines.body,'linesHueRange','Hue Range', 0, 270, 1);
+  addSlider(sLines.body,'linesLightRange','Light Range', 0, 1, 0.01);
+  addSlider(sLines.body,'linesSatRange','Sat Range', 0, 1, 0.01);
+  addSelect(sLines.body,'linesBlend','Blend', ['difference','screen','lighten','overlay','normal']);
+  panelContent.append(sLines.sec);
+
+  const sLinesInv = wrapSec('Lines B (Farthest)', false);
+  addCheckbox(sLinesInv.body,'linkLinesInvert','Enabled');
+  addSlider(sLinesInv.body,'linesInvertMinDist','Min Distance', 0, 500, 5);
+  addSlider(sLinesInv.body,'linesInvertMaxDist','Max Distance', 50, 1500, 5);
+  addSlider(sLinesInv.body,'linesInvertFadeDistance','Fade Distance', 0, 200, 1);
+  addSlider(sLinesInv.body,'linesInvertOpacity','Opacity', 0, 1, 0.01);
+  addSlider(sLinesInv.body,'linesInvertWidth','Width', 0.1, 12, 0.1);
+  addSlider(sLinesInv.body,'linesInvertMaxConnections','Max Connections', 1, 10, 1);
+  addCheckbox(sLinesInv.body,'linesInvertBezier','Curved');
+  addSlider(sLinesInv.body,'linesInvertBezierBend','Curve Bend', 0, 1.5, 0.01);
+  addColor(sLinesInv.body,'linesInvertColorA','Color A');
+  addColor(sLinesInv.body,'linesInvertColorB','Color B');
+  addCheckbox(sLinesInv.body,'linesInvertGradientInvert','Invert');
+  addCheckbox(sLinesInv.body,'linesInvertColorRandom','Random Colors');
+  addSlider(sLinesInv.body,'linesInvertHueRange','Hue Range', 0, 270, 1);
+  addSlider(sLinesInv.body,'linesInvertLightRange','Light Range', 0, 1, 0.01);
+  addSlider(sLinesInv.body,'linesInvertSatRange','Sat Range', 0, 1, 0.01);
+  addSelect(sLinesInv.body,'linesInvertBlend','Blend', ['difference','screen','lighten','overlay','normal']);
+  sLinesInv.toggle.addEventListener('change', ()=> {
+    CONFIG.linkLinesInvert = sLinesInv.toggle.checked;
+  });
+  panelContent.append(sLinesInv.sec);
+
+  const sPtrLines = wrapSec('Lines Pointer', false);
+  addCheckbox(sPtrLines.body,'pointerCurves','Enabled');
+  addSlider(sPtrLines.body,'pointerLinesMinDist','Min Distance', 0, 500, 5);
+  addSlider(sPtrLines.body,'pointerLinesMaxDist','Max Distance', 50, 2400, 10);
+  addSlider(sPtrLines.body,'pointerLinesFadeDistance','Fade Distance', 0, 200, 1);
+  addSlider(sPtrLines.body,'pointerLinesCount','Count', 1, 90, 1);
+  addSlider(sPtrLines.body,'pointerLinesOpacity','Opacity', 0, 1, 0.01);
+  addSlider(sPtrLines.body,'pointerLinesWidth','Width', 0.5, 24, 0.1);
+  addSlider(sPtrLines.body,'pointerLinesBend','Bend', -1.5, 1.5, 0.01);
+  addColor(sPtrLines.body,'pointerLinesColorA','Color A');
+  addColor(sPtrLines.body,'pointerLinesColorB','Color B');
+  addCheckbox(sPtrLines.body,'pointerLinesGradientInvert','Invert');
+  addCheckbox(sPtrLines.body,'pointerLinesColorRandom','Random Colors');
+  addSlider(sPtrLines.body,'pointerLinesHueRange','Hue Range', 0, 270, 1);
+  addSlider(sPtrLines.body,'pointerLinesLightRange','Light Range', 0, 1, 0.01);
+  addSlider(sPtrLines.body,'pointerLinesSatRange','Sat Range', 0, 1, 0.01);
+  addSelect(sPtrLines.body,'pointerLinesBlend','Blend', ['difference','screen','lighten','overlay','normal']);
+  sPtrLines.toggle.addEventListener('change', ()=> {
+    CONFIG.pointerCurves = sPtrLines.toggle.checked;
+  });
+  panelContent.append(sPtrLines.sec);
+
+  const sCanvas = wrapSec('Canvas');
+  addSelect(sCanvas.body,'canvasBlendMode','Blend', ['difference','screen','lighten','overlay','multiply','normal']);
+  addColor(sCanvas.body,'canvasBgColor','Background Color');
+  addSlider(sCanvas.body,'canvasBgOpacity','Background Opacity', 0, 1, 0.01);
+  panelContent.append(sCanvas.sec);
+
+  const sParallax = wrapSec('Parallax');
+  addCheckbox(sParallax.body,'parallaxEnabled','Enabled');
+  addSlider(sParallax.body,'parallaxStrength','Strength', 0, 1, 0.01);
+  addSlider(sParallax.body,'parallaxSmooth','Smooth', 0, 0.5, 0.01);
+  addSlider(sParallax.body,'parallaxRangeMin','Range Min', 0, 1, 0.01);
+  addSlider(sParallax.body,'parallaxRangeMax','Range Max', 0, 1, 0.01);
+  addSlider(sParallax.body,'parallaxRand','Randomize', 0, 1, 0.01);
+  panelContent.append(sParallax.sec);
+
+  panel.append(panelContent);
+  document.body.appendChild(panel);
+
+  // Hotkeys
+  addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'w' || e.key === 'W') { rebuildParticles(); e.preventDefault(); }
+    if (e.key === 'a' || e.key === 'A') { btnRandomColor.click(); e.preventDefault(); }
+    if (e.key === 's' || e.key === 'S') { btnRandomStyle.click(); e.preventDefault(); }
+    if (e.key === 'd' || e.key === 'D') { btnRandomDynamic.click(); e.preventDefault(); }
+    if (e.key === 'e' || e.key === 'E') { panelContent.classList.toggle('collapsed'); e.preventDefault(); }
+  });
+
+  // Styles
+  const style = document.createElement('style');
+  style.textContent = `
+  .pfx-panel{position:fixed; right:24px; top:64px; z-index:9999;
+    font:12px/1.3 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif; color:#eee;}
+  .pfx-header{display:flex; gap:12px; align-items:center;}
+  .pfx-title-btn{background:rgba(17,17,17,0.95); backdrop-filter:blur(10px); color:#eee; 
+    border:1px solid #333; border-radius:8px; padding:10px 20px; cursor:pointer; 
+    font-size:13px; font-weight:600; transition:all 0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.6);}
+  .pfx-title-btn:hover{background:rgba(30,30,30,0.98); border-color:#444; transform:translateY(-1px);}
+  .pfx-header-btns{display:flex; gap:8px; align-items:center;}
+  .pfx-fps{background:rgba(17,17,17,0.95); backdrop-filter:blur(10px); color:#4f4; 
+    border:1px solid #333; border-radius:6px; padding:8px 12px; font-size:11px; font-weight:600; 
+    font-variant-numeric:tabular-nums;}
+  .pfx-sys-btn{background:rgba(17,17,17,0.95); backdrop-filter:blur(10px); color:#eee; 
+    border:1px solid #333; border-radius:6px; padding:8px 16px; cursor:pointer; 
+    font-size:11px; font-weight:600; transition:all 0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.6);}
+  .pfx-sys-btn:hover{background:rgba(30,30,30,0.98); transform:scale(1.05);}
+  .pfx-content{width:580px; max-height:calc(90vh - 120px); overflow-y:auto; 
+    background:rgba(17,17,17,0.95); backdrop-filter:blur(10px); 
+    border:1px solid #333; border-radius:12px; padding:16px; margin-top:12px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.6); transition:all 0.3s;}
+  .pfx-content.collapsed{display:none;}
+  .pfx-content::-webkit-scrollbar{width:8px;}
+  .pfx-content::-webkit-scrollbar-track{background:rgba(255,255,255,0.05); border-radius:4px;}
+  .pfx-content::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2); border-radius:4px;}
+  .pfx-content::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.3);}
+  .pfx-preset-bar{display:flex; gap:8px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #2a2a2a;}
+  .pfx-preset-select{flex:1; background:#2a2a2a; color:#eee; border:1px solid #444; 
+    border-radius:6px; padding:6px 10px; font-size:11px;}
+  .pfx-preset-btn{background:#2a2a2a; color:#eee; border:1px solid #444; 
+    border-radius:6px; padding:6px 12px; cursor:pointer; font-size:11px; font-weight:600;}
+  .pfx-preset-btn:hover{background:#333;}
+  .pfx-bar{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; padding-bottom:12px; border-bottom:1px solid #2a2a2a;}
+  .pfx-bar button{flex:1; min-width:95px; background:#2a2a2a; color:#eee; border:1px solid #444; 
+    border-radius:8px; padding:8px 12px; cursor:pointer; font-size:11px; font-weight:600;
+    transition:all 0.2s ease;}
+  .pfx-bar button:hover{background:#333; border-color:#555; transform:translateY(-1px);}
+  .pfx-bar-random{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #2a2a2a;}
+  .pfx-rand-btn{background:#1a1a1a !important; color:#eee; border:1px solid #444; 
+    border-radius:8px; padding:10px 12px; cursor:pointer; font-size:11px; font-weight:600;
+    transition:all 0.2s ease;}
+  .pfx-rand-btn:hover{background:#252525 !important; border-color:#555; transform:translateY(-1px) scale(1.02);}
+  .pfx-sec{border-top:1px solid #2a2a2a; padding-top:12px; margin-top:12px;}
+  .pfx-sec-title{font-weight:600; font-size:11px; color:#999; margin-bottom:10px; 
+    text-transform:uppercase; letter-spacing:0.08em; cursor:pointer; user-select:none;
+    padding:4px 0; transition:color 0.2s; display:flex; align-items:center; gap:8px;}
+  .pfx-sec-title:hover{color:#ccc;}
+  .pfx-sec-toggle{width:14px; height:14px; cursor:pointer; accent-color:#fff;}
+  .pfx-sec-body.collapsed{display:none;}
+  .pfx-row{display:flex; align-items:center; gap:10px; margin:8px 0;}
+  .pfx-label{flex:0 0 130px; color:#bbb; font-size:12px;}
+  .pfx-range{flex:1; -webkit-appearance:none; height:3px; background:rgba(255,255,255,0.15); 
+    border-radius:3px; outline:none; cursor:pointer;}
+  .pfx-range::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px; 
+    background:#fff; border-radius:50%; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.3);
+    transition:transform 0.15s ease;}
+  .pfx-range::-webkit-slider-thumb:hover{transform:scale(1.15);}
+  .pfx-range::-moz-range-thumb{width:14px; height:14px; background:#fff; border:none; 
+    border-radius:50%; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.3);}
+  .pfx-val{width:50px; text-align:right; color:#777; font-size:11px; font-variant-numeric:tabular-nums;}
+  .pfx-color{width:50px; height:28px; border:1px solid #444; border-radius:6px; 
+    background:transparent; cursor:pointer;}
+  .pfx-select{flex:1; padding:6px 10px; background:#2a2a2a; color:#eee; border:1px solid #444;
+    border-radius:6px; cursor:pointer; font-size:12px;}
+  .pfx-select option{background:#1a1a1a;}
+  .pfx-row input[type="checkbox"]{width:16px; height:16px; cursor:pointer; accent-color:#fff;}
+  .pfx-row label{cursor:pointer;}
+  @media (max-width:768px){.pfx-content{width:calc(100vw - 80px);}}
+  `;
+  document.head.appendChild(style);
+
+  window.__particleSystemDestroy = () => {
+    removeEventListener('pointermove', onPointerMove);
+    try{ document.body.removeChild(canvas); }catch(e){}
+    try{ document.body.removeChild(panel); }catch(e){}
+    try{ document.head.removeChild(style); }catch(e){}
+    window.__particleSystemActive = false;
+  };
+})();
+</script>
+</body>
+</html>
