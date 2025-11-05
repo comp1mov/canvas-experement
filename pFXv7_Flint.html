@@ -1257,8 +1257,8 @@
 
   const sTrail = wrapSec('Trail', false);
   addCheckbox(sTrail.body,'trailEnabled','Enabled');
-  addSlider(sTrail.body,'trailLength','Length (frames)', 2, 60, 1);
-  addSlider(sTrail.body,'trailFade','Fade', 0, 1, 0.01);
+  addSlider(sTrail.body,'trailLength','Length (frames)', 2, 600, 1);
+  addSlider(sTrail.body,'trailFade','Fade', 0, 0.2, 0.01);
   sTrail.toggle.addEventListener('change', ()=> {
     CONFIG.trailEnabled = sTrail.toggle.checked;
     if (CONFIG.trailEnabled) initTrailCanvas();
@@ -1296,7 +1296,7 @@
   addSlider(sClick.body,'burstShrinkFactor','Burst End Size', 0.1, 2, 0.05);
   addSlider(sClick.body,'explosionPower','Power', 1, 450, 5);
   addSlider(sClick.body,'explosionRandomness','Randomness', 0, 2, 0.05);
-  addSlider(sClick.body,'explodeGrowMul','Size Peak', 50, 1800, 10);
+  addSlider(sClick.body,'explodeGrowMul','Size Peak', 1, 200, 10);
   addSlider(sClick.body,'particleStrokePeak','Stroke Peak', 0, 900, 5);
   addSlider(sClick.body,'particleStrokeEnd','Stroke End', 0, 15, 0.1);
   addSlider(sClick.body,'explodeTurbulence','Turbulence', 0, 1000, 5);
@@ -1307,7 +1307,7 @@
   const sLines = wrapSec('Lines A (Closest)');
   addCheckbox(sLines.body,'linkLines','Enabled');
   addSlider(sLines.body,'linesMinDist','Min Distance', 0, 500, 5);
-  addSlider(sLines.body,'linesMaxDist','Max Distance', 50, 1500, 5);
+  addSlider(sLines.body,'linesMaxDist','Max Distance', 5, 1500, 5);
   addSlider(sLines.body,'linesFadeDistance','Fade Distance', 0, 200, 1);
   addSlider(sLines.body,'linesOpacity','Opacity', 0, 1, 0.01);
   addSlider(sLines.body,'linesWidth','Width', 0.1, 12, 0.1);
@@ -1479,4 +1479,5 @@
 })();
 </script>
 </body>
+
 </html>
