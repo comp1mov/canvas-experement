@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Spectrum Under Construction v11.9</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --panel-bg: rgba(0,0,0,0.92);
+      --panel-border: #ff006e;
+      --label: #9ca3af;
+      --title: #f5f5f5;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { overflow:hidden; background:#0a0a0a; font-family:'Roboto',system-ui,sans-serif; }
+    canvas { display:block; width:100vw; height:100vh; background:#c8c8c8; image-rendering:pixelated; }
+    #controls {
+      position:fixed;
+      top:20px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:10;
+      background:var(--panel-bg);
+      border:2px solid var(--panel-border);
+      border-radius:10px;
+      padding:0 16px 14px 16px;
+      color:white;
+      width:540px;
+    }
+    #dragBar { display:flex; align-items:center; gap:8px; padding:8px 0 4px 0; user-select:none; cursor:grab; }
+    #dragSquare { width:14px; height:14px; background:#ff006e; border-radius:3px; }
+    #dragHint { font-size:9px; color:#9ca3af; }
+    #topRow { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:6px; }
+    #titleBlock { flex:1; }
+    h2 { font-size:15px; font-weight:500; margin-bottom:2px; color:var(--title); }
+    #byline { font-size:9px; color:#6b7280; }
+    #audioBtns { display:flex; gap:4px; margin-top:2px; }
+    button {
+      background:linear-gradient(135deg,#ff006e,#8ac926);
+      border:none; color:white; padding:6px 10px; font-size:10px;
+      border-radius:4px; text-transform:uppercase; letter-spacing:.04em; font-weight:500; cursor:pointer;
+    }
+    button:disabled { background:#333; cursor:not-allowed; }
+    .group-title { font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:white; margin-bottom:4px; font-weight:500; }
+    .slider-group { margin-bottom:6px; }
+    .slider-group label { display:flex; justify-content:space-between; font-size:10px; color:var(--label); margin-bottom:3px; text-transform:uppercase; letter-spacing:.04em; }
+    input[type="range"] { width:100%; }
+    select {
+      width:100%; background:#0f172a; color:white; border:1px solid #1f2937;
+      border-radius:4px; height:26px; font-size:11px;
+    }
+    .checkbox-line { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--label); margin-bottom:4px; text-transform:uppercase; }
+    #specBar { width:320px; height:32px; background:#111; border:1px solid rgba(255,255,255,0.07); image-rendering:pixelated; flex:1; }
+    .vol-box { width:32px; height:32px; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.08); border-radius:4px; }
+    #topMeters { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+    #volLabelWrap { display:flex; flex-direction:column; justify-content:center; line-height:1; }
+    #volLabelTiny { font-size:9px; text-transform:uppercase; color:#e5e7eb; letter-spacing:.04em; }
+    #volVal { font-size:13px; font-weight:500; color:white; margin-top:2px; }
+    #panelGrid { display:grid; grid-template-columns:1fr 1fr; gap:14px 12px; align-items:start; margin-top:10px; }
+    .palette-preview { height:10px; border-radius:3px; border:1px solid rgba(255,255,255,0.15); margin-top:4px; }
+    #status { grid-column:1 / span 2; font-size:10px; color:#9ca3af; margin-top:4px; }
+    #fps { position:fixed; bottom:10px; left:10px; background:rgba(0,0,0,0.55); color:white; font-size:10px; padding:3px 8px; border-radius:4px; z-index:20; font-family:monospace; }
+    #btnRow { display:flex; gap:6px; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="controls">
+    <div id="dragBar">
+      <div id="dragSquare"></div>
+      <div id="dragHint">H hide panel | LMB move | MMB scale | RMB rotate scene</div>
+    </div>
+    <div id="topRow">
+      <div id="titleBlock">
+        <h2>Spectrum v11.9</h2>
+        <div id="byline">dev by Grisha Tsvetkov</div>
+      </div>
+      <div id="audioBtns">
+        <button id="micBtn">mic</button>
+        <button id="fileBtn">file</button>
+        <input id="fileInput" type="file" accept="audio/*" style="display:none">
+      </div>
+    </div>
+
+    <!-- meters -->
+    <div id="topMeters">
+      <div class="vol-box" id="volBox"></div>
+      <div class="vol-box" id="volTrigBox"></div>
+      <div id="volLabelWrap">
+        <div id="volLabelTiny">vol</div>
+        <div id="volVal">0.00</div>
+      </div>
+      <canvas id="specBar" width="320" height="32"></canvas>
+    </div>
+    <!-- vol trigger прямо здесь -->
+    <div class="slider-group" style="margin-bottom:8px;">
+      <label>vol trigger<span id="volTrigValue">0.70</span></label>
+      <input id="volTrigSlider" type="range" min="0" max="1" step="0.01" value="0.7">
+    </div>
+
+    <!-- SOUND & SPECTRUM -->
+    <div class="group-title" style="margin-top:0;">sound & spectrum</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;">
+      <div class="slider-group">
+        <label>signal x<span id="gainValue">0.5</span></label>
+        <input id="gainSlider" type="range" min="0.5" max="10" step="0.5" value="0.5">
+      </div>
+      <div class="slider-group">
+        <label>file volume<span id="fileVolValue">0.90</span></label>
+        <input id="fileVolSlider" type="range" min="0" max="1.5" step="0.05" value="0.9">
+      </div>
+      <div class="slider-group">
+        <label>silence thr<span id="thresholdValue">0.05</span></label>
+        <input id="thresholdSlider" type="range" min="0.01" max="0.2" step="0.01" value="0.05">
+      </div>
+      <div class="slider-group">
+        <label>attack<span id="attackValue">0.25</span></label>
+        <input id="attackSlider" type="range" min="0.02" max="1" step="0.02" value="0.25">
+      </div>
+      <div class="slider-group">
+        <label>decay<span id="decayValue">0.08</span></label>
+        <input id="decaySlider" type="range" min="0.01" max="0.5" step="0.01" value="0.08">
+      </div>
+      <div class="slider-group">
+        <label>spec offset<span id="specOffsetValue">-65</span></label>
+        <input id="specOffsetSlider" type="range" min="-512" max="512" step="1" value="-65">
+      </div>
+      <div class="slider-group">
+        <label>spec scale<span id="specScaleValue">0.8x</span></label>
+        <input id="specScaleSlider" type="range" min="0.2" max="3" step="0.1" value="0.8">
+      </div>
+      <div class="slider-group">
+        <label>shuffle speed<span id="shuffleValue">1.2s</span></label>
+        <input id="shuffleSlider" type="range" min="0.3" max="10" step="0.1" value="1.2">
+      </div>
+      <div class="checkbox-line" style="grid-column:1 / span 2;">
+        <input id="volShuffleCheckbox" type="checkbox" checked>
+        <label for="volShuffleCheckbox">trigger shuffle by vol</label>
+      </div>
+    </div>
+
+    <div id="panelGrid">
+      <div>
+        <div class="group-title">drag / scene</div>
+        <div class="checkbox-line"><input id="dragScene" type="checkbox"><label for="dragScene">drag scene</label></div>
+        <div class="checkbox-line"><input id="dragGrid" type="checkbox"><label for="dragGrid">drag grid</label></div>
+        <div class="checkbox-line"><input id="dragBlock1" type="checkbox"><label for="dragBlock1">drag block 1</label></div>
+        <div class="checkbox-line"><input id="dragBlock2" type="checkbox"><label for="dragBlock2">drag block 2</label></div>
+        <div class="slider-group">
+          <label>container scale<span id="containerScaleValue">1.00x</span></label>
+          <input id="containerScaleSlider" type="range" min="0.4" max="1.2" step="0.05" value="1.0">
+        </div>
+        <div id="btnRow">
+          <button id="resetBtn">reset position</button>
+          <button id="resetSizeBtn">reset size</button>
+        </div>
+
+        <div class="group-title" style="margin-top:10px;">background</div>
+        <div class="slider-group">
+          <label>bg gradient</label>
+          <select id="bgGradientSelect"></select>
+          <div id="bgPreview" class="palette-preview"></div>
+        </div>
+        <div class="slider-group">
+          <label>bg type</label>
+          <select id="bgGradType">
+            <option value="radial">radial</option>
+            <option value="linear-x">linear-x</option>
+            <option value="linear-y">linear-y</option>
+            <option value="linear-diag1">linear-diag1</option>
+            <option value="linear-diag2">linear-diag2</option>
+          </select>
+        </div>
+        <div class="slider-group">
+          <label>bg scale<span id="bgRadialValue">1.0x</span></label>
+          <input id="bgRadialSlider" type="range" min="0.3" max="5" step="0.05" value="1">
+        </div>
+        <div class="slider-group">
+          <label>bg color offset<span id="bgColorOffValue">0.00</span></label>
+          <input id="bgColorOffSlider" type="range" min="0" max="1" step="0.01" value="0">
+        </div>
+
+        <div class="group-title" style="margin-top:10px;">grid</div>
+        <div class="checkbox-line"><input id="showGrid" type="checkbox" checked><label for="showGrid">show grid</label></div>
+        <div id="gridControls">
+          <div class="slider-group">
+            <label>grid step<span id="gridStepValue">200px</span></label>
+            <input id="gridStepSlider" type="range" min="20" max="200" step="5" value="200">
+          </div>
+          <div class="slider-group">
+            <label>grid stroke<span id="gridStrokeValue">1px</span></label>
+            <input id="gridStrokeSlider" type="range" min="0" max="400" step="1" value="1">
+          </div>
+          <div class="slider-group">
+            <label>grid gradient</label>
+            <select id="gridGradientSelect"></select>
+            <div id="gridPreview" class="palette-preview"></div>
+          </div>
+          <div class="slider-group">
+            <label>grid color offset<span id="gridColorOffValue">0.00</span></label>
+            <input id="gridColorOffSlider" type="range" min="0" max="1" step="0.01" value="0">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="group-title">block 1 (vertical)</div>
+        <div class="slider-group">
+          <label>cell size<span id="sizeValue">1.8x</span></label>
+          <input id="sizeSlider" type="range" min="0.5" max="3" step="0.1" value="1.8">
+        </div>
+        <div class="slider-group">
+          <label>hide %<span id="hideValue">89%</span></label>
+          <input id="hideSlider" type="range" min="0" max="100" step="1" value="89">
+        </div>
+        <div class="slider-group">
+          <label>row offset<span id="blockOffsetValue">0</span></label>
+          <input id="blockOffsetSlider" type="range" min="0" max="200" step="1" value="0">
+        </div>
+        <div class="slider-group">
+          <label>block 1 scale<span id="blockScaleValue">0.3x</span></label>
+          <input id="blockScaleSlider" type="range" min="0.3" max="30" step="0.1" value="0.3">
+        </div>
+        <div class="slider-group">
+          <label>stroke base<span id="strokeValue">2px</span></label>
+          <input id="strokeSlider" type="range" min="0" max="20" step="1" value="2">
+        </div>
+        <div class="slider-group">
+          <label>stroke random<span id="strokeRndValue">600px</span></label>
+          <input id="strokeRndSlider" type="range" min="0" max="2000" step="10" value="600">
+        </div>
+        <div class="slider-group">
+          <label>block palette</label>
+          <select id="blockPaletteSelect"></select>
+          <div id="blockPalettePreview" class="palette-preview"></div>
+        </div>
+
+        <div class="group-title" style="margin-top:8px;">block 2 (horizontal)</div>
+        <div class="slider-group">
+          <label>hide %<span id="b2HideValue">18%</span></label>
+          <input id="b2HideSlider" type="range" min="0" max="100" step="1" value="18">
+        </div>
+        <div class="slider-group">
+          <label>row offset<span id="b2OffsetValue">7</span></label>
+          <input id="b2OffsetSlider" type="range" min="0" max="200" step="1" value="7">
+        </div>
+        <div class="slider-group">
+          <label>density<span id="b2DensityValue">0.20</span></label>
+          <input id="b2DensitySlider" type="range" min="0" max="1" step="0.05" value="0.20">
+        </div>
+        <div class="slider-group">
+          <label>length<span id="b2LengthValue">0.20</span></label>
+          <input id="b2LengthSlider" type="range" min="0.1" max="30" step="0.1" value="0.20">
+        </div>
+        <div class="slider-group">
+          <label>block 2 scale<span id="b2ScaleValue">2.0x</span></label>
+          <input id="b2ScaleSlider" type="range" min="0.3" max="30" step="0.1" value="2.0">
+        </div>
+        <div class="slider-group">
+          <label>stripe stroke base<span id="b2StrokeValue">1px</span></label>
+          <input id="b2StrokeSlider" type="range" min="0" max="10" step="1" value="1">
+        </div>
+        <div class="slider-group">
+          <label>stripe stroke random<span id="b2StrokeRndValue">0px</span></label>
+          <input id="b2StrokeRndSlider" type="range" min="0" max="2000" step="10" value="0">
+        </div>
+        <div class="slider-group">
+          <label>stripe palette</label>
+          <select id="stripePaletteSelect"></select>
+          <div id="stripePalettePreview" class="palette-preview"></div>
+        </div>
+      </div>
+
+      <div id="status">click mic or file</div>
+    </div>
+  </div>
+
+  <div id="fps">fps: 0</div>
+
+  <script>
+    const MASTER_PALETTES = {
+      black_pink: ['#000000','#1a0010','#330020','#660040','#cc0080','#ff00a0','#ff33b8','#ff66cc'],
+      transparent_cyan: ['rgba(0,0,0,0)','rgba(0,100,100,0.3)','rgba(0,150,150,0.5)','#008888','#00cccc','#00ffff'],
+      transparent_green: ['rgba(0,0,0,0)','rgba(20,40,0,0.3)','rgba(40,80,0,0.5)','#558800','#88cc00','#aaff00','#ccff33'],
+      black_white: ['#000000','#1a1a1a','#444444','#00ff88','#00ffff','#88ffff','#ffffff'],
+      mono_mint: ['#0f172a','#101820','#2dd4bf','#ecfeff'],
+      neon_magenta_cyan: ['#ff008c','#ff66cc','#00f6ff'],
+      violet_orange: ['#312e81','#a855f7','#f97316'],
+      teal_pink: ['#00f6ff','#0ea5e9','#ff006e'],
+      acid: ['#f97316','#ff006e','#00f6ff'],
+      mono_gray: ['#d4d4d4','#e5e5e5'],
+      night_blue: ['#020617','#0f172a','#1f2937'],
+      teal_orange: ['#0d9488','#f97316'],
+      magenta_cyan: ['#ff008c','#00f6ff'],
+      mint: ['#0f766e','#ecfccb'],
+      sand: ['#f97316','#fff7ed'],
+      violet: ['#312e81','#a855f7','#f97316'],
+      coral_ice: ['#ff5f6d','#ffc371'],
+      electric: ['#00f6ff','#006eff','#1200ff'],
+      sunset_pink: ['#ff008c','#ff8c00','#fff500'],
+      forest: ['#0f766e','#14532d','#bef264']
+    };
+
+    function parseColor(str){
+      if (str.startsWith('rgba')) {
+        const m = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        return {r:+m[1],g:+m[2],b:+m[3],a:m[4]!==undefined ? +m[4] : 1};
+      } else if (str.startsWith('#')) {
+        return {
+          r:parseInt(str.slice(1,3),16),
+          g:parseInt(str.slice(3,5),16),
+          b:parseInt(str.slice(5,7),16),
+          a:1
+        };
+      }
+      return {r:0,g:0,b:0,a:1};
+    }
+    function lerpColorAny(c1,c2,t){
+      const a=parseColor(c1), b=parseColor(c2);
+      const r=Math.round(a.r+(b.r-a.r)*t);
+      const g=Math.round(a.g+(b.g-a.g)*t);
+      const bl=Math.round(a.b+(b.b-a.b)*t);
+      const al=a.a+(b.a-a.a)*t;
+      return `rgba(${r},${g},${bl},${al})`;
+    }
+
+    function samplePalette(name){ return (MASTER_PALETTES[name]||['#fff','#000']).slice(); }
+
+    const DPR = 1;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    const specCanvas = document.getElementById('specBar');
+    const specCtx = specCanvas.getContext('2d');
+    specCtx.imageSmoothingEnabled = false;
+
+    const controls = document.getElementById('controls');
+    const dragBar = document.getElementById('dragBar');
+
+    let audioContext, analyser, visGainNode, fileGainNode, dataArray;
+    let isPlaying=false, micSource=null, fileSource=null;
+
+    const CONFIG = {
+      numBars:512,
+      numGroups:4,
+      barsPerGroup:128,
+      containerScale:1.0,
+      containerOffsetX:0,
+      containerOffsetY:0,
+      containerRotation:0,
+      gridDragX:0,
+      gridDragY:0,
+      block1DrawOffsetX:0,
+      block1DrawOffsetY:0,
+      block2DrawOffsetX:0,
+      block2DrawOffsetY:0,
+      shuffleInterval:1200,
+      silenceThreshold:0.05,
+      signalGain:0.5,
+      fileVolume:0.9,
+      cellRatio:0.012,
+      cellScale:1.8,
+      hidePercentBlocks:89,
+      blockOffsetRows:0,
+      blockScale:0.3,
+      specOffset:-65,
+      specScale:0.8,
+      bgGradientKey:'acid',
+      bgGradType:'radial',
+      bgRadialScale:1.0,
+      bgColorOffset:0,
+      gridStep:200,
+      gridStroke:1,
+      gridGradientKey:'acid',
+      gridColorOffset:0,
+      showGrid:true,
+      strokeWidth:2,
+      strokeRandomMax:600,
+      groupShuffleSizes:[32,8,4,128],
+      groupSilence:['rgba(0,0,0,0)','rgba(0,0,0,0)','rgba(0,0,0,0)','#000000'],
+      volTrigger:0.7,
+      triggerShuffleByVol:true,
+      attack:0.25,
+      decay:0.08
+    };
+
+    const BLOCK2 = {
+      hidePercent:18,
+      offset:7,
+      scale:2.0,
+      lengthFactor:0.20,
+      density:0.20,
+      strokeWidth:1,
+      strokeRandom:0
+    };
+
+    const DEFAULT_RESET_SIZE = {
+      cellScale:1,
+      blockScale:1,
+      strokeWidth:0,
+      strokeRandomMax:0,
+      hidePercentBlocks:0,
+      blockOffsetRows:0,
+      b2Hide:0,
+      b2Scale:1,
+      b2Stroke:0,
+      b2StrokeRnd:0,
+      b2Length:1,
+      containerScale:1.0
+    };
+
+    let currentBlockPalette=samplePalette('black_pink');
+    let currentStripePalette=samplePalette('neon_magenta_cyan');
+
+    let bars=[], groups=[], displayBars=[];
+    let grid={cols:0,rows:0,cellW:0,cellH:0,startX:0,startY:0,contentW:0,contentH:0};
+    let drawRects=[];
+    let block2Seeds=[];
+    let gridColorPhase=0;
+    let lastShuffleTime=0;
+    let lastFrameTime=performance.now();
+    let controlsVisible=true;
+    let lastVolTriggerState=false;
+    let currentRMS=0;
+
+    const bgSelect=document.getElementById('bgGradientSelect');
+    const gridSelect=document.getElementById('gridGradientSelect');
+    const blockPaletteSelect=document.getElementById('blockPaletteSelect');
+    const stripePaletteSelect=document.getElementById('stripePaletteSelect');
+    for (const k in MASTER_PALETTES){
+      const o1=document.createElement('option'); o1.value=k; o1.textContent=k; bgSelect.appendChild(o1);
+      const o2=document.createElement('option'); o2.value=k; o2.textContent=k; gridSelect.appendChild(o2);
+      const o3=document.createElement('option'); o3.value=k; o3.textContent=k; blockPaletteSelect.appendChild(o3);
+      const o4=document.createElement('option'); o4.value=k; o4.textContent=k; stripePaletteSelect.appendChild(o4);
+    }
+    bgSelect.value='acid';
+    gridSelect.value='acid';
+    blockPaletteSelect.value='black_pink';
+    stripePaletteSelect.value='neon_magenta_cyan';
+    function updatePreview(el,colors){ el.style.background=`linear-gradient(90deg, ${colors.join(',')})`; }
+    updatePreview(document.getElementById('bgPreview'),MASTER_PALETTES[CONFIG.bgGradientKey]);
+    updatePreview(document.getElementById('gridPreview'),MASTER_PALETTES[CONFIG.gridGradientKey]);
+    updatePreview(document.getElementById('blockPalettePreview'),currentBlockPalette);
+    updatePreview(document.getElementById('stripePalettePreview'),currentStripePalette);
+
+    function resizeCanvas(){ canvas.width=window.innerWidth*DPR|0; canvas.height=window.innerHeight*DPR|0; if (bars.length) buildGrid(); }
+    resizeCanvas();
+    window.addEventListener('resize',resizeCanvas);
+
+    (function(){
+      let isDown=false, ox=0, oy=0;
+      dragBar.addEventListener('mousedown',e=>{
+        isDown=true;
+        const rect=controls.getBoundingClientRect();
+        ox=e.clientX-rect.left; oy=e.clientY-rect.top;
+        dragBar.style.cursor='grabbing';
+      });
+      document.addEventListener('mousemove',e=>{
+        if (!isDown) return;
+        controls.style.left=(e.clientX-ox)+'px';
+        controls.style.top=(e.clientY-oy)+'px';
+        controls.style.transform='';
+      });
+      document.addEventListener('mouseup',()=>{isDown=false; dragBar.style.cursor='grab';});
+    })();
+
+    document.addEventListener('keydown',e=>{
+      if (e.key==='h'||e.key==='H'){ controlsVisible=!controlsVisible; controls.style.display=controlsVisible?'block':'none'; }
+    });
+
+    // ui bindings (оставляю как в предыдущем, только containerScale = 1 по умолчанию)
+    document.getElementById('gainSlider').oninput=e=>{CONFIG.signalGain=+e.target.value; if (visGainNode) visGainNode.gain.value=CONFIG.signalGain; document.getElementById('gainValue').textContent=CONFIG.signalGain.toFixed(1);};
+    document.getElementById('fileVolSlider').oninput=e=>{CONFIG.fileVolume=+e.target.value; if (fileGainNode) fileGainNode.gain.value=CONFIG.fileVolume; document.getElementById('fileVolValue').textContent=CONFIG.fileVolume.toFixed(2);};
+    document.getElementById('thresholdSlider').oninput=e=>{CONFIG.silenceThreshold=+e.target.value; document.getElementById('thresholdValue').textContent=CONFIG.silenceThreshold.toFixed(2);};
+    document.getElementById('attackSlider').oninput=e=>{CONFIG.attack=+e.target.value; document.getElementById('attackValue').textContent=CONFIG.attack.toFixed(2);};
+    document.getElementById('decaySlider').oninput=e=>{CONFIG.decay=+e.target.value; document.getElementById('decayValue').textContent=CONFIG.decay.toFixed(2);};
+    document.getElementById('specOffsetSlider').oninput=e=>{CONFIG.specOffset=+e.target.value; document.getElementById('specOffsetValue').textContent=CONFIG.specOffset;};
+    document.getElementById('specScaleSlider').oninput=e=>{CONFIG.specScale=+e.target.value; document.getElementById('specScaleValue').textContent=CONFIG.specScale.toFixed(1)+'x';};
+    document.getElementById('shuffleSlider').oninput=e=>{CONFIG.shuffleInterval=+e.target.value*1000; document.getElementById('shuffleValue').textContent=(+e.target.value).toFixed(1)+'s';};
+    document.getElementById('volShuffleCheckbox').oninput=e=>{CONFIG.triggerShuffleByVol=e.target.checked;};
+    document.getElementById('volTrigSlider').oninput=e=>{CONFIG.volTrigger=+e.target.value; document.getElementById('volTrigValue').textContent=CONFIG.volTrigger.toFixed(2);};
+
+    const dragSceneCb=document.getElementById('dragScene');
+    const dragGridCb=document.getElementById('dragGrid');
+    const dragBlock1Cb=document.getElementById('dragBlock1');
+    const dragBlock2Cb=document.getElementById('dragBlock2');
+
+    document.getElementById('containerScaleSlider').oninput=e=>{CONFIG.containerScale=+e.target.value; document.getElementById('containerScaleValue').textContent=CONFIG.containerScale.toFixed(2)+'x'; buildGrid();};
+
+    document.getElementById('bgGradientSelect').oninput=e=>{CONFIG.bgGradientKey=e.target.value; updatePreview(document.getElementById('bgPreview'),MASTER_PALETTES[CONFIG.bgGradientKey]);};
+    document.getElementById('bgGradType').oninput=e=>{CONFIG.bgGradType=e.target.value;};
+    document.getElementById('bgRadialSlider').oninput=e=>{CONFIG.bgRadialScale=+e.target.value; document.getElementById('bgRadialValue').textContent=CONFIG.bgRadialScale.toFixed(1)+'x';};
+    document.getElementById('bgColorOffSlider').oninput=e=>{CONFIG.bgColorOffset=+e.target.value; document.getElementById('bgColorOffValue').textContent=CONFIG.bgColorOffset.toFixed(2);};
+
+    document.getElementById('showGrid').oninput=e=>{CONFIG.showGrid=e.target.checked; document.getElementById('gridControls').style.display=CONFIG.showGrid?'block':'none';};
+    document.getElementById('gridStepSlider').oninput=e=>{CONFIG.gridStep=+e.target.value; document.getElementById('gridStepValue').textContent=CONFIG.gridStep+'px';};
+    document.getElementById('gridStrokeSlider').oninput=e=>{CONFIG.gridStroke=+e.target.value; document.getElementById('gridStrokeValue').textContent=CONFIG.gridStroke+'px';};
+    document.getElementById('gridGradientSelect').oninput=e=>{CONFIG.gridGradientKey=e.target.value; updatePreview(document.getElementById('gridPreview'),MASTER_PALETTES[CONFIG.gridGradientKey]);};
+    document.getElementById('gridColorOffSlider').oninput=e=>{CONFIG.gridColorOffset=+e.target.value; document.getElementById('gridColorOffValue').textContent=CONFIG.gridColorOffset.toFixed(2);};
+
+    document.getElementById('sizeSlider').oninput=e=>{CONFIG.cellScale=+e.target.value; document.getElementById('sizeValue').textContent=CONFIG.cellScale.toFixed(1)+'x'; buildGrid();};
+    document.getElementById('hideSlider').oninput=e=>{CONFIG.hidePercentBlocks=+e.target.value; document.getElementById('hideValue').textContent=CONFIG.hidePercentBlocks+'%';};
+    document.getElementById('blockOffsetSlider').oninput=e=>{CONFIG.blockOffsetRows=+e.target.value; document.getElementById('blockOffsetValue').textContent=CONFIG.blockOffsetRows;};
+    document.getElementById('blockScaleSlider').oninput=e=>{CONFIG.blockScale=+e.target.value; document.getElementById('blockScaleValue').textContent=CONFIG.blockScale.toFixed(1)+'x';};
+    document.getElementById('strokeSlider').oninput=e=>{CONFIG.strokeWidth=+e.target.value; document.getElementById('strokeValue').textContent=CONFIG.strokeWidth+'px';};
+    document.getElementById('strokeRndSlider').oninput=e=>{CONFIG.strokeRandomMax=+e.target.value; document.getElementById('strokeRndValue').textContent=CONFIG.strokeRandomMax+'px';};
+    blockPaletteSelect.oninput=e=>{currentBlockPalette=samplePalette(e.target.value); updatePreview(document.getElementById('blockPalettePreview'),currentBlockPalette);};
+
+    document.getElementById('b2HideSlider').oninput=e=>{BLOCK2.hidePercent=+e.target.value; document.getElementById('b2HideValue').textContent=BLOCK2.hidePercent+'%';};
+    document.getElementById('b2OffsetSlider').oninput=e=>{BLOCK2.offset=+e.target.value; document.getElementById('b2OffsetValue').textContent=BLOCK2.offset;};
+    document.getElementById('b2DensitySlider').oninput=e=>{BLOCK2.density=+e.target.value; document.getElementById('b2DensityValue').textContent=BLOCK2.density.toFixed(2);};
+    document.getElementById('b2LengthSlider').oninput=e=>{BLOCK2.lengthFactor=+e.target.value; document.getElementById('b2LengthValue').textContent=BLOCK2.lengthFactor.toFixed(2);};
+    document.getElementById('b2ScaleSlider').oninput=e=>{BLOCK2.scale=+e.target.value; document.getElementById('b2ScaleValue').textContent=BLOCK2.scale.toFixed(1)+'x';};
+    document.getElementById('b2StrokeSlider').oninput=e=>{BLOCK2.strokeWidth=+e.target.value; document.getElementById('b2StrokeValue').textContent=BLOCK2.strokeWidth+'px';};
+    document.getElementById('b2StrokeRndSlider').oninput=e=>{BLOCK2.strokeRandom=+e.target.value; document.getElementById('b2StrokeRndValue').textContent=BLOCK2.strokeRandom+'px';};
+    stripePaletteSelect.oninput=e=>{currentStripePalette=samplePalette(e.target.value); updatePreview(document.getElementById('stripePalettePreview'),currentStripePalette);};
+
+    document.getElementById('resetBtn').onclick=()=>{
+      CONFIG.containerOffsetX=0; CONFIG.containerOffsetY=0;
+      CONFIG.gridDragX=0; CONFIG.gridDragY=0;
+      CONFIG.block1DrawOffsetX=0; CONFIG.block1DrawOffsetY=0;
+      CONFIG.block2DrawOffsetX=0; CONFIG.block2DrawOffsetY=0;
+      CONFIG.containerRotation=0;
+      buildGrid();
+    };
+
+    document.getElementById('resetSizeBtn').onclick=()=>{
+      CONFIG.cellScale = DEFAULT_RESET_SIZE.cellScale;
+      CONFIG.blockScale = DEFAULT_RESET_SIZE.blockScale;
+      CONFIG.strokeWidth = DEFAULT_RESET_SIZE.strokeWidth;
+      CONFIG.strokeRandomMax = DEFAULT_RESET_SIZE.strokeRandomMax;
+      CONFIG.hidePercentBlocks = DEFAULT_RESET_SIZE.hidePercentBlocks;
+      CONFIG.blockOffsetRows = DEFAULT_RESET_SIZE.blockOffsetRows;
+      CONFIG.containerScale = DEFAULT_RESET_SIZE.containerScale;
+
+      BLOCK2.hidePercent = DEFAULT_RESET_SIZE.b2Hide;
+      BLOCK2.scale = DEFAULT_RESET_SIZE.b2Scale;
+      BLOCK2.strokeWidth = DEFAULT_RESET_SIZE.b2Stroke;
+      BLOCK2.strokeRandom = DEFAULT_RESET_SIZE.b2StrokeRnd;
+      BLOCK2.lengthFactor = DEFAULT_RESET_SIZE.b2Length;
+
+      document.getElementById('sizeSlider').value = CONFIG.cellScale;
+      document.getElementById('sizeValue').textContent = CONFIG.cellScale.toFixed(1)+'x';
+      document.getElementById('blockScaleSlider').value = CONFIG.blockScale;
+      document.getElementById('blockScaleValue').textContent = CONFIG.blockScale.toFixed(1)+'x';
+      document.getElementById('strokeSlider').value = CONFIG.strokeWidth;
+      document.getElementById('strokeValue').textContent = CONFIG.strokeWidth+'px';
+      document.getElementById('strokeRndSlider').value = CONFIG.strokeRandomMax;
+      document.getElementById('strokeRndValue').textContent = CONFIG.strokeRandomMax+'px';
+      document.getElementById('hideSlider').value = CONFIG.hidePercentBlocks;
+      document.getElementById('hideValue').textContent = CONFIG.hidePercentBlocks+'%';
+      document.getElementById('blockOffsetSlider').value = CONFIG.blockOffsetRows;
+      document.getElementById('blockOffsetValue').textContent = CONFIG.blockOffsetRows;
+      document.getElementById('containerScaleSlider').value = CONFIG.containerScale;
+      document.getElementById('containerScaleValue').textContent = CONFIG.containerScale.toFixed(2)+'x';
+
+      document.getElementById('b2HideSlider').value = BLOCK2.hidePercent;
+      document.getElementById('b2HideValue').textContent = BLOCK2.hidePercent+'%';
+      document.getElementById('b2ScaleSlider').value = BLOCK2.scale;
+      document.getElementById('b2ScaleValue').textContent = BLOCK2.scale.toFixed(1)+'x';
+      document.getElementById('b2StrokeSlider').value = BLOCK2.strokeWidth;
+      document.getElementById('b2StrokeValue').textContent = BLOCK2.strokeWidth+'px';
+      document.getElementById('b2StrokeRndSlider').value = BLOCK2.strokeRandom;
+      document.getElementById('b2StrokeRndValue').textContent = BLOCK2.strokeRandom+'px';
+      document.getElementById('b2LengthSlider').value = BLOCK2.lengthFactor;
+      document.getElementById('b2LengthValue').textContent = BLOCK2.lengthFactor.toFixed(2);
+
+      shuffleGroups();
+      buildGrid();
+    };
+
+    function initAudio(){
+      if (!audioContext){
+        audioContext = new (window.AudioContext||window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0;
+        visGainNode = audioContext.createGain();
+        visGainNode.gain.value = CONFIG.signalGain;
+        fileGainNode = audioContext.createGain();
+        fileGainNode.gain.value = CONFIG.fileVolume;
+        visGainNode.connect(analyser);
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+      }
+    }
+    function initBars(){
+      bars=[]; groups=[];
+      for (let i=0;i<CONFIG.numBars;i++){
+        bars.push({id:i,freqBin:i,energy:0,groupIndex:Math.floor(i/CONFIG.barsPerGroup),colorA:'rgba(0,0,0,0)',colorB:'rgba(0,0,0,0)'});
+      }
+      for (let g=0;g<CONFIG.numGroups;g++){
+        const groupBars=bars.filter(b=>b.groupIndex===g);
+        groups.push({index:g,bars:groupBars,chunkSize:CONFIG.groupShuffleSizes[g],silenceColor:CONFIG.groupSilence[g]});
+      }
+    }
+
+    document.getElementById('micBtn').onclick=async()=>{
+      try{
+        initAudio(); initBars();
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        micSource=audioContext.createMediaStreamSource(stream);
+        micSource.connect(visGainNode);
+        isPlaying=true;
+        document.getElementById('micBtn').disabled=true;
+        document.getElementById('fileBtn').disabled=true;
+        document.getElementById('status').textContent='🎤 microphone active';
+        if (audioContext.state==='suspended') await audioContext.resume();
+        buildGrid();
+        animate();
+      }catch(err){ console.error(err); document.getElementById('status').textContent='❌ mic denied'; }
+    };
+    document.getElementById('fileBtn').onclick=()=>document.getElementById('fileInput').click();
+    document.getElementById('fileInput').onchange=async e=>{
+      const file=e.target.files[0]; if (!file) return;
+      try{
+        initAudio(); initBars();
+        const arr=await file.arrayBuffer();
+        const audioBuffer=await audioContext.decodeAudioData(arr);
+        if (fileSource && fileSource.stop) fileSource.stop();
+        fileSource=audioContext.createBufferSource();
+        fileSource.buffer=audioBuffer; fileSource.loop=true;
+        fileSource.connect(visGainNode);
+        fileSource.connect(fileGainNode);
+        fileGainNode.connect(audioContext.destination);
+        fileSource.start(0);
+        isPlaying=true;
+        document.getElementById('micBtn').disabled=true;
+        document.getElementById('fileBtn').disabled=true;
+        document.getElementById('status').textContent='🎵 '+file.name;
+        if (audioContext.state==='suspended') await audioContext.resume();
+        buildGrid();
+        animate();
+      }catch(err){ console.error(err); document.getElementById('status').textContent='❌ file load error'; }
+    };
+
+    // drag
+    let dragMode=null;
+    let dragStart={x:0,y:0, ox:0, oy:0, rot:0, scale:1};
+    canvas.addEventListener('mousedown',e=>{
+      const btn=e.button;
+      if (btn===0){
+        if (dragGridCb.checked){ dragMode='grid-move'; dragStart={x:e.clientX,y:e.clientY,ox:CONFIG.gridDragX,oy:CONFIG.gridDragY}; }
+        else if (dragBlock1Cb.checked){ dragMode='b1-move'; dragStart={x:e.clientX,y:e.clientY,ox:CONFIG.block1DrawOffsetX,oy:CONFIG.block1DrawOffsetY}; }
+        else if (dragBlock2Cb.checked){ dragMode='b2-move'; dragStart={x:e.clientX,y:e.clientY,ox:CONFIG.block2DrawOffsetX,oy:CONFIG.block2DrawOffsetY}; }
+        else if (dragSceneCb.checked){ dragMode='scene-move'; dragStart={x:e.clientX,y:e.clientY,ox:CONFIG.containerOffsetX,oy:CONFIG.containerOffsetY}; }
+      } else if (btn===1){
+        if (dragSceneCb.checked){ dragMode='scene-scale'; dragStart={x:e.clientX,y:e.clientY,scale:CONFIG.containerScale}; }
+        else if (dragBlock1Cb.checked || dragBlock2Cb.checked){
+          // масштабируем блоки как один слой
+          dragMode='blocks-scale';
+          dragStart={x:e.clientX,y:e.clientY,scale1:CONFIG.blockScale,scale2:BLOCK2.scale};
+        }
+      } else if (btn===2){
+        if (dragSceneCb.checked){ dragMode='scene-rot'; dragStart={x:e.clientX,y:e.clientY,rot:CONFIG.containerRotation}; }
+      }
+    });
+    canvas.addEventListener('contextmenu',e=>e.preventDefault());
+    document.addEventListener('mousemove',e=>{
+      if (!dragMode) return;
+      const dx=e.clientX-dragStart.x;
+      const dy=e.clientY-dragStart.y;
+      if (dragMode==='grid-move'){ CONFIG.gridDragX=dragStart.ox+dx; CONFIG.gridDragY=dragStart.oy+dy; }
+      else if (dragMode==='b1-move'){ CONFIG.block1DrawOffsetX=dragStart.ox+dx; CONFIG.block1DrawOffsetY=dragStart.oy+dy; }
+      else if (dragMode==='b2-move'){ CONFIG.block2DrawOffsetX=dragStart.ox+dx; CONFIG.block2DrawOffsetY=dragStart.oy+dy; }
+      else if (dragMode==='scene-move'){ CONFIG.containerOffsetX=dragStart.ox+dx; CONFIG.containerOffsetY=dragStart.oy+dy; buildGrid(); }
+      else if (dragMode==='scene-scale'){ const s=dragStart.scale+dx*0.002; CONFIG.containerScale=Math.min(1.2,Math.max(0.3,s)); document.getElementById('containerScaleValue').textContent=CONFIG.containerScale.toFixed(2)+'x'; buildGrid(); }
+      else if (dragMode==='blocks-scale'){
+        const s = dragStart.scale1 + dx*0.01;
+        const s2 = dragStart.scale2 + dx*0.01;
+        CONFIG.blockScale = Math.min(30,Math.max(0.1,s));
+        BLOCK2.scale = Math.min(30,Math.max(0.1,s2));
+        document.getElementById('blockScaleValue').textContent = CONFIG.blockScale.toFixed(1)+'x';
+        document.getElementById('b2ScaleValue').textContent = BLOCK2.scale.toFixed(1)+'x';
+      }
+      else if (dragMode==='scene-rot'){ CONFIG.containerRotation=dragStart.rot+dx*0.002; }
+    });
+    document.addEventListener('mouseup',()=>{ dragMode=null; });
+
+    function spectrumIndex(i){
+      const len=dataArray.length;
+      const center=len/2;
+      const rel=i-center;
+      const scaled=rel*CONFIG.specScale;
+      let idx=Math.round(center+scaled - CONFIG.specOffset);
+      idx=((idx%len)+len)%len;
+      return idx;
+    }
+
+    function shuffleGroups(){
+      displayBars=[];
+      groups.forEach(group=>{
+        const groupBars=[...group.bars];
+        const chunkSize=group.chunkSize;
+        const chunks=[];
+        for (let i=0;i<groupBars.length;i+=chunkSize){
+          chunks.push(groupBars.slice(i,i+chunkSize));
+        }
+        for (let i=chunks.length-1;i>0;i--){
+          const j=Math.floor(Math.random()*(i+1));
+          [chunks[i],chunks[j]]=[chunks[j],chunks[i]];
+        }
+        displayBars.push(...chunks.flat());
+      });
+      for (let i=displayBars.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [displayBars[i],displayBars[j]]=[displayBars[j],displayBars[i]];
+      }
+      block2Seeds=[];
+      const total=grid.cols*grid.rows;
+      for (let i=0;i<total;i++) block2Seeds.push(Math.random());
+    }
+
+    function buildGrid(){
+      const w=canvas.width,h=canvas.height;
+      const baseW=Math.floor(w*0.6*CONFIG.containerScale);
+      const baseH=Math.floor(h*0.6*CONFIG.containerScale);
+      const startX=Math.floor((w-baseW)/2 + CONFIG.containerOffsetX);
+      const startY=Math.floor((h-baseH)/2 + CONFIG.containerOffsetY);
+      const baseRatio=CONFIG.cellRatio*CONFIG.cellScale;
+      const cellW=Math.max(2,Math.floor(baseW*baseRatio));
+      const cellH=Math.max(2,Math.floor(baseH*baseRatio));
+      const cols=Math.floor(baseW/cellW);
+      const rows=Math.floor(baseH/cellH);
+      if (!displayBars.length) shuffleGroups();
+      const cells=new Array(cols*rows);
+      let barIdx=0;
+      let currentBar=displayBars[0]||bars[0];
+      let repeatLeft=Math.floor(Math.random()*124)+1;
+      let step=0;
+      for (let c=0;c<cols;c++){
+        for (let r=0;r<rows;r++){
+          if (repeatLeft<=0){
+            barIdx++;
+            currentBar=displayBars[barIdx%displayBars.length]||bars[0];
+            repeatLeft=Math.floor(Math.random()*124)+1;
+            step=0;
+          }
+          cells[c*rows+r]={barId:currentBar.id,repeatStep:step};
+          repeatLeft--; step++;
+        }
+      }
+      const rects=[];
+      for (let c=0;c<cols;c++){
+        let r=0;
+        while(r<rows){
+          const cell=cells[c*rows+r];
+          const startR=r;
+          r++;
+          while(r<rows && cells[c*rows+r].barId===cell.barId && cells[c*rows+r].repeatStep===cells[c*rows+r-1].repeatStep+1){
+            r++;
+          }
+          rects.push({
+            x:startX+c*cellW,
+            y:startY+startR*cellH,
+            w:cellW,
+            h:(r-startR)*cellH,
+            barId:cell.barId,
+            repeatStep:cells[c*rows+startR].repeatStep,
+            strokeSeed:Math.random(),
+            hideSeed:Math.random()
+          });
+        }
+      }
+      grid={cols,rows,cellW,cellH,startX,startY,contentW:baseW,contentH:baseH};
+      drawRects=rects;
+      block2Seeds=[];
+      for (let i=0;i<cols*rows;i++) block2Seeds.push(Math.random());
+    }
+
+    function drawBackground(){
+      const w=canvas.width,h=canvas.height;
+      const colors=MASTER_PALETTES[CONFIG.bgGradientKey] || ['#d4d4d4','#e5e5e5'];
+      const phase=CONFIG.bgColorOffset;
+
+      function addStopsToGradient(g){
+        const n=colors.length;
+        for (let i=0;i<n;i++){
+          let t=i/(n-1||1);
+          t=(t+phase)%1;
+          g.addColorStop(t, colors[i]);
+        }
+      }
+
+      if (CONFIG.bgGradType==='radial'){
+        const cx=w/2, cy=h/2;
+        const maxR=Math.min(w,h)/2*CONFIG.bgRadialScale;
+        const g=ctx.createRadialGradient(cx,cy,0,cx,cy,maxR);
+        addStopsToGradient(g);
+        ctx.fillStyle=g;
+        ctx.fillRect(0,0,w,h);
+      } else if (CONFIG.bgGradType==='linear-x'){
+        const g=ctx.createLinearGradient(0,0,w*CONFIG.bgRadialScale,0);
+        addStopsToGradient(g);
+        ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+      } else if (CONFIG.bgGradType==='linear-y'){
+        const g=ctx.createLinearGradient(0,0,0,h*CONFIG.bgRadialScale);
+        addStopsToGradient(g);
+        ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+      } else if (CONFIG.bgGradType==='linear-diag1'){
+        const g=ctx.createLinearGradient(0,0,w*CONFIG.bgRadialScale,h*CONFIG.bgRadialScale);
+        addStopsToGradient(g);
+        ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+      } else {
+        const g=ctx.createLinearGradient(w*CONFIG.bgRadialScale,0,0,h*CONFIG.bgRadialScale);
+        addStopsToGradient(g);
+        ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+      }
+    }
+
+    function drawGridUnder(){
+      if (!CONFIG.showGrid) return;
+      const {startX,startY,contentW,contentH}=grid;
+      if (!contentW || !contentH) return;
+      const colors=MASTER_PALETTES[CONFIG.gridGradientKey] || ['#000000','#ff006e'];
+      const gx0=startX+CONFIG.gridDragX;
+      const gy0=startY+CONFIG.gridDragY;
+      for (let y=gy0;y<=gy0+contentH;y+=CONFIG.gridStep){
+        let t=(y-gy0)/contentH;
+        t=(t+CONFIG.gridColorOffset+gridColorPhase)%1;
+        const cIdx = Math.min(colors.length-1, Math.floor(t*(colors.length-1)));
+        const cNext = Math.min(colors.length-1, cIdx+1);
+        const localT = t*(colors.length-1)-cIdx;
+        ctx.strokeStyle=lerpColorAny(colors[cIdx],colors[cNext],localT);
+        ctx.lineWidth=CONFIG.gridStroke;
+        ctx.beginPath(); ctx.moveTo(gx0,y+0.5); ctx.lineTo(gx0+contentW,y+0.5); ctx.stroke();
+      }
+      for (let x=gx0;x<=gx0+contentW;x+=CONFIG.gridStep){
+        let t=(x-gx0)/contentW;
+        t=(t+CONFIG.gridColorOffset+gridColorPhase)%1;
+        const cIdx = Math.min(colors.length-1, Math.floor(t*(colors.length-1)));
+        const cNext = Math.min(colors.length-1, cIdx+1);
+        const localT = t*(colors.length-1)-cIdx;
+        ctx.strokeStyle=lerpColorAny(colors[cIdx],colors[cNext],localT);
+        ctx.lineWidth=CONFIG.gridStroke;
+        ctx.beginPath(); ctx.moveTo(x+0.5,gy0); ctx.lineTo(x+0.5,gy0+contentH); ctx.stroke();
+      }
+    }
+
+    function drawBlock1(){
+      const {startY,contentH,cellH}=grid;
+      const offsetPx=(CONFIG.blockOffsetRows%(grid.rows||1))*cellH;
+      for (let i=0;i<drawRects.length;i++){
+        const rect=drawRects[i];
+        if (rect.hideSeed*100 < CONFIG.hidePercentBlocks) continue;
+        const bar=bars[rect.barId];
+        if (bar.energy < CONFIG.silenceThreshold) continue;
+        const color=bar.colorA;
+        const w=rect.w*CONFIG.blockScale;
+        const h=rect.h*CONFIG.blockScale;
+        let y=rect.y+offsetPx+CONFIG.block1DrawOffsetY;
+        let x=rect.x+CONFIG.block1DrawOffsetX;
+        while (y+h>startY+contentH) y-=contentH;
+        ctx.fillStyle=color;
+        ctx.fillRect(x,y,w,h);
+        const strokeW=CONFIG.strokeWidth + rect.strokeSeed*CONFIG.strokeRandomMax;
+        if (strokeW>0){ ctx.lineWidth=strokeW; ctx.strokeStyle=color; ctx.strokeRect(x,y,w,h); }
+      }
+    }
+
+    function drawBlock2(){
+      const {cols,rows,cellW,cellH,startX,startY}=grid;
+      if (!cols || !rows) return;
+      for (let c=0;c<cols;c++){
+        for (let r=0;r<rows;r++){
+          const idx=c*rows+r;
+          const seed=block2Seeds[idx] || 0;
+          if (seed>BLOCK2.density) continue;
+          if (seed*100 < BLOCK2.hidePercent) continue;
+          const barIdx=(idx+BLOCK2.offset)%bars.length;
+          const bar=bars[barIdx];
+          if (bar.energy < CONFIG.silenceThreshold) continue;
+          const col=bar.colorB;
+
+          const cellX=startX+c*cellW+CONFIG.block2DrawOffsetX;
+          const cellY=startY+r*cellH+CONFIG.block2DrawOffsetY;
+          const centerX = cellX + cellW/2;
+          const h = Math.max(1, Math.floor(cellH*0.35*BLOCK2.scale));
+          const len = Math.floor(cellW*BLOCK2.lengthFactor);
+          const x = centerX - len/2;
+          const y = cellY + Math.floor(cellH/2 - h/2);
+
+          ctx.fillStyle=col;
+          ctx.fillRect(x,y,len,h);
+          const strokeW=BLOCK2.strokeWidth + Math.random()*BLOCK2.strokeRandom;
+          if (strokeW>0){ ctx.lineWidth=strokeW; ctx.strokeStyle=col; ctx.strokeRect(x,y,len,h); }
+        }
+      }
+    }
+
+    function animate(timestamp=0){
+      if (!isPlaying) return;
+      requestAnimationFrame(animate);
+      analyser.getByteFrequencyData(dataArray);
+
+      const now=performance.now();
+      const fps=1000/(now-lastFrameTime);
+      document.getElementById('fps').textContent='fps: '+fps.toFixed(1);
+      const dt=now-lastFrameTime;
+      lastFrameTime=now;
+
+      gridColorPhase=(gridColorPhase + dt*0.0002*(1000/CONFIG.shuffleInterval))%1;
+
+      bars.forEach(bar=>{
+        const idx=spectrumIndex(bar.freqBin);
+        const target=(dataArray[idx]||0)/255;
+        if (target>bar.energy) bar.energy += (target-bar.energy)*CONFIG.attack;
+        else bar.energy += (target-bar.energy)*CONFIG.decay;
+        if (bar.energy < CONFIG.silenceThreshold){
+          bar.colorA = groups[bar.groupIndex] ? groups[bar.groupIndex].silenceColor : 'rgba(0,0,0,0)';
+          bar.colorB = 'rgba(0,0,0,0)';
+        } else {
+          bar.colorA = lerpColorAny(currentBlockPalette[0], currentBlockPalette[currentBlockPalette.length-1], bar.energy);
+          bar.colorB = lerpColorAny(currentStripePalette[0], currentStripePalette[currentStripePalette.length-1], bar.energy);
+        }
+      });
+
+      let sumSq=0;
+      for (let i=0;i<bars.length;i++){ const e=bars[i].energy; sumSq+=e*e; }
+      currentRMS=Math.sqrt(sumSq/bars.length);
+      document.getElementById('volVal').textContent=currentRMS.toFixed(2);
+      document.getElementById('volBox').style.background=`rgba(255,255,255,${currentRMS})`;
+      const triggered=currentRMS >= CONFIG.volTrigger;
+      document.getElementById('volTrigBox').style.background=triggered?'white':'rgba(255,255,255,0.1)';
+      if (CONFIG.triggerShuffleByVol){
+        if (triggered && !lastVolTriggerState){ shuffleGroups(); buildGrid(); lastShuffleTime=timestamp; }
+      }
+      lastVolTriggerState=triggered;
+
+      if (timestamp - lastShuffleTime > CONFIG.shuffleInterval || displayBars.length===0){
+        shuffleGroups(); buildGrid(); lastShuffleTime=timestamp;
+      }
+
+      drawBackground();
+      ctx.save();
+      const cx=canvas.width/2, cy=canvas.height/2;
+      ctx.translate(cx,cy);
+      ctx.rotate(CONFIG.containerRotation);
+      ctx.translate(-cx,-cy);
+      drawGridUnder();
+      drawBlock1();
+      drawBlock2();
+      ctx.restore();
+
+      // mini spectrum
+      specCtx.clearRect(0,0,specCanvas.width,specCanvas.height);
+      for (let i=0;i<specCanvas.width && i<dataArray.length;i++){
+        const idx=spectrumIndex(i);
+        const v=dataArray[idx]/255;
+        const h=Math.floor(v*(specCanvas.height-2));
+        specCtx.fillStyle=`rgb(${Math.floor(v*255)},${Math.floor(v*255)},${Math.floor(v*255)})`;
+        specCtx.fillRect(i, specCanvas.height-h, 1, h);
+      }
+    }
+  </script>
+</body>
+</html>
