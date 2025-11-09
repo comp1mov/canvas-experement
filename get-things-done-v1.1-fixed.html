@@ -1,1679 +1,756 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get Things Done v1.1 by Grisha Tsvetkov</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Things Done v1.2.1 by Grisha Tsvetkov</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      overflow: hidden;
+      width: 100vw; height: 100vh; position: relative;
+    }
+    #app { width: 100%; height: 100%; position: relative; overflow: hidden; }
+    #checkboxes-container { width: 100%; height: 100%; position: relative; overflow: hidden; min-height: 100vh; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f5f5f5;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
+    /* Progress Bar */
+    #progress-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 300px; z-index: 1200; }
+    #progress-bar { width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
+    #progress-fill { height: 100%; background: #000; width: 0%; transition: width 0.3s ease; }
+    #progress-text { text-align: center; margin-top: 8px; font-size: 12px; font-weight: 500; color: #666; }
 
-        #app {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-        }
+    /* Checkboxes */
+    .checkbox-item { position: absolute; display: flex; align-items: center; gap: 10px; cursor: pointer;
+      user-select: none; transition: opacity 0.2s ease; padding: 5px 8px; border-radius: 4px; }
+    .checkbox-item:hover { opacity: 0.7; background: rgba(0,0,0,0.03); }
+    .checkbox-item input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+    .checkbox-item label { cursor: pointer; font-size: 14px; color: #333; white-space: nowrap; }
 
-        #checkboxes-container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-        }
+    /* Completion Screen */
+    #completion-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95); display: none; flex-direction: column;
+      justify-content: center; align-items: center; z-index: 2400; color: white; }
+    #completion-screen.active { display: flex; }
+    #project-info { position: absolute; top: 30px; text-align: center; }
+    #project-title { font-size: 20px; font-weight: 600; margin-bottom: 5px; }
+    #project-author { font-size: 12px; opacity: 0.7; margin-bottom: 8px; }
+    #project-description { font-size: 11px; opacity: 0.5; max-width: 400px; line-height: 1.4; }
+    #completion-message { font-size: 48px; font-weight: bold; margin-bottom: 20px; text-align: center; }
+    #completion-submessage { font-size: 24px; margin-bottom: 40px; opacity: 0.8; }
+    #name-input-container { margin-bottom: 30px; }
+    #name-input { background: transparent; border: none; border-bottom: 2px solid white; color: white;
+      font-size: 20px; padding: 10px; text-align: center; width: 300px; outline: none; }
+    #name-input::placeholder { color: rgba(255,255,255,0.5); }
+    #badge { background: white; color: black; padding: 20px 40px; border-radius: 8px; font-size: 18px; font-weight: 500; margin-bottom: 30px; }
 
-        /* Progress Bar */
-        #progress-container {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            z-index: 1000;
-        }
+    /* Certificate */
+    #certificate { display: none; background: white; color: black; padding: 40px 60px; border-radius: 12px;
+      text-align: center; max-width: 500px; border: 8px solid gold; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative; }
+    #certificate.show { display: block; }
+    #certificate-title { font-size: 32px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+    #certificate-body { font-size: 16px; line-height: 1.8; margin-bottom: 25px; }
+    #certificate-name { font-size: 28px; font-weight: bold; margin: 25px 0; font-style: italic; border-bottom: 2px solid #333; display: block; padding-bottom: 8px; }
+    #certificate-task-count { font-size: 20px; color: gold; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+    #certificate-footer { margin-top: 30px; font-size: 12px; opacity: 0.6; }
+    #certificate-badge { position: absolute; top: -20px; right: -20px; background: gold; border-radius: 50%; width: 80px; height: 80px;
+      display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 
-        #progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
+    #reset-hint { font-size: 14px; opacity: 0.6; margin-top: 20px; }
 
-        #progress-fill {
-            height: 100%;
-            background: #000;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
+    /* Confetti Canvas */
+    #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2500; }
 
-        #progress-text {
-            text-align: center;
-            margin-top: 8px;
-            font-size: 12px;
-            font-weight: 500;
-            color: #666;
-        }
+    /* Help Text */
+    #help-text { position: fixed; bottom: 20px; right: 20px; font-size: 12px; color: #999; opacity: 0.5; transition: opacity 0.3s; z-index: 1200; }
+    #help-text:hover { opacity: 1; }
 
-        /* Checkboxes */
-        .checkbox-item {
-            position: absolute;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            user-select: none;
-            transition: opacity 0.2s ease;
-            padding: 5px 8px;
-            border-radius: 4px;
-        }
-
-        .checkbox-item:hover {
-            opacity: 0.7;
-            background: rgba(0, 0, 0, 0.03);
-        }
-
-        .checkbox-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .checkbox-item label {
-            cursor: pointer;
-            font-size: 14px;
-            color: #333;
-            white-space: nowrap;
-        }
-
-        /* Completion Screen */
-        #completion-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            color: white;
-        }
-
-        #completion-screen.active {
-            display: flex;
-        }
-
-        #project-info {
-            position: absolute;
-            top: 30px;
-            text-align: center;
-        }
-
-        #project-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        #project-author {
-            font-size: 12px;
-            opacity: 0.7;
-            margin-bottom: 8px;
-        }
-
-        #project-description {
-            font-size: 11px;
-            opacity: 0.5;
-            max-width: 400px;
-            line-height: 1.4;
-        }
-
-        #completion-message {
-            font-size: 48px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        #completion-submessage {
-            font-size: 24px;
-            margin-bottom: 40px;
-            opacity: 0.8;
-        }
-
-        #name-input-container {
-            margin-bottom: 30px;
-        }
-
-        #name-input {
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid white;
-            color: white;
-            font-size: 20px;
-            padding: 10px;
-            text-align: center;
-            width: 300px;
-            outline: none;
-        }
-
-        #name-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        #badge {
-            background: white;
-            color: black;
-            padding: 20px 40px;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: 500;
-            margin-bottom: 30px;
-        }
-
-        /* Certificate */
-        #certificate {
-            display: none;
-            background: white;
-            color: black;
-            padding: 40px 60px;
-            border-radius: 12px;
-            text-align: center;
-            max-width: 500px;
-            border: 8px solid gold;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            position: relative;
-        }
-
-        #certificate.show {
-            display: block;
-        }
-
-        #certificate-title {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        #certificate-body {
-            font-size: 16px;
-            line-height: 1.8;
-            margin-bottom: 25px;
-        }
-
-        #certificate-name {
-            font-size: 28px;
-            font-weight: bold;
-            margin: 25px 0;
-            font-style: italic;
-            border-bottom: 2px solid #333;
-            display: block;
-            padding-bottom: 8px;
-        }
-
-        #certificate-task-count {
-            font-size: 20px;
-            color: gold;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
-        #certificate-footer {
-            margin-top: 30px;
-            font-size: 12px;
-            opacity: 0.6;
-        }
-
-        #certificate-badge {
-            position: absolute;
-            top: -20px;
-            right: -20px;
-            background: gold;
-            border-radius: 50%;
-            width: 80px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        #reset-hint {
-            font-size: 14px;
-            opacity: 0.6;
-            margin-top: 20px;
-        }
-
-        /* Confetti Canvas */
-        #confetti-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1500;
-        }
-
-        /* Help Text */
-        #help-text {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            font-size: 12px;
-            color: #999;
-            opacity: 0.5;
-            transition: opacity 0.3s;
-        }
-
-        #help-text:hover {
-            opacity: 1;
-        }
-
-        /* Debug Panel */
-        #debug-panel {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.85);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-family: 'Courier New', monospace;
-            z-index: 1001;
-            min-width: 200px;
-            backdrop-filter: blur(10px);
-            cursor: move;
-            user-select: none;
-        }
-
-        #debug-panel:active {
-            cursor: grabbing;
-        }
-
-        #debug-panel .debug-title {
-            font-weight: bold;
-            font-size: 12px;
-            margin-bottom: 8px;
-            color: #4ecdc4;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-            padding-bottom: 5px;
-        }
-
-        #debug-panel .debug-line {
-            margin: 3px 0;
-        }
-
-        #debug-panel .debug-label {
-            color: #95e1d3;
-        }
-
-        #debug-panel .debug-value {
-            color: #ffe66d;
-        }
-
-        #debug-panel .debug-params {
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            font-size: 10px;
-        }
-
-        /* Reset Button */
-        #reset-button {
-            margin-top: 10px;
-            padding: 8px 16px;
-            background: #4ecdc4;
-            color: #000;
-            border: none;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.2s;
-            font-family: 'Courier New', monospace;
-        }
-
-        #reset-button:hover {
-            background: #95e1d3;
-            transform: translateY(-1px);
-        }
-
-        #reset-button:active {
-            transform: translateY(0);
-        }
-    </style>
+    /* Debug Panel */
+    #debug-panel { position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.85); color: white;
+      padding: 15px; border-radius: 8px; font-size: 11px; font-family: 'Courier New', monospace;
+      z-index: 1300; min-width: 200px; backdrop-filter: blur(10px); cursor: move; user-select: none; }
+    #debug-panel:active { cursor: grabbing; }
+    #debug-panel .debug-title { font-weight: bold; font-size: 12px; margin-bottom: 8px; color: #4ecdc4; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 5px; }
+    #debug-panel .debug-line { margin: 3px 0; }
+    #debug-panel .debug-label { color: #95e1d3; }
+    #debug-panel .debug-value { color: #ffe66d; }
+    #debug-panel .debug-params { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 10px; }
+    #reset-button { margin-top: 10px; padding: 8px 16px; background: #4ecdc4; color: #000; border: none; border-radius: 4px;
+      font-size: 11px; font-weight: bold; cursor: pointer; width: 100%; transition: all 0.2s; font-family: 'Courier New', monospace; }
+    #reset-button:hover { background: #95e1d3; transform: translateY(-1px); }
+    #reset-button:active { transform: translateY(0); }
+  </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Progress Bar -->
-        <div id="progress-container">
-            <div id="progress-bar">
-                <div id="progress-fill"></div>
-            </div>
-            <div id="progress-text">0 / 0</div>
-        </div>
-
-        <!-- Checkboxes Container -->
-        <div id="checkboxes-container"></div>
-
-        <!-- Completion Screen -->
-        <div id="completion-screen">
-            <div id="project-info">
-                <div id="project-title">Get Things Done v1.1</div>
-                <div id="project-author">by Grisha Tsvetkov</div>
-                <div id="project-description">An ironic productivity simulator celebrating the dopamine rush of checking boxes</div>
-            </div>
-            
-            <div id="completion-message">Well done!</div>
-            <div id="completion-submessage">You did it! 🎉</div>
-            
-            <div id="name-input-container">
-                <input type="text" id="name-input" placeholder="Your name..." maxlength="30">
-            </div>
-            
-            <div id="badge"></div>
-            
-            <!-- Certificate (shown after name input) -->
-            <div id="certificate">
-                <div id="certificate-badge">🏆</div>
-                <div id="certificate-title">Certificate of Productivity</div>
-                <div id="certificate-body">
-                    This certifies that
-                    <div id="certificate-name"></div>
-                    has successfully completed <strong id="certificate-task-count"></strong> tasks<br>
-                    and achieved peak productivity simulation
-                </div>
-                <div id="certificate-date"></div>
-                <div id="certificate-footer">
-                    Official Productivity Achievement • Get Things Done v1.1<br>
-                    <em>Warning: May cause false sense of accomplishment</em>
-                </div>
-            </div>
-            
-            <div id="reset-hint">Press R to start again</div>
-        </div>
-
-        <!-- Confetti Canvas -->
-        <canvas id="confetti-canvas"></canvas>
-
-        <!-- Help Text -->
-        <div id="help-text">Press R to reset</div>
-
-        <!-- Debug Panel -->
-        <div id="debug-panel">
-            <div class="debug-title">DEBUG INFO</div>
-            <div class="debug-line"><span class="debug-label">Seed:</span> <span class="debug-value" id="debug-seed">-</span></div>
-            <div class="debug-line"><span class="debug-label">Layout:</span> <span class="debug-value" id="debug-layout">-</span></div>
-            <div class="debug-line"><span class="debug-label">Count:</span> <span class="debug-value" id="debug-count">-</span></div>
-            <div class="debug-params" id="debug-params"></div>
-            <button id="reset-button">RESET (R)</button>
-        </div>
+  <div id="app">
+    <div id="progress-container">
+      <div id="progress-bar"><div id="progress-fill"></div></div>
+      <div id="progress-text">0 / 0</div>
     </div>
 
-    <script>
-        // ============================================
-        // SEEDED RANDOM GENERATOR
-        // ============================================
-        class SeededRandom {
-            constructor(seed) {
-                this.seed = seed;
-                this.current = seed;
-            }
+    <div id="checkboxes-container"></div>
 
-            // Linear Congruential Generator
-            next() {
-                this.current = (this.current * 1103515245 + 12345) & 0x7fffffff;
-                return this.current / 0x7fffffff;
-            }
+    <div id="completion-screen">
+      <div id="project-info">
+        <div id="project-title">Get Things Done v1.2.1</div>
+        <div id="project-author">by Grisha Tsvetkov</div>
+        <div id="project-description">An ironic productivity simulator celebrating the dopamine rush of checking boxes</div>
+      </div>
+      <div id="completion-message">Well done!</div>
+      <div id="completion-submessage">You did it! 🎉</div>
+      <div id="name-input-container"><input type="text" id="name-input" placeholder="Your name..." maxlength="30"></div>
+      <div id="badge"></div>
+      <div id="certificate">
+        <div id="certificate-badge">🏆</div>
+        <div id="certificate-title">Certificate of Productivity</div>
+        <div id="certificate-body">
+          This certifies that
+          <div id="certificate-name"></div>
+          has successfully completed <strong id="certificate-task-count"></strong> tasks<br>
+          and achieved peak productivity simulation
+        </div>
+        <div id="certificate-date"></div>
+        <div id="certificate-footer">
+          Official Productivity Achievement • Get Things Done v1.2.1<br>
+          <em>Warning: May cause false sense of accomplishment</em>
+        </div>
+      </div>
+      <div id="reset-hint">Press R to start again</div>
+    </div>
 
-            // Random float between 0 and 1
-            random() {
-                return this.next();
-            }
+    <canvas id="confetti-canvas"></canvas>
+    <div id="help-text">Press R to reset</div>
 
-            // Random integer between min (inclusive) and max (exclusive)
-            randomInt(min, max) {
-                return Math.floor(this.random() * (max - min)) + min;
-            }
+    <div id="debug-panel">
+      <div class="debug-title">DEBUG INFO</div>
+      <div class="debug-line"><span class="debug-label">Seed:</span> <span class="debug-value" id="debug-seed">-</span></div>
+      <div class="debug-line"><span class="debug-label">Layout:</span> <span class="debug-value" id="debug-layout">-</span></div>
+      <div class="debug-line"><span class="debug-label">Count:</span> <span class="debug-value" id="debug-count">-</span></div>
+      <div class="debug-params" id="debug-params"></div>
+      <button id="reset-button">RESET (R)</button>
+    </div>
+  </div>
 
-            // Random float between min and max
-            randomFloat(min, max) {
-                return this.random() * (max - min) + min;
-            }
+  <script>
+    // ======================= Seeded RNG =======================
+    class SeededRandom {
+      constructor(seed) { this.seed = seed|0; this.current = this.seed; }
+      next() { this.current = (this.current * 1103515245 + 12345) & 0x7fffffff; return this.current / 0x7fffffff; }
+      random() { return this.next(); }
+      randomInt(min, max) { return Math.floor(this.random() * (max - min)) + min; }
+      randomFloat(min, max) { return this.random() * (max - min) + min; }
+      choice(array) { return array[this.randomInt(0, array.length)]; }
+    }
 
-            // Random choice from array
-            choice(array) {
-                return array[this.randomInt(0, array.length)];
-            }
-        }
+    // ======================= Global =======================
+    let rng, rngConfetti;
+    let currentSeed;
+    let currentLayout;
+    let currentParams = {};
+    let checkboxes = [];
+    let checkedCount = 0;
+    let totalCount = 0;
 
-        // ============================================
-        // GLOBAL STATE
-        // ============================================
-        let rng; // Seeded random generator
-        let currentSeed;
-        let currentLayout;
-        let currentParams = {};
-        
-        // ============================================
-        // CONTENT LIBRARY
-        // ============================================
-        const TEXTS = {
-            serious: [
-                "Review project documentation",
-                "Call mom",
-                "Reply to important emails",
-                "Update portfolio",
-                "Check bank account",
-                "Schedule dentist appointment",
-                "Water the plants",
-                "Pay bills",
-                "Backup important files",
-                "Clean the workspace"
-            ],
-            absurd: [
-                "Pet a cloud",
-                "Count to infinity",
-                "Teach a fish to climb",
-                "Find the end of the rainbow",
-                "Befriend a shadow",
-                "Organize your thoughts alphabetically",
-                "High-five yourself",
-                "Contemplate the void",
-                "Name all your fingers",
-                "Win an argument with yourself"
-            ],
-            quotes: [
-                "Done is better than perfect",
-                "Progress, not perfection",
-                "One step at a time",
-                "Small wins matter",
-                "Consistency beats intensity",
-                "Action creates clarity",
-                "Start where you are",
-                "Every day is a fresh start",
-                "Your pace is enough",
-                "Trust the process"
-            ]
-        };
+    const TEXTS = {
+      serious: ["Review project documentation","Call mom","Reply to important emails","Update portfolio","Check bank account","Schedule dentist appointment","Water the plants","Pay bills","Backup important files","Clean the workspace"],
+      absurd: ["Pet a cloud","Count to infinity","Teach a fish to climb","Find the end of the rainbow","Befriend a shadow","Organize your thoughts alphabetically","High-five yourself","Contemplate the void","Name all your fingers","Win an argument with yourself"],
+      quotes: ["Done is better than perfect","Progress, not perfection","One step at a time","Small wins matter","Consistency beats intensity","Action creates clarity","Start where you are","Every day is a fresh start","Your pace is enough","Trust the process"]
+    };
 
-        // ============================================
-        // STATE
-        // ============================================
-        let checkboxes = [];
-        let checkedCount = 0;
-        let totalCount = 0;
+    // ======================= Debug panel =======================
+    function updateDebugPanel() {
+      document.getElementById('debug-seed').textContent = currentSeed;
+      document.getElementById('debug-layout').textContent = currentLayout;
+      document.getElementById('debug-count').textContent = totalCount;
+      const paramsEl = document.getElementById('debug-params');
+      let html = '';
+      for (let k in currentParams) {
+        const v = currentParams[k];
+        html += `<div class="debug-line"><span class="debug-label">${k}:</span> ${typeof v === 'number' ? Number(v).toFixed(2) : v}</div>`;
+      }
+      paramsEl.innerHTML = html;
+    }
 
-        // ============================================
-        // DEBUG PANEL
-        // ============================================
-        function updateDebugPanel() {
-            document.getElementById('debug-seed').textContent = currentSeed;
-            document.getElementById('debug-layout').textContent = currentLayout;
-            document.getElementById('debug-count').textContent = totalCount;
-            
-            // Display parameters
-            const paramsEl = document.getElementById('debug-params');
-            let paramsHTML = '';
-            for (let key in currentParams) {
-                const value = currentParams[key];
-                const displayValue = typeof value === 'number' ? value.toFixed(2) : value;
-                paramsHTML += `<div class="debug-line"><span class="debug-label">${key}:</span> ${displayValue}</div>`;
-            }
-            paramsEl.innerHTML = paramsHTML;
-        }
+    // ======================= Boot safe for Super =======================
+    function readSeed() {
+      const url = new URL(location.href);
+      const qSeed = url.searchParams.get('seed');
+      const hSeed = new URLSearchParams(url.hash.slice(1)).get('seed');
+      const lsSeed = localStorage.getItem('gtd_seed');
+      return qSeed || hSeed || lsSeed || null;
+    }
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        function init() {
-            // Check URL parameters
-            const params = new URLSearchParams(location.search);
-            const urlSeed = params.get('seed');
-            const urlLayout = params.get('layout');
+    function init() {
+      const s = readSeed();
+      currentSeed = s ? parseInt(s, 10) : Math.floor(Math.random() * 1e9);
+      rng = new SeededRandom(currentSeed);
+      rngConfetti = new SeededRandom((currentSeed ^ 0x9e3779b9) >>> 0); // independent stream, same seed base
 
-            // Generate random seed or use URL seed
-            currentSeed = urlSeed ? parseInt(urlSeed, 10) : Math.floor(Math.random() * 1000000);
-            rng = new SeededRandom(currentSeed);
-            
-            clearCheckboxes();
+      clearCheckboxes();
+      generateCheckboxes();
+      updateProgress();
+      updateDebugPanel();
+      hideCompletionScreen();
+      stopConfetti();
+    }
 
-            // Force layout from URL if provided
-            if (urlLayout) {
-                const originalChoice = rng.choice;
-                rng.choice = arr => urlLayout && arr.includes(urlLayout) ? urlLayout : originalChoice.call(rng, arr);
-                generateCheckboxes();
-                rng.choice = originalChoice;
-            } else {
-                generateCheckboxes();
-            }
-
-            updateProgress();
-            updateDebugPanel();
-            hideCompletionScreen();
-            stopConfetti();
-        }
-
-        // ============================================
-        // CHECKBOX GENERATION
-        // ============================================
-        function generateCheckboxes() {
-            const container = document.getElementById('checkboxes-container');
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-
-            // Calculate number of checkboxes based on actual available space
-            const availableArea = width * (height - 100); // minus top margin
-            const avgCheckboxSize = 180 * 50; // area estimate
-            let count = Math.floor(availableArea / avgCheckboxSize);
-            
-            // Scale down for smaller screens
-            if (width < 800) {
-                count = Math.floor(count * 0.6);
-            }
-            
-            // Add randomness using seeded RNG: ±30% variation
-            const variation = 0.7 + rng.random() * 0.6; // 0.7 to 1.3
-            count = Math.floor(count * variation);
-            
-            // Clamp to 5-25 range
-            totalCount = Math.max(5, Math.min(count, 25));
-            checkedCount = 0;
-
-            // Text distribution: 30% serious, 30% absurd, 20% quotes, 20% empty
-            const textPool = [];
-            const seriesCount = Math.floor(totalCount * 0.3);
-            const absurdCount = Math.floor(totalCount * 0.3);
-            const quotesCount = Math.floor(totalCount * 0.2);
-            const emptyCount = totalCount - seriesCount - absurdCount - quotesCount;
-
-            // Fill text pool using seeded random
-            for (let i = 0; i < seriesCount; i++) {
-                textPool.push(rng.choice(TEXTS.serious));
-            }
-            for (let i = 0; i < absurdCount; i++) {
-                textPool.push(rng.choice(TEXTS.absurd));
-            }
-            for (let i = 0; i < quotesCount; i++) {
-                textPool.push(rng.choice(TEXTS.quotes));
-            }
-            for (let i = 0; i < emptyCount; i++) {
-                textPool.push(null);
-            }
-
-            // Shuffle text pool using seeded random
-            shuffleArraySeeded(textPool, rng);
-
-            // Generate positions with random layout pattern
-            let positions = generatePositions(totalCount, width, height, textPool);
-
-            // Post-process: resolve overlaps (but NOT for list pattern - it manages its own hierarchy)
-            if (currentLayout !== 'list') {
-                positions = resolveOverlaps(positions, width, height, { 
-                    margin: 30, 
-                    top: 100, 
-                    iterations: 80, 
-                    padding: 8 
-                });
-            }
-
-            // Create checkboxes
-            positions.forEach((pos, i) => {
-                const checkboxEl = createCheckbox(i, pos.x, pos.y, textPool[i], pos.isNested);
-                container.appendChild(checkboxEl);
-                checkboxes.push(checkboxEl);
-            });
-
-            updateProgress();
-        }
-
-        function createCheckbox(id, x, y, text, isNested) {
-            const div = document.createElement('div');
-            div.className = 'checkbox-item';
-            div.style.left = `${x}px`;
-            div.style.top = `${y}px`;
-
-            // Add nested indicator for list pattern
-            if (isNested) {
-                const nestedIcon = document.createElement('span');
-                nestedIcon.textContent = '▸ ';
-                nestedIcon.style.marginRight = '5px';
-                nestedIcon.style.opacity = '0.5';
-                nestedIcon.style.fontSize = '10px';
-                div.appendChild(nestedIcon);
-            }
-
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `cb-${id}`;
-            checkbox.addEventListener('change', onCheckboxChange);
-
-            div.appendChild(checkbox);
-
-            if (text) {
-                const label = document.createElement('label');
-                label.htmlFor = `cb-${id}`;
-                label.textContent = text;
-                div.appendChild(label);
-            }
-
-            return div;
-        }
-
-        // ============================================
-        // PATCHED: CACHED TEXT MEASUREMENT
-        // ============================================
-        // Create one offscreen canvas context for text measurement
-        const __measureCtx = (() => {
-            const c = document.createElement('canvas');
-            return c.getContext('2d');
-        })();
-
-        function measureTextWidth(text) {
-            if (!text) return 20; // only checkbox
-            __measureCtx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            const w = __measureCtx.measureText(text).width;
-            return 20 + 10 + w + 20; // checkbox + gap + text + padding
-        }
-
-        // Check if two bounding boxes overlap
-        function boxesOverlap(box1, box2) {
-            return !(box1.x + box1.width < box2.x || 
-                     box2.x + box2.width < box1.x || 
-                     box1.y + box1.height < box2.y || 
-                     box2.y + box2.height < box1.y);
-        }
-
-        // ============================================
-        // PATCHED: VALUE NOISE 2D UTILITIES
-        // ============================================
-        function lerp(a, b, t) { 
-            return a + t * (b - a); 
-        }
-
-        function smoothstep(t) { 
-            return t * t * (3 - 2 * t); 
-        }
-
-        // Fast 32-bit hash
-        function hash2D(ix, iy, seed) {
-            let n = Math.imul(ix, 374761393) ^ Math.imul(iy, 668265263) ^ (seed | 0);
-            n = (n ^ (n >>> 13)) >>> 0;
-            n = Math.imul(n, 1274126177) >>> 0;
-            return n / 4294967296; // 0..1
-        }
-
-        // Smooth value-noise
-        function noise2D(x, y, scale) {
-            const sx = x * scale, sy = y * scale;
-            const x0 = Math.floor(sx), y0 = Math.floor(sy);
-            const x1 = x0 + 1, y1 = y0 + 1;
-            const fx = sx - x0, fy = sy - y0;
-            const u = smoothstep(fx), v = smoothstep(fy);
-
-            const v00 = hash2D(x0, y0, currentSeed);
-            const v10 = hash2D(x1, y0, currentSeed);
-            const v01 = hash2D(x0, y1, currentSeed);
-            const v11 = hash2D(x1, y1, currentSeed);
-
-            const nx0 = lerp(v00, v10, u);
-            const nx1 = lerp(v01, v11, u);
-            return lerp(nx0, nx1, v); // 0..1
-        }
-
-        // ============================================
-        // PATCHED: UNIVERSAL OVERLAP RESOLVER
-        // ============================================
-        function resolveOverlaps(rects, width, height, opts = {}) {
-            const margin = opts.margin ?? 30;
-            const topMargin = opts.top ?? 100;
-            const iterations = opts.iterations ?? 100;
-            const stiffness = opts.stiffness ?? 0.6;
-            const padding = opts.padding ?? 6;
-
-            for (let k = 0; k < iterations; k++) {
-                let moved = false;
-
-                for (let i = 0; i < rects.length; i++) {
-                    for (let j = i + 1; j < rects.length; j++) {
-                        const a = rects[i], b = rects[j];
-                        const ax = a.x + a.width / 2, ay = a.y + a.height / 2;
-                        const bx = b.x + b.width / 2, by = b.y + b.height / 2;
-
-                        const dx = ax - bx, dy = ay - by;
-                        const overlapX = (a.width / 2 + b.width / 2 + padding) - Math.abs(dx);
-                        const overlapY = (a.height / 2 + b.height / 2 + padding) - Math.abs(dy);
-
-                        if (overlapX > 0 && overlapY > 0) {
-                            moved = true;
-                            const pushX = stiffness * overlapX * Math.sign(dx || (rng.random() - 0.5));
-                            const pushY = stiffness * overlapY * Math.sign(dy || (rng.random() - 0.5));
-
-                            a.x += pushX * 0.5; b.x -= pushX * 0.5;
-                            a.y += pushY * 0.5; b.y -= pushY * 0.5;
-
-                            // Clamp to working area
-                            a.x = Math.max(margin, Math.min(a.x, width - margin - a.width));
-                            b.x = Math.max(margin, Math.min(b.x, width - margin - b.width));
-                            a.y = Math.max(topMargin, Math.min(a.y, height - margin - a.height));
-                            b.y = Math.max(topMargin, Math.min(b.y, height - margin - b.height));
-                        }
-                    }
-                }
-                if (!moved) break;
-            }
-            return rects;
-        }
-
-        // ============================================
-        // LAYOUT PATTERNS
-        // ============================================
-        
-        // Random layout selector
-        function generatePositions(count, width, height, texts) {
-            const layouts = ['scatter', 'list', 'circle', 'spiral', 'grid-noise', 'letter', 'phyllotaxis', 'lissajous'];
-            currentLayout = rng.choice(layouts);
-            currentParams = {}; // Reset params
-            
-            console.log(`Layout: ${currentLayout}, Seed: ${currentSeed}`);
-            
-            switch(currentLayout) {
-                case 'scatter': return generateScatterPositions(count, width, height, texts);
-                case 'list': return generateListPositions(count, width, height, texts);
-                case 'circle': return generateCirclePositions(count, width, height, texts);
-                case 'spiral': return generateSpiralPositions(count, width, height, texts);
-                case 'grid-noise': return generateGridNoisePositions(count, width, height, texts);
-                case 'letter': return generateLetterPositions(count, width, height, texts);
-                case 'phyllotaxis': return generatePhyllotaxisPositions(count, width, height, texts);
-                case 'lissajous': return generateLissajousPositions(count, width, height, texts);
-                default: return generateScatterPositions(count, width, height, texts);
-            }
-        }
-
-        // ============================================
-        // PATTERN 1: SCATTER (clustered)
-        // ============================================
-        function generateScatterPositions(count, width, height, texts) {
-            const positions = [];
-            const margin = 30;
-            const topMargin = 100;
-            const padding = 15;
-            const maxAttempts = 150;
-            const checkboxHeight = 30;
-
-            // Seeded parameters
-            const clusterProbability = rng.randomFloat(0.3, 0.5);
-            const clusterCount = Math.max(2, Math.floor(count / rng.randomInt(4, 8)));
-            const clusterRadius = rng.randomFloat(60, 100);
-            
-            currentParams = {
-                clusterProb: clusterProbability,
-                clusters: clusterCount,
-                radius: clusterRadius
+    function safeInit() {
+      const start = () => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const doInit = () => {
+              const container = document.getElementById('checkboxes-container');
+              const rect = container.getBoundingClientRect();
+              if (rect.width < 50 || rect.height < 50) { setTimeout(doInit, 50); return; }
+              init();
+              setTimeout(() => { reset(); }, 300);
             };
-
-            const clusters = [];
-            for (let i = 0; i < clusterCount; i++) {
-                clusters.push({
-                    x: margin + rng.random() * (width - margin * 2),
-                    y: topMargin + rng.random() * (height - topMargin - margin)
-                });
-            }
-
-            for (let i = 0; i < count; i++) {
-                let pos;
-                let attempts = 0;
-                let valid = false;
-                
-                const textWidth = measureTextWidth(texts[i]);
-                const boxWidth = textWidth;
-                const boxHeight = checkboxHeight;
-
-                const inCluster = rng.random() < clusterProbability && clusters.length > 0;
-
-                while (!valid && attempts < maxAttempts) {
-                    if (inCluster) {
-                        const cluster = rng.choice(clusters);
-                        const angle = rng.random() * Math.PI * 2;
-                        const distance = rng.random() * clusterRadius;
-                        pos = {
-                            x: cluster.x + Math.cos(angle) * distance,
-                            y: cluster.y + Math.sin(angle) * distance,
-                            width: boxWidth,
-                            height: boxHeight
-                        };
-                        pos.x = Math.max(margin, Math.min(pos.x, width - margin - boxWidth));
-                        pos.y = Math.max(topMargin, Math.min(pos.y, height - margin - boxHeight));
-                    } else {
-                        pos = {
-                            x: margin + rng.random() * (width - margin * 2 - boxWidth),
-                            y: topMargin + rng.random() * (height - topMargin - margin - boxHeight),
-                            width: boxWidth,
-                            height: boxHeight
-                        };
-                    }
-
-                    valid = true;
-                    for (let existing of positions) {
-                        if (boxesOverlap(
-                            {x: pos.x - padding, y: pos.y - padding, width: pos.width + padding * 2, height: pos.height + padding * 2},
-                            {x: existing.x - padding, y: existing.y - padding, width: existing.width + padding * 2, height: existing.height + padding * 2}
-                        )) {
-                            valid = false;
-                            break;
-                        }
-                    }
-                    attempts++;
-                }
-
-                if (!valid) {
-                    pos = {
-                        x: margin + rng.random() * (width - margin * 2 - boxWidth),
-                        y: topMargin + rng.random() * (height - topMargin - margin - boxHeight),
-                        width: boxWidth,
-                        height: boxHeight
-                    };
-                }
-
-                positions.push(pos);
-            }
-
-            return positions;
-        }
-
-        // ============================================
-        // PATTERN 2: LIST (hierarchical)
-        // ============================================
-        function generateListPositions(count, width, height, texts) {
-            const positions = [];
-            const margin = 60;
-            const topMargin = 120;
-            const checkboxHeight = 30;
-            
-            // Seeded parameters
-            const sublistCount = rng.randomInt(3, 7); // More variety
-            const lineSpacing = rng.randomFloat(35, 45);
-            const nestingProbability = rng.randomFloat(0.15, 0.3);
-            const indentSize = rng.randomFloat(25, 35);
-            
-            currentParams = {
-                sublists: sublistCount,
-                lineSpacing: lineSpacing.toFixed(0),
-                indentSize: indentSize.toFixed(0),
-                nesting: (nestingProbability * 100).toFixed(0) + '%'
-            };
-            
-            // Distribute items across sublists (with more randomness)
-            const itemsPerSublist = [];
-            let remaining = count;
-            for (let i = 0; i < sublistCount; i++) {
-                if (i === sublistCount - 1) {
-                    itemsPerSublist.push(remaining);
-                } else {
-                    const size = rng.randomInt(2, Math.max(3, Math.floor(remaining / (sublistCount - i)) + 2));
-                    itemsPerSublist.push(Math.min(size, remaining));
-                    remaining -= itemsPerSublist[i];
-                }
-            }
-            
-            // Calculate max width for each sublist
-            const maxWidths = [];
-            let textIdx = 0;
-            for (let i = 0; i < sublistCount; i++) {
-                let maxW = 0;
-                for (let j = 0; j < itemsPerSublist[i]; j++) {
-                    if (textIdx < count) {
-                        maxW = Math.max(maxW, measureTextWidth(texts[textIdx]));
-                        textIdx++;
-                    }
-                }
-                maxWidths.push(maxW + 50);
-            }
-            
-            // Generate positions for sublists with collision detection
-            const sublistBounds = [];
-            const maxAttempts = 50;
-            
-            for (let i = 0; i < sublistCount; i++) {
-                let validPosition = false;
-                let attempts = 0;
-                let sublistX, sublistY;
-                
-                const sublistWidth = maxWidths[i];
-                const sublistHeight = itemsPerSublist[i] * lineSpacing + 20;
-                
-                while (!validPosition && attempts < maxAttempts) {
-                    sublistX = margin + rng.random() * (width - margin * 2 - sublistWidth);
-                    sublistY = topMargin + rng.random() * (height - topMargin - margin - sublistHeight);
-                    
-                    // Check collision with existing sublists
-                    validPosition = true;
-                    for (let existing of sublistBounds) {
-                        const padding = 30;
-                        if (!(sublistX + sublistWidth + padding < existing.x ||
-                              existing.x + existing.width + padding < sublistX ||
-                              sublistY + sublistHeight + padding < existing.y ||
-                              existing.y + existing.height + padding < sublistY)) {
-                            validPosition = false;
-                            break;
-                        }
-                    }
-                    
-                    attempts++;
-                }
-                
-                sublistBounds.push({
-                    x: sublistX,
-                    y: sublistY,
-                    width: sublistWidth,
-                    height: sublistHeight
-                });
-            }
-            
-            // Create checkboxes for each sublist
-            textIdx = 0;
-            for (let sublistIdx = 0; sublistIdx < sublistCount; sublistIdx++) {
-                const baseX = sublistBounds[sublistIdx].x;
-                let currentY = sublistBounds[sublistIdx].y;
-                
-                for (let i = 0; i < itemsPerSublist[sublistIdx]; i++) {
-                    if (textIdx >= count) break;
-                    
-                    const isNested = i > 0 && rng.random() < nestingProbability;
-                    const indent = isNested ? indentSize : 0;
-                    
-                    const x = baseX + indent;
-                    const textWidth = measureTextWidth(texts[textIdx]);
-                    const boxWidth = textWidth;
-                    
-                    positions.push({
-                        x: x,
-                        y: currentY,
-                        width: boxWidth,
-                        height: checkboxHeight,
-                        isNested: isNested,
-                        sublistId: sublistIdx
-                    });
-                    
-                    currentY += lineSpacing;
-                    textIdx++;
-                }
-            }
-            
-            return positions;
-        }
-
-        // ============================================
-        // PATTERN 3: CIRCLE
-        // ============================================
-        function generateCirclePositions(count, width, height, texts) {
-            const positions = [];
-            const topMargin = 100;
-            const centerX = width / 2;
-            const centerY = (height + topMargin) / 2;
-            const checkboxHeight = 30;
-            
-            // Seeded parameters
-            const baseRadius = Math.min(width, height - topMargin) * rng.randomFloat(0.3, 0.4);
-            const radiusVariation = rng.randomFloat(0, 0.2);
-            const rotationOffset = rng.random() * Math.PI * 2;
-            const ellipseRatio = rng.randomFloat(0.7, 1.3);
-            
-            currentParams = {
-                radius: baseRadius,
-                variation: radiusVariation,
-                rotation: (rotationOffset * 180 / Math.PI).toFixed(0) + '°',
-                ellipse: ellipseRatio
-            };
-            
-            for (let i = 0; i < count; i++) {
-                const angle = rotationOffset + (i / count) * Math.PI * 2;
-                const radiusVar = 1 + (rng.random() * 2 - 1) * radiusVariation;
-                const radius = baseRadius * radiusVar;
-                
-                const textWidth = measureTextWidth(texts[i]);
-                const boxWidth = textWidth;
-                
-                const x = centerX + Math.cos(angle) * radius * ellipseRatio - boxWidth / 2;
-                const y = centerY + Math.sin(angle) * radius - checkboxHeight / 2;
-                
-                positions.push({
-                    x: x,
-                    y: y,
-                    width: boxWidth,
-                    height: checkboxHeight
-                });
-            }
-            
-            return positions;
-        }
-
-        // ============================================
-        // PATTERN 4: SPIRAL (golden/fibonacci spiral)
-        // ============================================
-        function generateSpiralPositions(count, width, height, texts) {
-            const positions = [];
-            const topMargin = 100;
-            const centerX = width / 2;
-            const centerY = (height + topMargin) / 2;
-            const checkboxHeight = 30;
-            
-            // Seeded parameters
-            const startAngle = rng.random() * Math.PI * 2;
-            const maxRadius = Math.min(width, height - topMargin) * 0.48;
-            const minRadius = rng.randomFloat(20, 50);
-            const spiralTightness = rng.randomFloat(0.15, 0.25);
-            
-            currentParams = {
-                startAngle: (startAngle * 180 / Math.PI).toFixed(0) + '°',
-                maxR: maxRadius.toFixed(0),
-                minR: minRadius.toFixed(0),
-                tightness: spiralTightness.toFixed(2)
-            };
-            
-            // Generate spiral path
-            const pathPoints = [];
-            const steps = count * 3;
-            
-            for (let i = 0; i < steps; i++) {
-                const t = i / (steps - 1);
-                const angle = startAngle + t * Math.PI * 6 * (1 / spiralTightness);
-                const radius = maxRadius * Math.exp(-spiralTightness * t * 20);
-                
-                if (radius < minRadius) break;
-                
-                pathPoints.push({
-                    x: centerX + Math.cos(angle) * radius,
-                    y: centerY + Math.sin(angle) * radius,
-                    angle: angle,
-                    radius: radius
-                });
-            }
-            
-            // Place checkboxes along path
-            let currentPathIndex = 0;
-            
-            for (let i = 0; i < count; i++) {
-                if (currentPathIndex >= pathPoints.length) break;
-                
-                const textWidth = measureTextWidth(texts[i]);
-                const boxWidth = textWidth;
-                const point = pathPoints[currentPathIndex];
-                
-                const x = point.x - boxWidth / 2;
-                const y = point.y - checkboxHeight / 2;
-                
-                positions.push({
-                    x: x,
-                    y: y,
-                    width: boxWidth,
-                    height: checkboxHeight
-                });
-                
-                currentPathIndex += Math.max(1, Math.floor(pathPoints.length / (count * 1.5)));
-            }
-            
-            return positions;
-        }
-
-        // ============================================
-        // PATTERN 5: GRID + NOISE (PATCHED)
-        // ============================================
-        function generateGridNoisePositions(count, width, height, texts) {
-            const positions = [];
-            const margin = 60;
-            const topMargin = 120;
-            const checkboxHeight = 30;
-
-            const cols = Math.ceil(Math.sqrt(count * (width / height)));
-            const rows = Math.ceil(count / cols);
-
-            let maxTextWidth = 0;
-            for (let text of texts) {
-                maxTextWidth = Math.max(maxTextWidth, measureTextWidth(text));
-            }
-
-            const cellWidth = Math.max((width - margin * 2) / cols, maxTextWidth + 20);
-            const cellHeight = Math.max((height - topMargin - margin) / rows, 50);
-
-            // Noise parameters
-            const noiseScale = rng.randomFloat(0.18, 0.45);
-            const noiseStrength = rng.randomFloat(28, 64);
-
-            currentParams = {
-                cols: cols,
-                rows: rows,
-                noiseScale: Number(noiseScale.toFixed(2)),
-                noiseStr: Number(noiseStrength.toFixed(1))
-            };
-
-            let index = 0;
-            for (let row = 0; row < rows && index < count; row++) {
-                for (let col = 0; col < cols && index < count; col++) {
-                    const textWidth = measureTextWidth(texts[index]);
-                    const boxWidth = textWidth;
-
-                    const baseX = margin + col * cellWidth + cellWidth / 2 - boxWidth / 2;
-                    const baseY = topMargin + row * cellHeight + cellHeight / 2 - checkboxHeight / 2;
-
-                    // Coordinate shifts with independent noise channels
-                    const nX = noise2D(col, row, noiseScale);
-                    const nY = noise2D(col + 1000, row + 1000, noiseScale);
-
-                    const x = baseX + (nX - 0.5) * noiseStrength;
-                    const y = baseY + (nY - 0.5) * noiseStrength;
-
-                    positions.push({
-                        x: Math.max(margin, Math.min(x, width - margin - boxWidth)),
-                        y: Math.max(topMargin, Math.min(y, height - margin - checkboxHeight)),
-                        width: boxWidth,
-                        height: checkboxHeight
-                    });
-
-                    index++;
-                }
-            }
-
-            return positions;
-        }
-
-        // ============================================
-        // PATTERN 6: LETTER (D, G, or T)
-        // ============================================
-        function generateLetterPositions(count, width, height, texts) {
-            const positions = [];
-            const topMargin = 100;
-            const centerX = width / 2;
-            const centerY = (height + topMargin) / 2;
-            const checkboxHeight = 30;
-            
-            // Seeded parameters
-            const letters = ['D', 'G', 'T'];
-            const chosenLetter = rng.choice(letters);
-            
-            let baseScale = rng.randomFloat(0.45, 0.55);
-            if (chosenLetter === 'T') {
-                baseScale = rng.randomFloat(0.55, 0.65);
-            }
-            
-            const letterScale = Math.min(width, height - topMargin) * baseScale;
-            const rotation = rng.randomFloat(0, 30) * (rng.random() > 0.5 ? 1 : -1);
-            const pointSpacing = rng.randomFloat(1.4, 1.7);
-            
-            currentParams = {
-                letter: chosenLetter,
-                scale: letterScale.toFixed(0),
-                rotation: rotation.toFixed(0) + '°',
-                spacing: pointSpacing.toFixed(2)
-            };
-            
-            const points = [];
-            
-            // Generate letter shape points
-            if (chosenLetter === 'D') {
-                const verticalPoints = Math.floor(count * 0.4);
-                for (let i = 0; i < verticalPoints; i++) {
-                    const t = i / Math.max(verticalPoints - 1, 1);
-                    points.push({
-                        x: -letterScale * 0.5,
-                        y: -letterScale + t * letterScale * 2
-                    });
-                }
-                const arcPoints = count - verticalPoints;
-                for (let i = 0; i < arcPoints; i++) {
-                    const t = i / Math.max(arcPoints - 1, 1);
-                    const angle = -Math.PI / 2 + t * Math.PI;
-                    points.push({
-                        x: -letterScale * 0.5 + Math.cos(angle) * letterScale * 0.75,
-                        y: Math.sin(angle) * letterScale
-                    });
-                }
-            } else if (chosenLetter === 'G') {
-                const arcPoints = Math.floor(count * 0.5);
-                for (let i = 0; i < arcPoints; i++) {
-                    const angle = Math.PI * 0.6 + (i / Math.max(arcPoints - 1, 1)) * Math.PI * 1.6;
-                    points.push({
-                        x: Math.cos(angle) * letterScale * 0.65,
-                        y: Math.sin(angle) * letterScale * 0.65 - letterScale * 0.1
-                    });
-                }
-                const barPoints = Math.floor(count * 0.25);
-                for (let i = 0; i < barPoints; i++) {
-                    const t = i / Math.max(barPoints - 1, 1);
-                    points.push({
-                        x: t * letterScale * 0.5,
-                        y: letterScale * 0.15
-                    });
-                }
-                for (let i = points.length; i < count; i++) {
-                    const angle = rng.random() * Math.PI * 1.5 + Math.PI * 0.5;
-                    const r = letterScale * rng.randomFloat(0.4, 0.7);
-                    points.push({
-                        x: Math.cos(angle) * r,
-                        y: Math.sin(angle) * r - letterScale * 0.1
-                    });
-                }
-            } else { // 'T'
-                const topPoints = Math.floor(count * 0.4);
-                for (let i = 0; i < topPoints; i++) {
-                    const t = i / Math.max(topPoints - 1, 1);
-                    points.push({
-                        x: (t - 0.5) * letterScale * 1.4,
-                        y: -letterScale * 0.65
-                    });
-                }
-                const stemPoints = count - topPoints;
-                for (let i = 0; i < stemPoints; i++) {
-                    const t = i / Math.max(stemPoints - 1, 1);
-                    points.push({
-                        x: 0,
-                        y: -letterScale * 0.65 + t * letterScale * 1.5
-                    });
-                }
-            }
-            
-            // Shuffle points
-            shuffleArraySeeded(points, rng);
-            
-            // Apply rotation
-            const rotRad = rotation * Math.PI / 180;
-            const cos = Math.cos(rotRad);
-            const sin = Math.sin(rotRad);
-            
-            // Place checkboxes
-            for (let i = 0; i < count; i++) {
-                const textWidth = measureTextWidth(texts[i]);
-                const boxWidth = textWidth;
-                
-                const point = points[i] || points[0];
-                
-                const rotX = point.x * cos - point.y * sin;
-                const rotY = point.x * sin + point.y * cos;
-                
-                const x = centerX + rotX * pointSpacing - boxWidth / 2;
-                const y = centerY + rotY * pointSpacing - checkboxHeight / 2;
-                
-                positions.push({
-                    x: x,
-                    y: y,
-                    width: boxWidth,
-                    height: checkboxHeight
-                });
-            }
-            
-            return positions;
-        }
-
-        // ============================================
-        // PATTERN 7: PHYLLOTAXIS (NEW)
-        // ============================================
-        function generatePhyllotaxisPositions(count, width, height, texts) {
-            const positions = [];
-            const topMargin = 120;
-            const cx = width / 2;
-            const cy = (height + topMargin) / 2;
-            const checkboxHeight = 30;
-
-            const R = Math.min(width, height - topMargin) * rng.randomFloat(0.35, 0.5);
-            const golden = Math.PI * (3 - Math.sqrt(5)); // Golden angle
-            const jitter = rng.randomFloat(0, 8);
-
-            currentParams = {
-                radius: Number(R.toFixed(0)),
-                jitter: Number(jitter.toFixed(1))
-            };
-
-            for (let i = 0; i < count; i++) {
-                const r = R * Math.sqrt(i / count);
-                const a = i * golden + rng.randomFloat(-0.2, 0.2);
-                const w = measureTextWidth(texts[i]);
-                const x = cx + Math.cos(a) * r + rng.randomFloat(-jitter, jitter) - w / 2;
-                const y = cy + Math.sin(a) * r + rng.randomFloat(-jitter, jitter) - checkboxHeight / 2;
-
-                positions.push({ x, y, width: w, height: checkboxHeight });
-            }
-            return positions;
-        }
-
-        // ============================================
-        // PATTERN 8: LISSAJOUS (NEW)
-        // ============================================
-        function generateLissajousPositions(count, width, height, texts) {
-            const positions = [];
-            const topMargin = 120;
-            const cx = width / 2;
-            const cy = (height + topMargin) / 2;
-            const checkboxHeight = 30;
-
-            const Ax = Math.min(width, height - topMargin) * rng.randomFloat(0.3, 0.45);
-            const Ay = Math.min(width, height - topMargin) * rng.randomFloat(0.3, 0.45);
-            const a = rng.randomInt(2, 6);
-            const b = rng.randomInt(3, 7);
-            const delta = rng.randomFloat(0, Math.PI);
-
-            currentParams = {
-                Ax: Number(Ax.toFixed(0)),
-                Ay: Number(Ay.toFixed(0)),
-                a, b,
-                delta: `${(delta * 180 / Math.PI).toFixed(0)}°`
-            };
-
-            for (let i = 0; i < count; i++) {
-                const t = i / count * Math.PI * 2;
-                const w = measureTextWidth(texts[i]);
-                const x = cx + Ax * Math.sin(a * t + delta) - w / 2;
-                const y = cy + Ay * Math.sin(b * t) - checkboxHeight / 2;
-                positions.push({ x, y, width: w, height: checkboxHeight });
-            }
-            return positions;
-        }
-
-        // ============================================
-        // CHECKBOX EVENTS
-        // ============================================
-        function onCheckboxChange(e) {
-            if (e.target.checked) {
-                checkedCount++;
-            } else {
-                checkedCount--;
-            }
-            updateProgress();
-            checkCompletion();
-        }
-
-        function updateProgress() {
-            const percentage = totalCount > 0 ? (checkedCount / totalCount) * 100 : 0;
-            document.getElementById('progress-fill').style.width = `${percentage}%`;
-            document.getElementById('progress-text').textContent = `${checkedCount} / ${totalCount}`;
-        }
-
-        function checkCompletion() {
-            if (checkedCount === totalCount && totalCount > 0) {
-                showCompletionScreen();
-            }
-        }
-
-        // ============================================
-        // COMPLETION SCREEN
-        // ============================================
-        function showCompletionScreen() {
-            const today = new Date();
-            const dateStr = today.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            
-            document.getElementById('badge').textContent = `✓ ${dateStr}`;
-            document.getElementById('certificate-date').textContent = dateStr;
-            document.getElementById('completion-screen').classList.add('active');
-            
-            // Hide certificate initially
-            document.getElementById('certificate').classList.remove('show');
-            document.getElementById('name-input-container').style.display = 'block';
-            document.getElementById('badge').style.display = 'block';
-            document.getElementById('completion-message').style.display = 'block';
-            document.getElementById('completion-submessage').style.display = 'block';
-            
-            startConfetti();
-            
-            // Focus name input
-            setTimeout(() => {
-                const nameInput = document.getElementById('name-input');
-                nameInput.focus();
-                
-                nameInput.onkeydown = (e) => {
-                    if (e.key === 'Enter' && nameInput.value.trim()) {
-                        showCertificate(nameInput.value.trim());
-                    }
-                };
-            }, 500);
-        }
-
-        function showCertificate(name) {
-            document.getElementById('name-input-container').style.display = 'none';
-            document.getElementById('badge').style.display = 'none';
-            document.getElementById('completion-message').style.display = 'none';
-            document.getElementById('completion-submessage').style.display = 'none';
-            
-            document.getElementById('certificate-name').textContent = name;
-            document.getElementById('certificate-task-count').textContent = totalCount;
-            document.getElementById('certificate').classList.add('show');
-        }
-
-        function hideCompletionScreen() {
-            document.getElementById('completion-screen').classList.remove('active');
-            document.getElementById('name-input').value = '';
-            document.getElementById('certificate').classList.remove('show');
-        }
-
-        // ============================================
-        // CONFETTI SYSTEM
-        // ============================================
-        const canvas = document.getElementById('confetti-canvas');
-        const ctx = canvas.getContext('2d');
-        let confettiParticles = [];
-        let confettiActive = false;
-        let animationFrame;
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        class ConfettiParticle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = -20;
-                this.vx = (Math.random() - 0.5) * 4;
-                this.vy = Math.random() * 3 + 2;
-                this.size = Math.random() * 8 + 4;
-                this.color = randomFromArray(['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181']);
-                this.rotation = Math.random() * 360;
-                this.rotationSpeed = (Math.random() - 0.5) * 10;
-                this.gravity = 0.1;
-            }
-
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.vy += this.gravity;
-                this.rotation += this.rotationSpeed;
-            }
-
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation * Math.PI / 180);
-                ctx.fillStyle = this.color;
-                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
-                ctx.restore();
-            }
-
-            isOffScreen() {
-                return this.y > canvas.height + 20;
-            }
-        }
-
-        function startConfetti() {
-            confettiActive = true;
-            confettiParticles = [];
-            
-            for (let i = 0; i < 100; i++) {
-                confettiParticles.push(new ConfettiParticle());
-            }
-            
-            animateConfetti();
-        }
-
-        function stopConfetti() {
-            confettiActive = false;
-            confettiParticles = [];
-            if (animationFrame) {
-                cancelAnimationFrame(animationFrame);
-            }
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-
-        function animateConfetti() {
-            if (!confettiActive) return;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (Math.random() < 0.3 && confettiParticles.length < 150) {
-                confettiParticles.push(new ConfettiParticle());
-            }
-
-            confettiParticles = confettiParticles.filter(p => {
-                p.update();
-                p.draw();
-                return !p.isOffScreen();
-            });
-
-            if (confettiParticles.length === 0) {
-                stopConfetti();
-                return;
-            }
-
-            animationFrame = requestAnimationFrame(animateConfetti);
-        }
-
-        // ============================================
-        // RESET
-        // ============================================
-        function clearCheckboxes() {
-            const container = document.getElementById('checkboxes-container');
-            container.innerHTML = '';
-            checkboxes = [];
-        }
-
-        function reset() {
-            init();
-        }
-
-        // ============================================
-        // KEYBOARD
-        // ============================================
-        document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT') return;
-            
-            if (e.key.toLowerCase() === 'r') {
-                reset();
-            }
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(doInit);
+            else doInit();
+          });
         });
+      };
+      if (document.readyState === 'complete' || document.readyState === 'interactive') start();
+      else document.addEventListener('DOMContentLoaded', start);
+    }
 
-        // Reset button click
-        document.getElementById('reset-button').addEventListener('click', reset);
+    // ======================= Text measure =======================
+    const __measureCtx = (() => { const c = document.createElement('canvas'); return c.getContext('2d'); })();
+    function measureTextWidth(text) {
+      if (!text) return 20;
+      __measureCtx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const w = __measureCtx.measureText(text).width;
+      return 20 + 10 + w + 20;
+    }
 
-        // ============================================
-        // UTILS
-        // ============================================
-        function randomFromArray(arr) {
-            return arr[Math.floor(Math.random() * arr.length)];
+    // ======================= Layouts selector from SEED =======================
+    function layoutFromSeed(seed) {
+      const layouts = ['scatter','list','circle','spiral','grid-noise','letter','phyllotaxis','lissajous'];
+      return layouts[seed % layouts.length];
+    }
+
+    function generatePositions(count, width, height, texts) {
+      currentLayout = layoutFromSeed(currentSeed);
+      currentParams = {};
+      switch(currentLayout) {
+        case 'scatter': return generateScatterPositions(count, width, height, texts);
+        case 'list': return generateListPositions(count, width, height, texts);
+        case 'circle': return generateCirclePositions(count, width, height, texts);
+        case 'spiral': return generateSpiralPositions(count, width, height, texts);
+        case 'grid-noise': return generateGridNoisePositions(count, width, height, texts);
+        case 'letter': return generateLetterPositions(count, width, height, texts);
+        case 'phyllotaxis': return generatePhyllotaxisPositions(count, width, height, texts);
+        case 'lissajous': return generateLissajousPositions(count, width, height, texts);
+        default: return generateScatterPositions(count, width, height, texts);
+      }
+    }
+
+    // ======================= Generators =======================
+    function generateCheckboxes() {
+      const container = document.getElementById('checkboxes-container');
+      const rect = container.getBoundingClientRect();
+      let width = rect.width, height = rect.height;
+      if (width < 50 || height < 50) { setTimeout(generateCheckboxes, 50); return; }
+
+      const availableArea = width * (height - 100);
+      const avgCheckboxSize = 180 * 50;
+      let count = Math.floor(availableArea / avgCheckboxSize);
+      if (width < 800) count = Math.floor(count * 0.6);
+      const variation = 0.7 + rng.random() * 0.6;
+      count = Math.floor(count * variation);
+      totalCount = Math.max(5, Math.min(count, 25));
+      checkedCount = 0;
+
+      const textPool = [];
+      const seriesCount = Math.floor(totalCount * 0.3);
+      const absurdCount = Math.floor(totalCount * 0.3);
+      const quotesCount = Math.floor(totalCount * 0.2);
+      const emptyCount = totalCount - seriesCount - absurdCount - quotesCount;
+      for (let i = 0; i < seriesCount; i++) textPool.push(rng.choice(TEXTS.serious));
+      for (let i = 0; i < absurdCount; i++) textPool.push(rng.choice(TEXTS.absurd));
+      for (let i = 0; i < quotesCount; i++) textPool.push(rng.choice(TEXTS.quotes));
+      for (let i = 0; i < emptyCount; i++) textPool.push(null);
+      shuffleArraySeeded(textPool, rng);
+
+      let positions = generatePositions(totalCount, width, height, textPool);
+      if (currentLayout !== 'list') positions = resolveOverlaps(positions, width, height, { margin: 30, top: 100, iterations: 80, padding: 8 });
+
+      positions.forEach((pos, i) => {
+        const el = createCheckbox(i, pos.x, pos.y, textPool[i], pos.isNested);
+        container.appendChild(el);
+        checkboxes.push(el);
+      });
+      updateProgress();
+    }
+
+    function createCheckbox(id, x, y, text, isNested) {
+      const div = document.createElement('div');
+      div.className = 'checkbox-item';
+      div.style.left = `${x}px`; div.style.top = `${y}px`;
+      if (isNested) {
+        const nestedIcon = document.createElement('span');
+        nestedIcon.textContent = '▸ '; nestedIcon.style.marginRight = '5px';
+        nestedIcon.style.opacity = '0.5'; nestedIcon.style.fontSize = '10px'; div.appendChild(nestedIcon);
+      }
+      const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = `cb-${id}`;
+      checkbox.addEventListener('change', onCheckboxChange); div.appendChild(checkbox);
+      if (text) { const label = document.createElement('label'); label.htmlFor = `cb-${id}`; label.textContent = text; div.appendChild(label); }
+      return div;
+    }
+
+    // Noise and overlap
+    function lerp(a,b,t){ return a + t*(b-a); }
+    function smoothstep(t){ return t*t*(3-2*t); }
+    function hash2D(ix, iy, seed) {
+      let n = Math.imul(ix, 374761393) ^ Math.imul(iy, 668265263) ^ (seed|0);
+      n = (n ^ (n >>> 13)) >>> 0; n = Math.imul(n, 1274126177) >>> 0;
+      return n / 4294967296;
+    }
+    function noise2D(x, y, scale) {
+      const sx = x * scale, sy = y * scale;
+      const x0 = Math.floor(sx), y0 = Math.floor(sy);
+      const x1 = x0 + 1, y1 = y0 + 1;
+      const fx = sx - x0, fy = sy - y0;
+      const u = smoothstep(fx), v = smoothstep(fy);
+      const v00 = hash2D(x0, y0, currentSeed);
+      const v10 = hash2D(x1, y0, currentSeed);
+      const v01 = hash2D(x0, y1, currentSeed);
+      const v11 = hash2D(x1, y1, currentSeed);
+      const nx0 = lerp(v00, v10, u);
+      const nx1 = lerp(v01, v11, u);
+      return lerp(nx0, nx1, v);
+    }
+    function resolveOverlaps(rects, width, height, opts = {}) {
+      const margin = opts.margin ?? 30;
+      const topMargin = opts.top ?? 100;
+      const iterations = opts.iterations ?? 100;
+      const stiffness = opts.stiffness ?? 0.6;
+      const padding = opts.padding ?? 6;
+      for (let k = 0; k < iterations; k++) {
+        let moved = false;
+        for (let i = 0; i < rects.length; i++) {
+          for (let j = i + 1; j < rects.length; j++) {
+            const a = rects[i], b = rects[j];
+            const ax = a.x + a.width/2, ay = a.y + a.height/2;
+            const bx = b.x + b.width/2, by = b.y + b.height/2;
+            const dx = ax - bx, dy = ay - by;
+            const overlapX = (a.width/2 + b.width/2 + padding) - Math.abs(dx);
+            const overlapY = (a.height/2 + b.height/2 + padding) - Math.abs(dy);
+            if (overlapX > 0 && overlapY > 0) {
+              moved = true;
+              const pushX = stiffness * overlapX * Math.sign(dx || (rng.random() - 0.5));
+              const pushY = stiffness * overlapY * Math.sign(dy || (rng.random() - 0.5));
+              a.x += pushX * 0.5; b.x -= pushX * 0.5;
+              a.y += pushY * 0.5; b.y -= pushY * 0.5;
+              a.x = Math.max(margin, Math.min(a.x, width - margin - a.width));
+              b.x = Math.max(margin, Math.min(b.x, width - margin - b.width));
+              a.y = Math.max(topMargin, Math.min(a.y, height - margin - a.height));
+              b.y = Math.max(topMargin, Math.min(b.y, height - margin - b.height));
+            }
+          }
         }
+        if (!moved) break;
+      }
+      return rects;
+    }
 
-        function shuffleArray(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
+    // Pattern generators
+    function generateScatterPositions(count, width, height, texts) {
+      const positions = [];
+      const margin = 30, topMargin = 100, padding = 15, maxAttempts = 150, checkboxHeight = 30;
+      const clusterProbability = rng.randomFloat(0.3, 0.5);
+      const clusterCount = Math.max(2, Math.floor(count / rng.randomInt(4, 8)));
+      const clusterRadius = rng.randomFloat(60, 100);
+      currentParams = { clusterProb: clusterProbability, clusters: clusterCount, radius: clusterRadius };
+      const clusters = [];
+      for (let i = 0; i < clusterCount; i++) clusters.push({ x: margin + rng.random()*(width - margin*2), y: topMargin + rng.random()*(height - topMargin - margin) });
+      for (let i = 0; i < count; i++) {
+        let pos, attempts = 0, valid = false;
+        const boxWidth = measureTextWidth(texts[i]), boxHeight = checkboxHeight;
+        const inCluster = rng.random() < clusterProbability && clusters.length > 0;
+        while (!valid && attempts < maxAttempts) {
+          if (inCluster) {
+            const c = rng.choice(clusters);
+            const a = rng.random() * Math.PI * 2, d = rng.random() * clusterRadius;
+            pos = { x: c.x + Math.cos(a)*d, y: c.y + Math.sin(a)*d, width: boxWidth, height: boxHeight };
+            pos.x = Math.max(margin, Math.min(pos.x, width - margin - boxWidth));
+            pos.y = Math.max(topMargin, Math.min(pos.y, height - margin - boxHeight));
+          } else {
+            pos = { x: margin + rng.random() * (width - margin*2 - boxWidth), y: topMargin + rng.random() * (height - topMargin - margin - boxHeight), width: boxWidth, height: boxHeight };
+          }
+          valid = true;
+          for (let e of positions) {
+            if (!(
+              pos.x + pos.width + padding < e.x || e.x + e.width + padding < pos.x ||
+              pos.y + pos.height + padding < e.y || e.y + e.height + padding < pos.y
+            )) { valid = false; break; }
+          }
+          attempts++;
         }
+        if (!valid) pos = { x: margin + rng.random() * (width - margin*2 - boxWidth), y: topMargin + rng.random() * (height - topMargin - margin - boxHeight), width: boxWidth, height: boxHeight };
+        positions.push(pos);
+      }
+      return positions;
+    }
 
-        function shuffleArraySeeded(arr, rng) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(rng.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
+    function generateListPositions(count, width, height, texts) {
+      const positions = [];
+      const margin = 60, topMargin = 120, checkboxHeight = 30;
+      const sublistCount = rng.randomInt(3, 7), lineSpacing = rng.randomFloat(35, 45);
+      const nestingProbability = rng.randomFloat(0.15, 0.3), indentSize = rng.randomFloat(25, 35);
+      currentParams = { sublists: sublistCount, lineSpacing: lineSpacing.toFixed(0), indentSize: indentSize.toFixed(0), nesting: (nestingProbability*100).toFixed(0)+'%' };
+      const itemsPerSublist = []; let remaining = count;
+      for (let i = 0; i < sublistCount; i++) {
+        if (i === sublistCount - 1) itemsPerSublist.push(remaining);
+        else { const size = rng.randomInt(2, Math.max(3, Math.floor(remaining / (sublistCount - i)) + 2)); itemsPerSublist.push(Math.min(size, remaining)); remaining -= itemsPerSublist[i]; }
+      }
+      const maxWidths = []; let textIdx = 0;
+      for (let i = 0; i < sublistCount; i++) {
+        let maxW = 0;
+        for (let j = 0; j < itemsPerSublist[i]; j++) { if (textIdx < count) { maxW = Math.max(maxW, measureTextWidth(texts[textIdx])); textIdx++; } }
+        maxWidths.push(maxW + 50);
+      }
+      const sublistBounds = []; const maxAttempts = 50;
+      for (let i = 0; i < sublistCount; i++) {
+        let valid = false, attempts = 0, sublistX, sublistY;
+        const sublistWidth = maxWidths[i]; const sublistHeight = itemsPerSublist[i] * lineSpacing + 20;
+        while (!valid && attempts < maxAttempts) {
+          sublistX = margin + rng.random() * (width - margin*2 - sublistWidth);
+          sublistY = topMargin + rng.random() * (height - topMargin - margin - sublistHeight);
+          valid = true;
+          for (let e of sublistBounds) {
+            const p = 30;
+            if (!(sublistX + sublistWidth + p < e.x || e.x + e.width + p < sublistX || sublistY + sublistHeight + p < e.y || e.y + e.height + p < sublistY)) { valid = false; break; }
+          }
+          attempts++;
         }
+        sublistBounds.push({ x: sublistX, y: sublistY, width: sublistWidth, height: sublistHeight });
+      }
+      textIdx = 0;
+      for (let s = 0; s < sublistCount; s++) {
+        const baseX = sublistBounds[s].x; let currentY = sublistBounds[s].y;
+        for (let i = 0; i < itemsPerSublist[s]; i++) {
+          if (textIdx >= count) break;
+          const isNested = i > 0 && rng.random() < nestingProbability;
+          const indent = isNested ? indentSize : 0;
+          const x = baseX + indent;
+          const boxWidth = measureTextWidth(texts[textIdx]);
+          positions.push({ x, y: currentY, width: boxWidth, height: checkboxHeight, isNested, sublistId: s });
+          currentY += lineSpacing;
+          textIdx++;
+        }
+      }
+      return positions;
+    }
 
-        // ============================================
-        // WINDOW RESIZE (PATCHED: debounced)
-        // ============================================
-        let __resizeT;
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            clearTimeout(__resizeT);
-            __resizeT = setTimeout(() => { reset(); }, 200);
-        });
+    function generateCirclePositions(count, width, height, texts) {
+      const positions = [];
+      const topMargin = 100, centerX = width / 2, centerY = (height + topMargin) / 2, checkboxHeight = 30;
+      const baseRadius = Math.min(width, height - topMargin) * rng.randomFloat(0.3, 0.4);
+      const radiusVariation = rng.randomFloat(0, 0.2);
+      const rotationOffset = rng.random() * Math.PI * 2;
+      const ellipseRatio = rng.randomFloat(0.7, 1.3);
+      currentParams = { radius: baseRadius, variation: radiusVariation, rotation: (rotationOffset*180/Math.PI).toFixed(0)+'°', ellipse: ellipseRatio };
+      for (let i = 0; i < count; i++) {
+        const angle = rotationOffset + (i / count) * Math.PI * 2;
+        const radius = baseRadius * (1 + (rng.random()*2 - 1) * radiusVariation);
+        const boxWidth = measureTextWidth(texts[i]);
+        const x = centerX + Math.cos(angle) * radius * ellipseRatio - boxWidth / 2;
+        const y = centerY + Math.sin(angle) * radius - checkboxHeight / 2;
+        positions.push({ x, y, width: boxWidth, height: checkboxHeight });
+      }
+      return positions;
+    }
 
-        // ============================================
-        // DEBUG PANEL DRAGGING
-        // ============================================
-        const debugPanel = document.getElementById('debug-panel');
-        let isDragging = false;
-        let dragOffsetX = 0;
-        let dragOffsetY = 0;
+    function generateSpiralPositions(count, width, height, texts) {
+      const positions = [];
+      const topMargin = 100, centerX = width / 2, centerY = (height + topMargin) / 2, checkboxHeight = 30;
+      const startAngle = rng.random() * Math.PI * 2;
+      const maxRadius = Math.min(width, height - topMargin) * 0.48;
+      const minRadius = rng.randomFloat(20, 50);
+      const tight = rng.randomFloat(0.15, 0.25);
+      currentParams = { startAngle: (startAngle*180/Math.PI).toFixed(0)+'°', maxR: maxRadius.toFixed(0), minR: minRadius.toFixed(0), tightness: tight.toFixed(2) };
+      const path = []; const steps = count * 3;
+      for (let i = 0; i < steps; i++) {
+        const t = i / (steps - 1);
+        const a = startAngle + t * Math.PI * 6 * (1 / tight);
+        const r = maxRadius * Math.exp(-tight * t * 20);
+        if (r < minRadius) break;
+        path.push({ x: centerX + Math.cos(a)*r, y: centerY + Math.sin(a)*r });
+      }
+      let idx = 0;
+      for (let i = 0; i < count; i++) {
+        if (idx >= path.length) break;
+        const boxWidth = measureTextWidth(texts[i]);
+        const p = path[idx];
+        positions.push({ x: p.x - boxWidth/2, y: p.y - checkboxHeight/2, width: boxWidth, height: checkboxHeight });
+        idx += Math.max(1, Math.floor(path.length / (count * 1.5)));
+      }
+      return positions;
+    }
 
-        debugPanel.addEventListener('mousedown', (e) => {
-            // Don't drag if clicking the reset button
-            if (e.target.id === 'reset-button') return;
-            
-            isDragging = true;
-            dragOffsetX = e.clientX - debugPanel.offsetLeft;
-            dragOffsetY = e.clientY - debugPanel.offsetTop;
-        });
+    function generateGridNoisePositions(count, width, height, texts) {
+      const positions = [];
+      const margin = 60, topMargin = 120, checkboxHeight = 30;
+      const cols = Math.ceil(Math.sqrt(count * (width / height)));
+      const rows = Math.ceil(count / cols);
+      let maxTextWidth = 0;
+      for (let text of texts) maxTextWidth = Math.max(maxTextWidth, measureTextWidth(text));
+      const cellWidth = Math.max((width - margin*2) / cols, maxTextWidth + 20);
+      const cellHeight = Math.max((height - topMargin - margin) / rows, 50);
+      const scale = rng.randomFloat(0.18, 0.45);
+      const strength = rng.randomFloat(28, 64);
+      currentParams = { cols, rows, noiseScale: Number(scale.toFixed(2)), noiseStr: Number(strength.toFixed(1)) };
+      let index = 0;
+      for (let row = 0; row < rows && index < count; row++) {
+        for (let col = 0; col < cols && index < count; col++) {
+          const boxWidth = measureTextWidth(texts[index]);
+          const baseX = margin + col*cellWidth + cellWidth/2 - boxWidth/2;
+          const baseY = topMargin + row*cellHeight + cellHeight/2 - checkboxHeight/2;
+          const nX = noise2D(col, row, scale);
+          const nY = noise2D(col + 1000, row + 1000, scale);
+          const x = baseX + (nX - 0.5) * strength;
+          const y = baseY + (nY - 0.5) * strength;
+          positions.push({ x: Math.max(margin, Math.min(x, width - margin - boxWidth)), y: Math.max(topMargin, Math.min(y, height - margin - checkboxHeight)), width: boxWidth, height: checkboxHeight });
+          index++;
+        }
+      }
+      return positions;
+    }
 
-        document.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                debugPanel.style.left = (e.clientX - dragOffsetX) + 'px';
-                debugPanel.style.top = (e.clientY - dragOffsetY) + 'px';
-                debugPanel.style.right = 'auto';
-            }
-        });
+    function generateLetterPositions(count, width, height, texts) {
+      const positions = [];
+      const topMargin = 100, centerX = width / 2, centerY = (height + topMargin) / 2, checkboxHeight = 30;
+      const letters = ['D','G','T'];
+      const chosenLetter = letters[currentSeed % letters.length]; // also driven by seed
+      let baseScale = rng.randomFloat(0.45, 0.55);
+      if (chosenLetter === 'T') baseScale = rng.randomFloat(0.55, 0.65);
+      const letterScale = Math.min(width, height - topMargin) * baseScale;
+      const rotation = rng.randomFloat(0, 30) * (rng.random() > 0.5 ? 1 : -1);
+      const pointSpacing = rng.randomFloat(1.4, 1.7);
+      currentParams = { letter: chosenLetter, scale: letterScale.toFixed(0), rotation: rotation.toFixed(0)+'°', spacing: pointSpacing.toFixed(2) };
+      const points = [];
+      if (chosenLetter === 'D') {
+        const verticalPoints = Math.floor(count * 0.4);
+        for (let i = 0; i < verticalPoints; i++) {
+          const t = i / Math.max(verticalPoints - 1, 1);
+          points.push({ x: -letterScale * 0.5, y: -letterScale + t * letterScale * 2 });
+        }
+        const arcPoints = count - verticalPoints;
+        for (let i = 0; i < arcPoints; i++) {
+          const t = i / Math.max(arcPoints - 1, 1);
+          const angle = -Math.PI/2 + t * Math.PI;
+          points.push({ x: -letterScale * 0.5 + Math.cos(angle) * letterScale * 0.75, y: Math.sin(angle) * letterScale });
+        }
+      } else if (chosenLetter === 'G') {
+        const arcPoints = Math.floor(count * 0.5);
+        for (let i = 0; i < arcPoints; i++) {
+          const angle = Math.PI * 0.6 + (i / Math.max(arcPoints - 1, 1)) * Math.PI * 1.6;
+          points.push({ x: Math.cos(angle) * letterScale * 0.65, y: Math.sin(angle) * letterScale * 0.65 - letterScale * 0.1 });
+        }
+        const barPoints = Math.floor(count * 0.25);
+        for (let i = 0; i < barPoints; i++) {
+          const t = i / Math.max(barPoints - 1, 1);
+          points.push({ x: t * letterScale * 0.5, y: letterScale * 0.15 });
+        }
+        for (let i = points.length; i < count; i++) {
+          const angle = rng.random() * Math.PI * 1.5 + Math.PI * 0.5;
+          const r = letterScale * rng.randomFloat(0.4, 0.7);
+          points.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r - letterScale * 0.1 });
+        }
+      } else {
+        const topPoints = Math.floor(count * 0.4);
+        for (let i = 0; i < topPoints; i++) {
+          const t = i / Math.max(topPoints - 1, 1);
+          points.push({ x: (t - 0.5) * letterScale * 1.4, y: -letterScale * 0.65 });
+        }
+        const stemPoints = count - topPoints;
+        for (let i = 0; i < stemPoints; i++) {
+          const t = i / Math.max(stemPoints - 1, 1);
+          points.push({ x: 0, y: -letterScale * 0.65 + t * letterScale * 1.5 });
+        }
+      }
+      shuffleArraySeeded(points, rng);
+      const rot = rotation * Math.PI / 180, cos = Math.cos(rot), sin = Math.sin(rot);
+      for (let i = 0; i < count; i++) {
+        const boxWidth = measureTextWidth(texts[i]);
+        const p = points[i] || points[0];
+        const rx = p.x * cos - p.y * sin, ry = p.x * sin + p.y * cos;
+        positions.push({ x: centerX + rx * pointSpacing - boxWidth / 2, y: centerY + ry * pointSpacing - checkboxHeight / 2, width: boxWidth, height: checkboxHeight });
+      }
+      return positions;
+    }
 
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
+    function generatePhyllotaxisPositions(count, width, height, texts) {
+      const positions = [];
+      const topMargin = 120, cx = width / 2, cy = (height + topMargin) / 2, checkboxHeight = 30;
+      const R = Math.min(width, height - topMargin) * rng.randomFloat(0.35, 0.5);
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      const jitter = rng.randomFloat(0, 8);
+      currentParams = { radius: Number(R.toFixed(0)), jitter: Number(jitter.toFixed(1)) };
+      for (let i = 0; i < count; i++) {
+        const r = R * Math.sqrt(i / count);
+        const a = i * golden + rng.randomFloat(-0.2, 0.2);
+        const w = measureTextWidth(texts[i]);
+        const x = cx + Math.cos(a) * r + rng.randomFloat(-jitter, jitter) - w / 2;
+        const y = cy + Math.sin(a) * r + rng.randomFloat(-jitter, jitter) - checkboxHeight / 2;
+        positions.push({ x, y, width: w, height: checkboxHeight });
+      }
+      return positions;
+    }
 
-        // Touch support for mobile dragging
-        debugPanel.addEventListener('touchstart', (e) => {
-            if (e.target.id === 'reset-button') return;
-            
-            isDragging = true;
-            const touch = e.touches[0];
-            dragOffsetX = touch.clientX - debugPanel.offsetLeft;
-            dragOffsetY = touch.clientY - debugPanel.offsetTop;
-            e.preventDefault();
-        });
+    function generateLissajousPositions(count, width, height, texts) {
+      const positions = [];
+      const topMargin = 120, cx = width / 2, cy = (height + topMargin) / 2, checkboxHeight = 30;
+      const Ax = Math.min(width, height - topMargin) * rng.randomFloat(0.3, 0.45);
+      const Ay = Math.min(width, height - topMargin) * rng.randomFloat(0.3, 0.45);
+      const a = rng.randomInt(2, 6), b = rng.randomInt(3, 7);
+      const delta = rng.randomFloat(0, Math.PI);
+      currentParams = { Ax: Number(Ax.toFixed(0)), Ay: Number(Ay.toFixed(0)), a, b, delta: (delta*180/Math.PI).toFixed(0) + '°' };
+      for (let i = 0; i < count; i++) {
+        const t = i / count * Math.PI * 2;
+        const w = measureTextWidth(texts[i]);
+        const x = cx + Ax * Math.sin(a * t + delta) - w / 2;
+        const y = cy + Ay * Math.sin(b * t) - checkboxHeight / 2;
+        positions.push({ x, y, width: w, height: checkboxHeight });
+      }
+      return positions;
+    }
 
-        document.addEventListener('touchmove', (e) => {
-            if (isDragging) {
-                const touch = e.touches[0];
-                debugPanel.style.left = (touch.clientX - dragOffsetX) + 'px';
-                debugPanel.style.top = (touch.clientY - dragOffsetY) + 'px';
-                debugPanel.style.right = 'auto';
-                e.preventDefault();
-            }
-        });
+    // ======================= Events =======================
+    function onCheckboxChange(e) { checkedCount += e.target.checked ? 1 : -1; updateProgress(); checkCompletion(); }
+    function updateProgress() {
+      const percentage = totalCount > 0 ? (checkedCount / totalCount) * 100 : 0;
+      document.getElementById('progress-fill').style.width = `${percentage}%`;
+      document.getElementById('progress-text').textContent = `${checkedCount} / ${totalCount}`;
+    }
+    function checkCompletion() { if (checkedCount === totalCount && totalCount > 0) showCompletionScreen(); }
 
-        document.addEventListener('touchend', () => {
-            isDragging = false;
-        });
+    // ======================= Completion + Confetti =======================
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let cssW = 0, cssH = 0;
+    function sizeCanvas() {
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      cssW = window.innerWidth; cssH = window.innerHeight;
+      canvas.width = Math.floor(cssW * dpr);
+      canvas.height = Math.floor(cssH * dpr);
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+    }
+    sizeCanvas();
 
-        // ============================================
-        // START
-        // ============================================
-        init();
-    </script>
+    let confettiParticles = [];
+    let confettiActive = false;
+    let animationFrame;
+
+    class ConfettiParticle {
+      constructor() {
+        this.x = rngConfetti.randomFloat(0, cssW);
+        this.y = -20;
+        this.vx = rngConfetti.randomFloat(-2, 2);
+        this.vy = rngConfetti.randomFloat(2, 5);
+        this.size = rngConfetti.randomFloat(4, 12);
+        const palette = ['#ff6b6b','#4ecdc4','#ffe66d','#95e1d3','#f38181'];
+        this.color = palette[Math.floor(rngConfetti.random() * palette.length)];
+        this.rotation = rngConfetti.randomFloat(0, 360);
+        this.rotationSpeed = rngConfetti.randomFloat(-10, 10);
+        this.gravity = 0.12;
+      }
+      update() { this.x += this.vx; this.y += this.vy; this.vy += this.gravity; this.rotation += this.rotationSpeed; }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation * Math.PI / 180);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+        ctx.restore();
+      }
+      isOffScreen() { return this.y > cssH + 30; }
+    }
+
+    function startConfetti() {
+      confettiActive = true;
+      confettiParticles = [];
+      for (let i = 0; i < 100; i++) confettiParticles.push(new ConfettiParticle());
+      animateConfetti();
+    }
+    function stopConfetti() {
+      confettiActive = false; confettiParticles = [];
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      ctx.clearRect(0, 0, cssW, cssH);
+    }
+    function animateConfetti() {
+      if (!confettiActive) return;
+      ctx.clearRect(0, 0, cssW, cssH);
+      if (rngConfetti.random() < 0.3 && confettiParticles.length < 150) confettiParticles.push(new ConfettiParticle());
+      confettiParticles = confettiParticles.filter(p => { p.update(); p.draw(); return !p.isOffScreen(); });
+      if (confettiParticles.length === 0) { stopConfetti(); return; }
+      animationFrame = requestAnimationFrame(animateConfetti);
+    }
+
+    function showCompletionScreen() {
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+      document.getElementById('badge').textContent = `✓ ${dateStr}`;
+      document.getElementById('certificate-date').textContent = dateStr;
+      document.getElementById('completion-screen').classList.add('active');
+      document.getElementById('certificate').classList.remove('show');
+      document.getElementById('name-input-container').style.display = 'block';
+      document.getElementById('badge').style.display = 'block';
+      document.getElementById('completion-message').style.display = 'block';
+      document.getElementById('completion-submessage').style.display = 'block';
+      startConfetti();
+      setTimeout(() => {
+        const input = document.getElementById('name-input');
+        input.focus();
+        input.onkeydown = e => { if (e.key === 'Enter' && input.value.trim()) showCertificate(input.value.trim()); };
+      }, 250);
+    }
+    function showCertificate(name) {
+      document.getElementById('name-input-container').style.display = 'none';
+      document.getElementById('badge').style.display = 'none';
+      document.getElementById('completion-message').style.display = 'none';
+      document.getElementById('completion-submessage').style.display = 'none';
+      document.getElementById('certificate-name').textContent = name;
+      document.getElementById('certificate-task-count').textContent = totalCount;
+      document.getElementById('certificate').classList.add('show');
+    }
+    function hideCompletionScreen() {
+      document.getElementById('completion-screen').classList.remove('active');
+      document.getElementById('name-input').value = '';
+      document.getElementById('certificate').classList.remove('show');
+    }
+
+    // ======================= Misc utils/events =======================
+    function clearCheckboxes() { const container = document.getElementById('checkboxes-container'); container.innerHTML = ''; checkboxes = []; }
+    function reset() { init(); }
+    function shuffleArraySeeded(arr, rng) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } }
+
+    let __resizeT;
+    window.addEventListener('resize', () => { sizeCanvas(); clearTimeout(__resizeT); __resizeT = setTimeout(() => { reset(); }, 200); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reset(); }, { once: true });
+    document.addEventListener('keydown', (e) => { if (e.target.tagName === 'INPUT') return; if (e.key.toLowerCase() === 'r') reset(); });
+
+    // Drag debug
+    const debugPanel = document.getElementById('debug-panel');
+    let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
+    debugPanel.addEventListener('mousedown', (e) => { if (e.target.id === 'reset-button') return; isDragging = true; dragOffsetX = e.clientX - debugPanel.offsetLeft; dragOffsetY = e.clientY - debugPanel.offsetTop; });
+    document.addEventListener('mousemove', (e) => { if (!isDragging) return; debugPanel.style.left = (e.clientX - dragOffsetX) + 'px'; debugPanel.style.top = (e.clientY - dragOffsetY) + 'px'; debugPanel.style.right = 'auto'; });
+    document.addEventListener('mouseup', () => { isDragging = false; });
+    document.getElementById('reset-button').addEventListener('click', reset);
+
+    // Public helpers
+    window.__gtd = {
+      setSeed: s => { localStorage.setItem('gtd_seed', String(s)); location.reload(); },
+      clearSeed: () => { localStorage.removeItem('gtd_seed'); location.reload(); }
+    };
+
+    // Start
+    safeInit();
+  </script>
 </body>
 </html>
