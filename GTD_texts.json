@@ -1,5 +1,5 @@
 {
-  serious: [
+  "serious": [
     "Update portfolio maybe",
     "Check if CV still makes sense",
     "Reply to one nice email",
@@ -107,7 +107,7 @@
     "Сохрани черновик сейчас"
   ],
 
-  absurd: [
+  "absurd": [
     "High-five your screen",
     "Feed the algorithm",
     "Blink twice for luck",
@@ -212,7 +212,7 @@
     "Сохрани вслух тишину"
   ],
 
-  quotes: [
+  "quotes": [
     "Done is better than perfect",
     "Your pace is enough",
     "Trust the process",
@@ -320,7 +320,7 @@
     "Сегодня достаточно"
   ],
 
-  simple: [
+  "simple": [
     "Inhale",
     "Exhale",
     "Hold",
