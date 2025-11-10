@@ -172,10 +172,1333 @@
     let totalCount = 0;
 
     const TEXTS = {
-      serious: ["Review project documentation","Call mom","Reply to important emails","Update portfolio","Check bank account","Schedule dentist appointment","Water the plants","Pay bills","Backup important files","Clean the workspace"],
-      absurd: ["Pet a cloud","Count to infinity","Teach a fish to climb","Find the end of the rainbow","Befriend a shadow","Organize your thoughts alphabetically","High-five yourself","Contemplate the void","Name all your fingers","Win an argument with yourself"],
-      quotes: ["Done is better than perfect","Progress, not perfection","One step at a time","Small wins matter","Consistency beats intensity","Action creates clarity","Start where you are","Every day is a fresh start","Your pace is enough","Trust the process"]
+     <style>
+  html, body{
+    height:100%;
+    overflow:hidden;
+    margin:0;
+    padding:0;
+  }
+  :root{
+    --gtd-fg:#111;
+  }
+  #gtd-app *{box-sizing:border-box}
+  #gtd-app{
+    position:relative;
+    width:100%;
+    height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  #gtd-checkboxes{
+    width:100%;
+    height:calc(100vh - 120px);
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* SECTION: top bar */
+  #gtd-progress{
+    position:fixed;
+    top:16px;
+    left:50%;
+    transform:translateX(-50%);
+    width:min(740px, 100vw - 32px);
+    z-index:1200;
+    pointer-events:none;
+  }
+  #gtd-progress-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    font-size:11px;
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    background:rgba(0,0,0,0.55);
+    backdrop-filter:blur(4px);
+    color:#fff;
+    padding:4px 14px;
+    border-radius:999px;
+    pointer-events:auto;
+  }
+  #gtd-progress-bar{
+    width:100%;
+    height:8px;
+    background:rgba(128,128,128,0.25);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  #gtd-progress-fill{
+    height:100%;
+    background:#207dff;
+    width:0%;
+    transition:width .25s ease;
+  }
+
+  /* SECTION: task items */
+  .gtd-item{
+    position:absolute;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    cursor:pointer;
+    user-select:none;
+    padding:4px 8px;
+    border-radius:4px;
+    transition:background .15s ease;
+  }
+  .gtd-item:hover{
+    background:rgba(128,128,128,0.18);
+  }
+  .gtd-item input[type="checkbox"]{
+    width:20px;
+    height:20px;
+    cursor:pointer;
+    accent-color:#207dff;
+  }
+  .gtd-item label{
+    cursor:pointer;
+    font-size:14px;
+    white-space:nowrap;
+  }
+
+  /* SECTION: done overlay */
+  #gtd-done{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.94);
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    z-index:2400;
+    color:#fff;
+    padding:16px;
+  }
+  #gtd-done.active{display:flex}
+  #gtd-name-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    margin-bottom:24px;
+  }
+  #gtd-name{
+    background:transparent;
+    border:none;
+    border-bottom:2px solid #fff;
+    color:#fff;
+    font-size:16px;
+    padding:8px 4px;
+    text-align:center;
+    width:min(76vw,340px);
+    outline:none;
+  }
+  #gtd-submit{
+    background:#fff;
+    color:#000;
+    padding:8px 14px;
+    border-radius:7px;
+    border:none;
+    font-weight:600;
+    cursor:pointer;
+  }
+
+  /* SECTION: certificate */
+  #gtd-cert{
+    display:none;
+    background:#fff;
+    color:#000;
+    padding:56px 48px 52px 48px;
+    border-radius:18px;
+    text-align:center;
+    max-width:min(92vw,640px);
+    min-height:460px;
+    border:10px solid #ffcb2f;
+    box-shadow:0 14px 44px rgba(0,0,0,.35);
+    position:relative;
+  }
+  #gtd-cert.show{display:block}
+  #gtd-cert-badge{
+    position:absolute;
+    top:-66px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#ffcb2f;
+    width:130px;
+    height:130px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:58px;
+    box-shadow:0 12px 30px rgba(0,0,0,.25);
+  }
+  #gtd-cert-title{
+    margin-top:34px;
+    font-size:24px;
+    font-weight:800;
+    margin-bottom:10px;
+    text-transform:uppercase;
+    letter-spacing:2.4px;
+  }
+  #gtd-cert-body{
+    font-size:15px;
+    line-height:1.7;
+    margin-bottom:18px;
+  }
+  #gtd-cert-name{
+    font-size:24px;
+    font-weight:800;
+    margin:10px 0 10px 0;
+    border-bottom:2px solid #333;
+    display:block;
+    padding-bottom:8px;
+  }
+  #gtd-cert-count{
+    font-size:18px;
+    color:#ffcb2f;
+    text-shadow:1px 1px 2px rgba(0,0,0,.25);
+  }
+  #gtd-cert-date{
+    font-size:12px;
+    opacity:.6;
+    margin-top:16px;
+  }
+  #gtd-cert-footer{
+    margin-top:10px;
+    font-size:12px;
+    opacity:.7;
+  }
+  #gtd-cert-project{
+    margin-top:26px;
+    font-size:10px;
+    opacity:.55;
+    line-height:1.35;
+  }
+  #gtd-reset-hint{
+    font-size:11px;
+    opacity:.6;
+    margin-top:14px;
+  }
+
+  /* SECTION: confetti canvas */
+  .gtd-confetti{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    pointer-events:none!important;
+    z-index:999999!important;
+    background:transparent;
+  }
+
+  /* SECTION: debug panel */
+  #gtd-debug{
+    position:fixed;
+    top:70px;
+    right:70px;
+    background:rgba(0,0,0,0.85);
+    color:#fff;
+    padding:12px 14px;
+    border-radius:8px;
+    font-size:11px;
+    font-family:"Courier New",monospace;
+    z-index:1300;
+    min-width:200px;
+    backdrop-filter:blur(10px);
+    display:none;
+    cursor:grab;
+  }
+  #gtd-debug .gtd-debug-title{
+    font-weight:700;
+    font-size:12px;
+    margin-bottom:6px;
+    color:#4ecdc4;
+    text-align:center;
+    border-bottom:1px solid rgba(255,255,255,.3);
+    padding-bottom:4px;
+    cursor:grab;
+  }
+  #gtd-debug .gtd-debug-line{margin:3px 0;display:flex;justify-content:space-between;gap:8px}
+  #gtd-debug .gtd-debug-label{opacity:.6}
+  #gtd-debug .gtd-debug-params{margin-top:6px;max-height:130px;overflow:auto}
+</style>
+</head>
+<body>
+<div id="gtd-app">
+  <div id="gtd-progress">
+    <div id="gtd-progress-top">
+      <span id="gtd-version-label">get things done v1.3.11</span>
+      <span id="gtd-progress-text">0 / 0</span>
+      <span id="gtd-hint-label">press R to restart</span>
+    </div>
+    <div id="gtd-progress-bar"><div id="gtd-progress-fill"></div></div>
+  </div>
+
+  <div id="gtd-checkboxes" aria-live="polite"></div>
+
+  <div id="gtd-done" aria-live="polite">
+    <div id="gtd-name-wrap">
+      <input id="gtd-name" placeholder="Your name..." maxlength="30" autocomplete="name" />
+      <button id="gtd-submit" type="button">Generate certificate</button>
+    </div>
+    <div id="gtd-cert" role="dialog" aria-modal="true">
+      <div id="gtd-cert-badge">🏆</div>
+      <div id="gtd-cert-title">Certificate of productivity</div>
+      <div id="gtd-cert-body">
+        This certifies that
+        <span id="gtd-cert-name"></span>
+        has completed <strong id="gtd-cert-count"></strong> tasks
+      </div>
+      <div id="gtd-cert-date"></div>
+      <div id="gtd-cert-footer">
+        Official Productivity Achievement<br>
+        Warning: may cause false sense of accomplishment
+      </div>
+      <div id="gtd-cert-project">
+        Get Things Done by Grisha Tsvetkov<br>
+        Ironic productivity simulator celebrating the dopamine rush of checking boxes
+      </div>
+      <div id="gtd-reset-hint">Press R to start again</div>
+    </div>
+  </div>
+
+  <div id="gtd-debug">
+    <div class="gtd-debug-title">DEBUG INFO</div>
+    <div class="gtd-debug-line"><span class="gtd-debug-label">Seed:</span> <span id="gtd-debug-seed">-</span></div>
+    <div class="gtd-debug-line"><span class="gtd-debug-label">Layout:</span> <span id="gtd-debug-layout">-</span></div>
+    <div class="gtd-debug-line"><span class="gtd-debug-label">Count:</span> <span id="gtd-debug-count">-</span></div>
+    <div class="gtd-debug-params" id="gtd-debug-params"></div>
+  </div>
+</div>
+
+<script>
+  /* SECTION: CONFIG
+     здесь можно править количество и распределение;
+     если хочешь больше задач, подними countMax;
+     если хочешь больше простых действий, подними percSimple. */
+  const GTD_SETUP = {
+    version: 'v1.3.11',
+    countMin: 10,
+    countMax: 26,
+    percSerious: 0.35,
+    percAbsurd: 0.16,
+    percQuotes: 0.12,
+    percSimple: 0.22,
+    percEmpty: 0.15
+  };
+  const GTD_CONFIG = { topOffset: 140, bottomOffset: 24, sideOffset: 30 };
+  const GTD_MIN_RENDER_HEIGHT = 420;
+  const GTD_DEBUG_ENABLED =
+    /(?:^|[?&])debug=1(?:&|$)/.test(location.search) ||
+    localStorage.getItem('gtd_debug') === '1';
+
+  /* SECTION: TEXT POOLS — 100 items per bucket, ~10 RU each */
+const GTD_TEXTS = {
+  serious: [
+    "Update portfolio maybe",
+    "Check if CV still makes sense",
+    "Reply to one nice email",
+    "Open project, stare at it",
+    "Rename that file again",
+    "Pretend to plan something",
+    "Save progress for future you",
+    "Revisit an old idea",
+    "Upload something unfinished",
+    "Call it a draft",
+    "Add one new line",
+    "Fix one thing you notice",
+    "Tidy layers, or not",
+    "Make folder chaos visible",
+    "Delete duplicate screenshots",
+    "Sort nothing, feel better",
+    "Write title before concept",
+    "Sketch, erase, sketch again",
+    "Archive what still matters",
+    "Push something somewhere",
+    "Mark one item done twice",
+    "Backup imagination",
+    "Close half of tabs",
+    "Sync with your mood",
+    "Review one random note",
+    "Change font for no reason",
+    "Adjust color, trust feeling",
+    "Export again just in case",
+    "Leave one task unfinished",
+    "Send yourself a compliment",
+    "Test if it still works",
+    "Check deadlines, ignore them",
+    "Move file to another folder",
+    "Take credit for small thing",
+    "Add something to portfolio",
+    "Forget why you opened this",
+    "Upload, then delete, then rest",
+    "Write todo: breathe",
+    "Hide taskbar anxiety",
+    "Turn off notifications",
+    "Replace urgent with soon",
+    "Write one honest line",
+    "Update the title again",
+    "Check design, trust instinct",
+    "Fix typo, celebrate",
+    "Email future collaborator",
+    "Name project final_v2",
+    "Add emoji to filename",
+    "Change nothing, save anyway",
+    "Reward yourself for existing",
+    "Mark this click as work",
+    "Log five minutes",
+    "Pin one reference",
+    "Collect one screenshot",
+    "Label that folder",
+    "Clean export settings",
+    "Re-run last render",
+    "Write a tiny brief",
+    "State the goal softly",
+    "Note one constraint",
+    "Draft a caption",
+    "Pick a cover image",
+    "Tag the project",
+    "Archive one chat",
+    "Decline one meeting",
+    "Accept one idea",
+    "Rename final to final_final",
+    "Refactor a sentence",
+    "Nudge layout a bit",
+    "Test mobile view",
+    "Check alt text",
+    "Trim whitespace",
+    "Sort by date",
+    "Star one email",
+    "Unsubscribe once",
+    "Mute one channel",
+    "Set status: Focus",
+    "Book a short slot",
+    "Write standup notes",
+    "Outline three bullets",
+    "Clarify acceptance criteria",
+    "Reduce scope kindly",
+    "Park one feature",
+    "Ship a micro-update",
+    "Share WIP preview",
+    "Ask for one review",
+    "Log a tiny bug",
+    "Move task to Today",
+    "Move task to Later",
+    "Celebrate a small win",
+    "Draft next steps",
+    "Re-read the brief",
+    "Confirm time zone",
+    "Check licenses",
+    "Export a thumbnail",
+    "Link to repo",
+    "Sync cloud files",
+    "Verify backup",
+    "Calibrate display",
+    "Update changelog",
+    "Commit with a smile",
+    "Напиши одно письмо",
+    "Переименуй файл спокойно",
+    "Обнови био чуть-чуть",
+    "Сохрани черновик сейчас"
+  ],
+
+  absurd: [
+    "High-five your screen",
+    "Feed the algorithm",
+    "Blink twice for luck",
+    "Schedule a nap",
+    "Click me again",
+    "Delete Monday",
+    "Ask AI for meaning",
+    "Compliment your cursor",
+    "Draw a circle mentally",
+    "Pet invisible cat",
+    "Like your own thought",
+    "Email future you",
+    "Water your Wi-Fi",
+    "Count to almost ten",
+    "Wave at the void",
+    "Debug your feelings",
+    "Rename reality v2",
+    "Install patience",
+    "Unplug the moon",
+    "Ping the universe",
+    "Charge your aura",
+    "Mute the chaos",
+    "Scroll with dignity",
+    "Refactor destiny",
+    "Optimize a yawn",
+    "Minify worries",
+    "Defragment dreams",
+    "Clear cache of doubts",
+    "Enable dark coffee",
+    "Resize the horizon",
+    "Reboot a cloud",
+    "Balance one pixel",
+    "Rotate your fate",
+    "Select all joy",
+    "Duplicate calm",
+    "Invert boredom",
+    "Center the soul",
+    "Snap to grid life",
+    "Outline your silence",
+    "Flatten expectations",
+    "Mask one thought",
+    "Nudge reality 1 px",
+    "Hide guidance lines",
+    "Group tiny hopes",
+    "Deselect anxiety",
+    "Lock inner guide",
+    "Rasterize chaos",
+    "Uncheck gravity",
+    "Pet a cloud",
+    "Win an argument with yourself",
+    "Install a nap",
+    "Rename brain to brain_final",
+    "Archive your doubts",
+    "Refill imagination buffer",
+    "Enable whisper mode",
+    "Turn off the noise",
+    "Resize the sun 80%",
+    "Export one rainbow",
+    "Commit to vibes",
+    "Ship a feeling",
+    "Open a wormhole",
+    "Unzip a smile",
+    "Recolor the sky",
+    "Fork your mood",
+    "Merge two naps",
+    "Rebase reality",
+    "Push to cosmos",
+    "Pull from dreams",
+    "Lint your thoughts",
+    "Console.log happiness",
+    "AI, take the wheel",
+    "Summon tiny dragons",
+    "Mute the apocalypse",
+    "Drink a pixel",
+    "Bake a timeline",
+    "Cache a hug",
+    "Map joy to ctrl+J",
+    "Upgrade your aura",
+    "Hotfix destiny",
+    "Rollback stress",
+    "Refactor naps",
+    "Hydrate your muse",
+    "Defuse overthinking",
+    "Render curiosity",
+    "Compile a laugh",
+    "Minimap serenity",
+    "Checkpoint reality",
+    "Patch the void",
+    "Toggle hope on",
+    "Blur the worry",
+    "Sharpen delight",
+    "Untangle spaghetti mind",
+    "Zoom heart to 120%",
+    "Sketch a parallel you",
+    "Teleport attention",
+    "Invite chaos to dance",
+    "Погладь пустоту",
+    "Переименуй скуку",
+    "Обними монитор взглядом",
+    "Пошли мем вселенной",
+    "Нажми сюда ещё раз",
+    "Сохрани вслух тишину"
+  ],
+
+  quotes: [
+    "Done is better than perfect",
+    "Your pace is enough",
+    "Trust the process",
+    "Ship, then improve",
+    "Document before doing",
+    "Small steps count",
+    "Perfection is delay",
+    "Progress is a feeling",
+    "The list never ends",
+    "Rest is also work",
+    "Focus is a choice",
+    "Momentum beats motivation",
+    "Clarity loves simple",
+    "Start small, start now",
+    "Silence helps thinking",
+    "One thing at a time",
+    "Constraints create form",
+    "Drafts are allowed",
+    "Routine makes freedom",
+    "Attention is finite",
+    "Time is material",
+    "Cut to the essential",
+    "Stop. Look. Continue.",
+    "WIP is a place",
+    "Iterations tell truth",
+    "Friction reveals shape",
+    "Deadlines are mirrors",
+    "Care is a method",
+    "Simplicity scales",
+    "You are not late",
+    "Move at human speed",
+    "Name it to see it",
+    "Notes remember you",
+    "Energy is a resource",
+    "Drafts invite progress",
+    "Pause creates edges",
+    "Reduce to decide",
+    "Patience is practice",
+    "Frames define meaning",
+    "Order follows action",
+    "Tiny wins matter",
+    "Less noise, more signal",
+    "Keep it humane",
+    "You can stop now",
+    "Art is a checkbox",
+    "Finish is a phase",
+    "Good enough is good",
+    "Done is a mood",
+    "Click = intention",
+    "Continue tomorrow",
+    "Good enough for now",
+    "You clicked, that counts",
+    "No rush today",
+    "Almost done, maybe",
+    "You are doing fine",
+    "Progress is a vibe",
+    "Perfection is a trap",
+    "Done-ish is done",
+    "Halfway is still movement",
+    "Rest is progress too",
+    "Tiny things add up",
+    "Be proud of minimal effort",
+    "Patience is an action",
+    "Simplicity wins again",
+    "Click = courage",
+    "Creative chaos allowed",
+    "Today is enough",
+    "Start small, stay kind",
+    "You did something",
+    "Art is never finished",
+    "One click, one mark",
+    "The list loves you",
+    "Momentum is gentle",
+    "It is fine as it is",
+    "Drafts are real too",
+    "Mess counts as process",
+    "Good job, unknown human",
+    "Meaning optional",
+    "Calm is productive",
+    "Nothing to prove",
+    "Unfinished is a style",
+    "Pause creates shape",
+    "Done. Kind of.",
+    "Perfectly imperfect",
+    "Clicking is self-care",
+    "This moment is valid",
+    "A small win counts",
+    "Less pressure, more presence",
+    "It is okay to not finish",
+    "Gentle effort only",
+    "No one is watching",
+    "This is also art",
+    "Breathing counts",
+    "Effort = enough",
+    "Today’s task: being",
+    "Succeed in resting",
+    "Stay a little soft",
+    "One more click of kindness",
+    "All checked, all good",
+    "Сделано достаточно",
+    "Малые шаги важны",
+    "Дыши и продолжай",
+    "Спокойствие продуктивно",
+    "Пауза тоже работа",
+    "Сегодня достаточно"
+  ],
+
+  simple: [
+    "Inhale",
+    "Exhale",
+    "Hold",
+    "Look left",
+    "Look right",
+    "Blink slowly",
+    "Drink water",
+    "Stand up",
+    "Stretch fingers",
+    "Relax shoulders",
+    "Check posture",
+    "Close one tab",
+    "Open window",
+    "Sit comfortably",
+    "Touch keyboard",
+    "Breathe again",
+    "Slow down",
+    "Smile once",
+    "Wash your face",
+    "Walk a minute",
+    "Send one photo",
+    "Post one story",
+    "Save one draft",
+    "Take a snapshot",
+    "File a picture",
+    "Share with a friend",
+    "Reply with one line",
+    "Write a caption",
+    "Make a tiny sketch",
+    "Pin one idea",
+    "Set a 5-min timer",
+    "Mute notifications",
+    "Turn volume down",
+    "Light on, light off",
+    "Stand, then sit",
+    "Count to five",
+    "Open portfolio",
+    "Pick one work",
+    "Update the title",
+    "Review your CV",
+    "Add one link",
+    "Trim one clip",
+    "Color one frame",
+    "Nudge 1 px",
+    "Reset zoom",
+    "Check battery",
+    "Clean one spot",
+    "Send a meme",
+    "Wave hello",
+    "Close an app",
+    "Tidy one icon",
+    "Wipe the screen",
+    "Stretch wrists",
+    "Roll shoulders",
+    "Deep breath",
+    "Short breath",
+    "Look outside",
+    "Look inside",
+    "Pet your mind",
+    "Write two words",
+    "Save and exit",
+    "Open and save",
+    "Check time",
+    "Turn on focus",
+    "Turn off noise",
+    "Open notes",
+    "Pin a thought",
+    "Archive one chat",
+    "Heart one photo",
+    "Post one reel",
+    "Like your draft",
+    "Send thanks",
+    "Say hi",
+    "Ask later",
+    "Copy link",
+    "Paste link",
+    "Undo once",
+    "Redo once",
+    "Zoom in",
+    "Zoom out",
+    "Switch window",
+    "Close window",
+    "Open finder",
+    "Empty bin",
+    "Align center",
+    "Align left",
+    "Turn light",
+    "Turn dark",
+    "Play music",
+    "Pause music",
+    "Stand tall",
+    "Sit soft",
+    "Shake hands",
+    "Shake head",
+    "Спасибо",
+    "Просто кликни",
+    "Готово",
+    "Налей воды",
+    "Сделай вдох",
+    "Посмотри в окно",
+    "Отправь эмодзи",
+    "Выключи звук"
+  ]
+  
+  };
+
+  /* SECTION: RANDOM CORE */
+  class GTDSeededRandom {
+    constructor(seed){ this.seed = seed|0; this.current = this.seed; }
+    next(){ this.current = (this.current*1103515245 + 12345) & 0x7fffffff; return this.current / 0x7fffffff; }
+    randomInt(min,max){ return Math.floor(this.next()*(max-min)) + min; }
+    choice(arr){ return arr[this.randomInt(0, arr.length)]; }
+  }
+
+  let gtdRng, gtdSeed, gtdLayout, gtdParams = {};
+  let gtdCheckboxes = [], gtdChecked = 0, gtdTotal = 0;
+
+  /* SECTION: CONFETTI VARS */
+  let gtdConfettiCanvas = null, gtdConfettiCtx = null, gtdConfettiParticles = [], gtdConfettiActive = false, gtdConfettiRAF = null;
+  const GTD_CONFETTI_COLORS = ['#ff6b6b','#feca57','#48dbfb','#1dd1a1','#5f27cd','#ff9ff3'];
+
+  /* SECTION: helper to read seed from url */
+  function gtdReadSeed(){
+    try{
+      const u = new URL(location.href);
+      return u.searchParams.get('seed') || localStorage.getItem('gtd_seed') || null;
+    }catch(e){ return null; }
+  }
+
+  /* SECTION: init */
+  window.addEventListener('load', function(){
+    setTimeout(()=>{
+      gtdInit();
+      gtdEnableDebugDrag();
+    }, 120);
+  });
+
+  function gtdInit(){
+    const s = gtdReadSeed() || Math.floor(Math.random()*1e9);
+    gtdSeed = parseInt(s,10);
+    gtdRng = new GTDSeededRandom(gtdSeed);
+    document.getElementById('gtd-version-label').textContent = 'get things done ' + GTD_SETUP.version;
+    gtdClear();
+    gtdGenerate();
+    gtdUpdateProgress();
+    gtdHideDone();
+    gtdApplyDebugVisibility();
+    gtdUpdateDebugPanel();
+    gtdBindKeys();
+    gtdStopConfetti();
+  }
+
+  function gtdApplyDebugVisibility(){
+    document.getElementById('gtd-debug').style.display = GTD_DEBUG_ENABLED ? 'block' : 'none';
+  }
+
+  function gtdClear(){
+    const cont = document.getElementById('gtd-checkboxes');
+    cont.innerHTML = '';
+    gtdCheckboxes = [];
+    gtdChecked = 0;
+    gtdTotal = 0;
+  }
+
+  /* SECTION: measure text */
+  const gtdMeasureCtx = (() => { const c=document.createElement('canvas'); return c.getContext('2d'); })();
+  function gtdMeasureTextWidth(text){
+    gtdMeasureCtx.font = '14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+    return 24 + (text ? gtdMeasureCtx.measureText(text).width : 0);
+  }
+
+  /* SECTION: main generate */
+  function gtdGenerate(){
+    const cont = document.getElementById('gtd-checkboxes');
+    const rect = cont.getBoundingClientRect();
+    let width = rect.width || 820;
+    let height = rect.height < GTD_MIN_RENDER_HEIGHT ? GTD_MIN_RENDER_HEIGHT : rect.height;
+    const M = { left:GTD_CONFIG.sideOffset, right:GTD_CONFIG.sideOffset, top:GTD_CONFIG.topOffset, bottom:GTD_CONFIG.bottomOffset, checkboxH:30 };
+
+    const span = (GTD_SETUP.countMax - GTD_SETUP.countMin) + 1;
+    let count = GTD_SETUP.countMin + (new GTDSeededRandom(gtdSeed+777).randomInt(0, span) || 0);
+
+    const pool = [];
+    const seriousN = Math.round(count * GTD_SETUP.percSerious);
+    const absurdN = Math.round(count * GTD_SETUP.percAbsurd);
+    const quotesN = Math.round(count * GTD_SETUP.percQuotes);
+    const simpleN = Math.round(count * GTD_SETUP.percSimple);
+    const emptyN = Math.max(0, count - seriousN - absurdN - quotesN - simpleN);
+
+    for (let i=0;i<seriousN;i++) pool.push(gtdRng.choice(GTD_TEXTS.serious));
+    for (let i=0;i<absurdN;i++) pool.push(gtdRng.choice(GTD_TEXTS.absurd));
+    for (let i=0;i<quotesN;i++) pool.push(gtdRng.choice(GTD_TEXTS.quotes));
+    for (let i=0;i<simpleN;i++) pool.push(gtdRng.choice(GTD_TEXTS.simple));
+    for (let i=0;i<emptyN;i++) pool.push(null);
+
+    for (let i=pool.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    /* SECTION: layout choice
+       сюда можно добавить свои раскладки и добавить в массив */
+    const layouts = ['list-124','scatter','circle','letter'];
+    gtdLayout = layouts[Math.abs(gtdSeed) % layouts.length];
+    gtdParams = {};
+
+    let positions;
+    switch (gtdLayout) {
+      case 'list-124':
+        positions = gtdList124(count,width,height,pool,M);
+        break;
+      case 'scatter':
+        positions = gtdScatter(count,width,height,pool,M);
+        break;
+      case 'circle':
+        positions = gtdCircle(count,width,height,pool,M);
+        break;
+      case 'letter':
+        positions = gtdLetter(count,width,height,pool,M);
+        break;
+      default:
+        positions = gtdScatter(count,width,height,pool,M);
+        break;
+    }
+
+    if (!positions || positions.length < 6){
+      positions = gtdScatter(pool.length,width,height,pool,M);
+    }
+
+    if (gtdLayout !== 'list-124'){
+      positions = gtdResolveOverlaps(positions,width,height,M,{iterations:70,padding:8});
+    }
+
+    positions.forEach((pos,i)=>{
+      const x = Math.max(M.left, Math.min(pos.x, width - M.right - pos.width));
+      const y = Math.max(M.top, Math.min(pos.y, height - M.bottom - pos.height));
+      const el = gtdCreateItem(i, x, y, pool[i], pos.isNested);
+      cont.appendChild(el);
+      gtdCheckboxes.push(el);
+    });
+
+    gtdTotal = gtdCheckboxes.length;
+  }
+
+  /* SECTION: layout list-124
+     это твоя версия с островками и небольшим шумом. */
+  function gtdList124(count,width,height,texts,M){
+    const sublistCount = 5;
+    const baseLine = 34;
+    const indentSize = 26;
+    const blockMaxW = 360;
+    const nestingProbability = 0.22;
+
+    const itemsPerSublist = [];
+    let remaining = count;
+    for (let i=0;i<sublistCount;i++){
+      if (i === sublistCount - 1){
+        itemsPerSublist.push(remaining);
+      } else {
+        const approx = Math.max(2, Math.floor(remaining / (sublistCount - i)));
+        const jitter = Math.floor(Math.random()*2);
+        const size = Math.min(approx + jitter, remaining);
+        itemsPerSublist.push(size);
+        remaining -= size;
+      }
+    }
+
+    const blocks = [];
+    const maxAttempts = 45;
+    for (let i=0;i<sublistCount;i++){
+      const blockH = itemsPerSublist[i] * baseLine + 20;
+      let placed = false;
+      let x=0, y=0, attempts=0;
+      while (!placed && attempts < maxAttempts){
+        x = M.left + Math.random() * (width - M.right - blockMaxW - M.left);
+        y = M.top + Math.random() * (height - M.bottom - blockH - M.top);
+        placed = true;
+        for (const b of blocks){
+          const pad = 26;
+          if (!(x + blockMaxW + pad < b.x || b.x + b.width + pad < x || y + blockH + pad < b.y || b.y + b.height + pad < y)){
+            placed = false;
+            break;
+          }
+        }
+        attempts++;
+      }
+      blocks.push({ x, y, width:blockMaxW, height:blockH });
+    }
+
+    const res = [];
+    let textIdx = 0;
+
+    for (let b=0;b<blocks.length;b++){
+      const block = blocks[b];
+      let y = block.y;
+      const itemsHere = itemsPerSublist[b];
+
+      for (let i=0;i<itemsHere;i++){
+        if (textIdx >= count) break;
+        const wantNested = i>0 && Math.random() < nestingProbability;
+        const indent = wantNested ? indentSize : 0;
+
+        const text = texts[textIdx];
+        const textW = Math.min(gtdMeasureTextWidth(text), block.width - 16 - indent);
+
+        const freeWidth = block.width - textW - indent - 16;
+        const jitterX = freeWidth > 0 ? Math.random() * freeWidth : 0;
+
+        res.push({
+          x: block.x + indent + 8 + jitterX,
+          y: y,
+          width: textW,
+          height: M.checkboxH,
+          isNested: wantNested
+        });
+
+        const lineJitter = (Math.random()*6) - 3;
+        y += baseLine + lineJitter;
+
+        textIdx++;
+      }
+    }
+
+    gtdParams = {
+      style:'list-scattered-124',
+      blocks:sublistCount,
+      baseLine,
+      indentSize
     };
+    return res;
+  }
+
+  /* SECTION: scatter layout */
+  function gtdScatter(count,width,height,texts,M){
+    const res = [];
+    const minX = M.left, maxX = width - M.right;
+    const minY = M.top, maxY = height - M.bottom;
+    const clusterCount = Math.max(2, Math.floor(count/5));
+    const clusters = [];
+    for (let i=0;i<clusterCount;i++){
+      clusters.push({ x:minX + Math.random()*(maxX-minX), y:minY + Math.random()*(maxY-minY) });
+    }
+    for (let i=0;i<count;i++){
+      const w = gtdMeasureTextWidth(texts[i]);
+      const useCluster = Math.random()<0.4;
+      if (useCluster){
+        const c = clusters[Math.floor(Math.random()*clusters.length)];
+        const ang = Math.random()*Math.PI*2;
+        const dist = Math.random()*70;
+        res.push({ x:c.x + Math.cos(ang)*dist, y:c.y + Math.sin(ang)*dist, width:w, height:M.checkboxH, isNested:Math.random()<0.12 });
+      } else {
+        res.push({ x:minX + Math.random()*(maxX-minX-w), y:minY + Math.random()*(maxY-minY-M.checkboxH), width:w, height:M.checkboxH, isNested:false });
+      }
+    }
+    gtdParams = { layout:'scatter', clusters:clusterCount };
+    return res;
+  }
+
+  /* SECTION: circle layout */
+  function gtdCircle(count,width,height,texts,M){
+    const cx = width/2;
+    const cy = (height - M.bottom + M.top)/2;
+    const radius = Math.min(width, height)*0.3;
+    const res = [];
+    for (let i=0;i<count;i++){
+      const t = (i/count)*Math.PI*2;
+      const w = gtdMeasureTextWidth(texts[i]);
+      res.push({ x: cx + Math.cos(t)*radius - w/2, y: cy + Math.sin(t)*radius - M.checkboxH/2, width:w, height:M.checkboxH, isNested:false });
+    }
+    gtdParams = { layout:'circle', radius:Math.round(radius) };
+    return res;
+  }
+
+  /* SECTION: letter layout
+     использует весь английский алфавит и цифры, но специальные формы только для некоторых */
+  function gtdLetter(count,width,height,texts,M){
+    const ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const ch = ABC[Math.abs(gtdSeed) % ABC.length];
+    const cx = width/2;
+    const cy = (height - M.bottom + M.top)/2;
+    const res = [];
+
+    if (ch === 'G' || ch === 'O' || ch === '0' || ch === 'D'){
+      const r = Math.min(width,height)*0.32;
+      for (let i=0;i<count;i++){
+        let t = (i/count)*Math.PI*2;
+        if (ch === 'G' && t > Math.PI*0.35 && t < Math.PI*0.55) t = Math.PI*0.55;
+        const w = gtdMeasureTextWidth(texts[i]);
+        res.push({ x: cx + Math.cos(t)*r - w/2, y: cy + Math.sin(t)*r - M.checkboxH/2, width:w, height:M.checkboxH, isNested:false });
+      }
+      gtdParams = { layout:'letter', char:ch, radius:Math.round(Math.min(width,height)*0.32) };
+      return res;
+    }
+
+    if (ch === 'T'){
+      const topY = cy - 130;
+      const wFull = 280;
+      const perRow = Math.min(count, 8);
+      for (let i=0;i<perRow;i++){
+        const w = gtdMeasureTextWidth(texts[i]);
+        const x = cx - wFull/2 + (i/(perRow-1 || 1))*wFull - w/2;
+        res.push({ x, y:topY, width:w, height:M.checkboxH, isNested:false });
+      }
+      let y = topY + 38;
+      for (let i=perRow;i<count;i++){
+        const w = gtdMeasureTextWidth(texts[i]);
+        res.push({ x: cx - w/2, y, width:w, height:M.checkboxH, isNested:false });
+        y += 30;
+      }
+      gtdParams = { layout:'letter', char:ch };
+      return res;
+    }
+
+    if (ch === 'L' || ch === '1'){
+      const xLeft = cx - 120;
+      let y = cy - 140;
+      for (let i=0;i<count;i++){
+        const w = gtdMeasureTextWidth(texts[i]);
+        if (i < Math.floor(count*0.7)){
+          res.push({ x:xLeft, y, width:w, height:M.checkboxH, isNested:false });
+        } else {
+          res.push({ x:xLeft + (i - Math.floor(count*0.7))*26, y:cy+90, width:w, height:M.checkboxH, isNested:false });
+        }
+        y += 28;
+      }
+      gtdParams = { layout:'letter', char:ch };
+      return res;
+    }
+
+    // все остальные буквы как овал
+    const radX = Math.min(width,height)*0.32;
+    const radY = Math.min(width,height)*0.20;
+    for (let i=0;i<count;i++){
+      const t = (i/count)*Math.PI*2;
+      const w = gtdMeasureTextWidth(texts[i]);
+      res.push({
+        x: cx + Math.cos(t)*radX - w/2,
+        y: cy + Math.sin(t)*radY - M.checkboxH/2,
+        width:w,
+        height:M.checkboxH,
+        isNested:false
+      });
+    }
+    gtdParams = { layout:'letter', char:ch, ellipse:true };
+    return res;
+  }
+
+  /* SECTION: overlap resolve */
+  function gtdResolveOverlaps(rects,width,height,M,opts){
+    const iterations = opts.iterations || 50;
+    const padding = opts.padding || 6;
+    for (let iter=0; iter<iterations; iter++){
+      let moved = false;
+      for (let i=0;i<rects.length;i++){
+        for (let j=i+1;j<rects.length;j++){
+          const a = rects[i], b = rects[j];
+          const ax = a.x + a.width/2, ay = a.y + a.height/2;
+          const bx = b.x + b.width/2, by = b.y + b.height/2;
+          const dx = ax - bx, dy = ay - by;
+          const overlapX = (a.width/2 + b.width/2 + padding) - Math.abs(dx);
+          const overlapY = (a.height/2 + b.height/2 + padding) - Math.abs(dy);
+          if (overlapX > 0 && overlapY > 0){
+            moved = true;
+            const pushX = 0.6*overlapX * Math.sign(dx || (Math.random()-0.5));
+            const pushY = 0.6*overlapY * Math.sign(dy || (Math.random()-0.5));
+            a.x += pushX*0.5;
+            b.x -= pushX*0.5;
+            a.y += pushY*0.5;
+            b.y -= pushY*0.5;
+            a.x = Math.max(M.left, Math.min(a.x, width - M.right - a.width));
+            b.x = Math.max(M.left, Math.min(b.x, width - M.right - b.width));
+            a.y = Math.max(M.top, Math.min(a.y, height - M.bottom - a.height));
+            b.y = Math.max(M.top, Math.min(b.y, height - M.bottom - b.height));
+          }
+        }
+      }
+      if (!moved) break;
+    }
+    return rects;
+  }
+
+  /* SECTION: create item */
+  function gtdCreateItem(id,x,y,text,isNested){
+    const div = document.createElement('div');
+    div.className = 'gtd-item';
+    div.style.left = x + 'px';
+    div.style.top = y + 'px';
+    if (isNested){
+      const s = document.createElement('span');
+      s.textContent = '▸';
+      s.style.opacity = '.5';
+      s.style.fontSize = '10px';
+      div.appendChild(s);
+    }
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = 'gtd-cb-'+id;
+    cb.addEventListener('change', gtdOnChange);
+    div.appendChild(cb);
+    if (text){
+      const lab = document.createElement('label');
+      lab.htmlFor = cb.id;
+      lab.textContent = text;
+      div.appendChild(lab);
+    }
+    return div;
+  }
+
+  /* SECTION: checkbox change */
+  function gtdOnChange(){
+    gtdChecked = gtdCheckboxes.reduce((acc, el) => {
+      const input = el.querySelector('input[type="checkbox"]');
+      return acc + (input && input.checked ? 1 : 0);
+    }, 0);
+    gtdUpdateProgress();
+    if (gtdTotal > 0 && gtdChecked >= gtdTotal) gtdShowDone();
+  }
+
+  /* SECTION: progress update */
+  function gtdUpdateProgress(){
+    document.getElementById('gtd-progress-fill').style.width = (gtdTotal ? (gtdChecked/gtdTotal)*100 : 0) + '%';
+    document.getElementById('gtd-progress-text').textContent = gtdChecked + ' / ' + gtdTotal;
+  }
+
+  /* SECTION: show done */
+  function gtdShowDone(){
+    document.getElementById('gtd-cert-date').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    document.getElementById('gtd-done').classList.add('active');
+    document.getElementById('gtd-name-wrap').style.display = 'flex';
+    document.getElementById('gtd-cert').classList.remove('show');
+    gtdStartConfetti();
+
+    const input = document.getElementById('gtd-name');
+    const btn = document.getElementById('gtd-submit');
+    const submit = ()=>{
+      const name = input.value.trim();
+      if (name) gtdShowCert(name);
+    };
+    setTimeout(()=>{ input.focus({preventScroll:true}); }, 200);
+    input.onkeydown = e => {
+      if (e.key === 'Enter') { e.preventDefault(); submit(); }
+      if (e.key === 'r' || e.key === 'R') e.stopPropagation();
+    };
+    btn.onclick = submit;
+  }
+
+  /* SECTION: show certificate */
+  function gtdShowCert(name){
+    document.getElementById('gtd-name-wrap').style.display = 'none';
+    document.getElementById('gtd-cert-name').textContent = name + '!';
+    document.getElementById('gtd-cert-count').textContent = gtdTotal;
+    document.getElementById('gtd-cert').classList.add('show');
+  }
+
+  /* SECTION: hide done */
+  function gtdHideDone(){
+    document.getElementById('gtd-done').classList.remove('active');
+    const input = document.getElementById('gtd-name');
+    if (input) input.value = '';
+    document.getElementById('gtd-cert').classList.remove('show');
+  }
+
+  /* SECTION: keybind */
+  function gtdBindKeys(){
+    document.removeEventListener('keydown', gtdKeyHandler);
+    document.addEventListener('keydown', gtdKeyHandler);
+  }
+  function gtdKeyHandler(e){
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (e.key === 'r' || e.key === 'R') gtdInit();
+  }
+
+  /* SECTION: confetti */
+  function gtdEnsureConfetti(){
+    if (gtdConfettiCanvas && gtdConfettiCtx) return;
+    gtdConfettiCanvas = document.createElement('canvas');
+    gtdConfettiCanvas.className = 'gtd-confetti';
+    document.body.appendChild(gtdConfettiCanvas);
+    gtdConfettiCtx = gtdConfettiCanvas.getContext('2d');
+    gtdConfettiCtx.globalCompositeOperation = 'source-over';
+    gtdSizeConfetti();
+    window.addEventListener('resize', gtdSizeConfetti);
+  }
+  function gtdSizeConfetti(){
+    if (!gtdConfettiCanvas) return;
+    gtdConfettiCanvas.width = window.innerWidth;
+    gtdConfettiCanvas.height = window.innerHeight;
+  }
+  class GTDConfettiParticle{
+    constructor(){ this.reset(); }
+    reset(){
+      this.x = Math.random()*gtdConfettiCanvas.width;
+      this.y = -20 + Math.random()*-200;
+      this.vx = (Math.random()-0.5)*2.2;
+      this.vy = Math.random()*1.4 + 1.1;
+      this.size = Math.random()*7 + 3.5;
+      this.color = GTD_CONFETTI_COLORS[Math.floor(Math.random()*GTD_CONFETTI_COLORS.length)];
+      this.rotation = Math.random()*360;
+      this.rotationSpeed = (Math.random()-0.5)*6;
+      this.gravity = 0.04;
+    }
+    update(){
+      this.x += this.vx;
+      this.y += this.vy;
+      this.vy += this.gravity;
+      this.rotation += this.rotationSpeed;
+      if (this.y > gtdConfettiCanvas.height + 30) this.reset();
+    }
+    draw(){
+      gtdConfettiCtx.save();
+      gtdConfettiCtx.translate(this.x, this.y);
+      gtdConfettiCtx.rotate(this.rotation * Math.PI/180);
+      gtdConfettiCtx.fillStyle = this.color;
+      gtdConfettiCtx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+      gtdConfettiCtx.restore();
+    }
+  }
+  function gtdStartConfetti(){
+    gtdEnsureConfetti();
+    gtdConfettiActive = true;
+    if (!gtdConfettiParticles.length){
+      for (let i=0;i<90;i++) gtdConfettiParticles.push(new GTDConfettiParticle());
+    }
+    gtdAnimateConfetti();
+  }
+  function gtdStopConfetti(){
+    gtdConfettiActive = false;
+    gtdConfettiParticles = [];
+    if (gtdConfettiRAF) cancelAnimationFrame(gtdConfettiRAF);
+    if (gtdConfettiCtx && gtdConfettiCanvas) {
+      gtdConfettiCtx.clearRect(0,0,gtdConfettiCanvas.width,gtdConfettiCanvas.height);
+    }
+  }
+  function gtdAnimateConfetti(){
+    if (!gtdConfettiActive || !gtdConfettiCtx) return;
+    gtdConfettiCtx.clearRect(0,0,gtdConfettiCanvas.width,gtdConfettiCanvas.height);
+    if (Math.random()<0.25 && gtdConfettiParticles.length<160) gtdConfettiParticles.push(new GTDConfettiParticle());
+    gtdConfettiParticles.forEach(p=>{ p.update(); p.draw(); });
+    gtdConfettiRAF = requestAnimationFrame(gtdAnimateConfetti);
+  }
+
+  /* SECTION: debug panel update */
+  function gtdUpdateDebugPanel(){
+    if (!GTD_DEBUG_ENABLED) return;
+    document.getElementById('gtd-debug-seed').textContent = gtdSeed;
+    document.getElementById('gtd-debug-layout').textContent = gtdLayout;
+    document.getElementById('gtd-debug-count').textContent = gtdTotal;
+    const paramsEl = document.getElementById('gtd-debug-params');
+    let html = '';
+    for (let k in gtdParams){
+      html += `<div class="gtd-debug-line"><span class="gtd-debug-label">${k}:</span><span>${gtdParams[k]}</span></div>`;
+    }
+    paramsEl.innerHTML = html || '<div class="gtd-debug-line"><span class="gtd-debug-label">no params</span></div>';
+  }
+
+  /* SECTION: debug drag */
+  function gtdEnableDebugDrag(){
+    const panel = document.getElementById('gtd-debug');
+    if (!panel) return;
+    let isDown = false;
+    let offsetX = 0, offsetY = 0;
+    panel.addEventListener('mousedown', e => {
+      isDown = true;
+      panel.style.cursor = 'grabbing';
+      offsetX = e.clientX - panel.getBoundingClientRect().left;
+      offsetY = e.clientY - panel.getBoundingClientRect().top;
+    });
+    document.addEventListener('mousemove', e => {
+      if (!isDown) return;
+      panel.style.top = (e.clientY - offsetY) + 'px';
+      panel.style.left = (e.clientX - offsetX) + 'px';
+      panel.style.right = 'auto';
+    });
+    document.addEventListener('mouseup', () => {
+      isDown = false;
+      panel.style.cursor = 'grab';
+    });
+  }
+</script>
 
     // ======================= Debug panel fill =======================
     function updateDebugPanel() {
