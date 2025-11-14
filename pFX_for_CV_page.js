@@ -62,14 +62,14 @@
     scrollKickHalflife: 0.5,       // сек: полураспад этого импульса
 
     // --- влияние указателя в базовом режиме ---
-    pointerInfluenceRadius: 500,   // px: радиус влияния указателя, умножается на dpr
+    pointerInfluenceRadius: 400,   // px: радиус влияния указателя, умножается на dpr
     enablePointerSwirl: true,      // bool: тангенциальный вихрь
-    pointerSwirlStrength: 1.0,     // коэф: сила вихря
+    pointerSwirlStrength: 2.0,     // коэф: сила вихря
     pointerSwirlFalloffExp: 1.4,   // коэф: затухание по радиусу, 1..3
      pointerAttractionStrength: 10.5,// коэф: сила притяжения (0.1-2.0)
     enablePointerNoise: true,      // bool: синус нойз-вектор от указателя
-    pointerNoiseAmp: 5.0,          // коэф: амплитуда нойза
-    pointerNoiseHz: 0.1,           // Гц: частота нойза
+    pointerNoiseAmp: 2.0,          // коэф: амплитуда нойза
+    pointerNoiseHz: 0.3,           // Гц: частота нойза
     pointerNoiseSmooth: 0.95,      // 0..0.999: сглаживание нойз-вектора
 
     // --- клик: pull -> burst ---
