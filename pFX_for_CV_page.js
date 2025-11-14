@@ -65,8 +65,8 @@
     pointerInfluenceRadius: 500,   // px: радиус влияния указателя, умножается на dpr
     enablePointerSwirl: true,      // bool: тангенциальный вихрь
     pointerSwirlStrength: 2.0,     // коэф: сила вихря
-    pointerSwirlFalloffExp: 1.4,   // коэф: затухание по радиусу, 1..3
-     pointerAttractionStrength: 0.5,// коэф: сила притяжения (0.1-2.0)
+    pointerSwirlFalloffExp: 2.4,   // коэф: затухание по радиусу, 1..3
+     pointerAttractionStrength: 1.5,// коэф: сила притяжения (0.1-2.0)
     enablePointerNoise: true,      // bool: синус нойз-вектор от указателя
     pointerNoiseAmp: 5.0,          // коэф: амплитуда нойза
     pointerNoiseHz: 0.1,           // Гц: частота нойза
@@ -74,7 +74,7 @@
 
     // --- клик: pull -> burst ---
     clickAffectsAll: false,        // bool: true трогать все точки, false только в радиусе
-    clickRadius: 150,              // px: радиус набора точек для клика, умножается на dpr
+    clickRadius: 350,              // px: радиус набора точек для клика, умножается на dpr
     prePullSec: 0.6,               // сек: длительность стягивания к центру
     pullGrowFactor: 0.0,           // коэф: масштаб точки в pull (1.0 без изменений)
     burstLife: 3.8,                // сек: длительность разлёта
