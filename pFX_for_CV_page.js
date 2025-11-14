@@ -75,18 +75,18 @@
 
     // --- клик: pull -> burst ---
     clickAffectsAll: false,        // bool: true трогать все точки, false только в радиусе
-    clickRadius: 150,              // px: радиус набора точек для клика, умножается на dpr
+    clickRadius: 50,              // px: радиус набора точек для клика, умножается на dpr
     prePullSec: 0.6,               // сек: длительность стягивания к центру
-    pullGrowFactor: 0.0,           // коэф: масштаб точки в pull (1.0 без изменений)
+    pullGrowFactor: 0.5,           // коэф: масштаб точки в pull (1.0 без изменений)
     burstLife: 3.8,                // сек: длительность разлёта
     explodeTimeJitter: 0.35,       // доля: разброс длительности burst ±
-    explosionPower: 90,            // px/s: базовая мощность начального импульса
+    explosionPower: 40,            // px/s: базовая мощность начального импульса
     explosionPowerJitter: 0.2,     // доля: вариативность импульса ±20%
     explosionAngleJitter: 0.25,    // рад: разброс угла старта разлёта
     frictionBurst: 0.8,            // коэф: трение в фазе burst
     explodeGrowMul: 100.0,         // коэф: пик увеличения радиуса в burst
     explodeNoiseHz: 0.02,          // Гц: частота нойза во время burst
-    explodeNoiseAmp: 52.0,         // коэф: сила нойза во время burst
+    explodeNoiseAmp: 152.0,         // коэф: сила нойза во время burst
     explodeNoiseSmooth: 0.99,      // 0..0.999: сглаживание нойз-скорости
     explodeAlphaBoost: 1.0,        // 0..1+: альфа в burst
     explodeStartJitterFramesMin: 1,// кадры: минимальная микрозадержка старта burst
