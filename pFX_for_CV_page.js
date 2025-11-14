@@ -27,7 +27,7 @@
   const CONFIG = {
     // --- количество частиц ---
     densityByArea: true,           // bool: если true, число точек считается от площади окна
-    numParticles: 130,             // шт: абсолютное число точек, если densityByArea=false
+    numParticles: 160,             // шт: абсолютное число точек, если densityByArea=false
     densityK: 0.00009,             // коэф: точки = width*height*densityK, мягко влияет на нагрузку
     pixelRatioClamp: 1,          // коэф: верхняя граница devicePixelRatio, защищает от ретины
 
@@ -66,7 +66,8 @@
     enablePointerSwirl: true,      // bool: тангенциальный вихрь
     pointerSwirlStrength: 2.0,     // коэф: сила вихря
     pointerSwirlFalloffExp: 1.4,   // коэф: затухание по радиусу, 1..3
-     pointerAttractionStrength: 10.5,// коэф: сила притяжения (0.1-2.0)
+    pointerAttractionStrength: 4.5,// коэф: сила притяжения (0.1-2.0)
+    enablePointerAttraction: true, // bool: притяжение к указателю ← ДОБАВЬ ЭТУ СТРОКУ
     enablePointerNoise: true,      // bool: синус нойз-вектор от указателя
     pointerNoiseAmp: 2.0,          // коэф: амплитуда нойза
     pointerNoiseHz: 0.3,           // Гц: частота нойза
