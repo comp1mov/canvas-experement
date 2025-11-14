@@ -52,7 +52,7 @@
 
     // --- базовая динамика поля ---
     friction: 0.98,                // коэф: трение скорости каждый кадр (0.9..0.99)
-    baseReturn: 0.000002,          // коэф: мягкий возврат к базовой позиции bx0,by0
+    baseReturn: 0.000005,          // коэф: мягкий возврат к базовой позиции bx0,by0
     jitterAmp: 0.12,               // коэф: амплитуда микроколебаний
     jitterFreq: 0.1,               // коэф: частота микроколебаний
 
@@ -62,10 +62,11 @@
     scrollKickHalflife: 0.5,       // сек: полураспад этого импульса
 
     // --- влияние указателя в базовом режиме ---
-    pointerInfluenceRadius: 300,   // px: радиус влияния указателя, умножается на dpr
+    pointerInfluenceRadius: 500,   // px: радиус влияния указателя, умножается на dpr
     enablePointerSwirl: true,      // bool: тангенциальный вихрь
     pointerSwirlStrength: 2.0,     // коэф: сила вихря
     pointerSwirlFalloffExp: 1.4,   // коэф: затухание по радиусу, 1..3
+     pointerAttractionStrength: 0.5,// коэф: сила притяжения (0.1-2.0)
     enablePointerNoise: true,      // bool: синус нойз-вектор от указателя
     pointerNoiseAmp: 5.0,          // коэф: амплитуда нойза
     pointerNoiseHz: 0.1,           // Гц: частота нойза
@@ -118,7 +119,7 @@
     pointerCurves: true,           // bool: рисовать кривые от указателя к ближним точкам
     pointerCurveComposite: 'screen',// canvas blend: режим смешивания кривых
     pointerCurveCount: 30,         // шт: сколько ближних точек связывать
-    pointerCurveMaxDist: 160,      // px: макс дистанция отбора точки
+    pointerCurveMaxDist: 260,      // px: макс дистанция отбора точки
     pointerCurveBend: 0,           // 0..1: изгиб кривой
     pointerCurveWidthPx: 3,        // px: толщина кривой
     pointerCurveOpacity: 0.85,     // 0..1: альфа кривой
@@ -469,6 +470,12 @@
             const swirl = CONFIG.pointerSwirlStrength * fall * speed;
             p.vx += (-dym / dlen) * swirl;
             p.vy += ( dxm / dlen) * swirl;
+          }
+
+          if (CONFIG.enablePointerAttraction) {
+            const attract = CONFIG.pointerAttractionStrength * fall;
+            p.vx += (dxm / dlen) * attract;
+            p.vy += (dym / dlen) * attract;
           }
 
           if (CONFIG.enablePointerNoise) {
