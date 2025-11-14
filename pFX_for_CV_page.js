@@ -1,7 +1,27 @@
 <script>
 (() => {
-  if (window.__particleSystemActive) return;
-  window.__particleSystemActive = true;
+  'use strict';
+  
+  // Глобальные переменные для всего скрипта
+  let canvas, ctx, dpr, w, h;
+  let particles = [];
+  let pointer = {};
+  let isActive = false;
+  let stopLoop = false;
+  let cleanup, resize, onPointerMove, triggerTapSequence;
+  
+  // Функция инициализации
+  function initParticles() {
+    // Проверяем: уже запущены или не на той странице
+    if (window.__particleSystemActive) return;
+    if (!window.location.href.includes('grisha-tsvetkov.com/cv')) return;
+    
+    window.__particleSystemActive = true;
+    isActive = true;
+    stopLoop = false;
+    console.log('Particles started');
+
+
 
   // =============== CONFIG ===============
   // комментарии даны к каждой опции: смысл, единицы, диапазоны, что лочит стабильность
@@ -10,7 +30,7 @@
     densityByArea: true,           // bool: если true, число точек считается от площади окна
     numParticles: 130,             // шт: абсолютное число точек, если densityByArea=false
     densityK: 0.00009,             // коэф: точки = width*height*densityK, мягко влияет на нагрузку
-    pixelRatioClamp: 1.5,          // коэф: верхняя граница devicePixelRatio, защищает от ретины
+    pixelRatioClamp: 1,          // коэф: верхняя граница devicePixelRatio, защищает от ретины
 
     // --- геометрия частицы ---
     sizeMin: 0.3,                  // px: минимальный радиус точки
@@ -33,7 +53,7 @@
 
     // --- базовая динамика поля ---
     friction: 0.98,                // коэф: трение скорости каждый кадр (0.9..0.99)
-    baseReturn: 0.000001,          // коэф: мягкий возврат к базовой позиции bx0,by0
+    baseReturn: 0.000002,          // коэф: мягкий возврат к базовой позиции bx0,by0
     jitterAmp: 0.12,               // коэф: амплитуда микроколебаний
     jitterFreq: 0.1,               // коэф: частота микроколебаний
 
@@ -133,41 +153,41 @@
   };
   // ============ конец блока CONFIG ============
 
-  // =============== Canvas ===============
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d', { alpha: true });
-  document.body.appendChild(canvas);
-  Object.assign(canvas.style, {
-    position: 'fixed',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: '9999',
-    pointerEvents: 'none',
-    background: 'transparent',
-    mixBlendMode: CONFIG.canvasBlendMode,
-    opacity: String(CONFIG.canvasOpacity)
-  });
+    // =============== Canvas ===============
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d', { alpha: true });
+    document.body.appendChild(canvas);
+    Object.assign(canvas.style, {
+      position: 'fixed',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      zIndex: '9999',
+      pointerEvents: 'none',
+      background: 'transparent',
+      mixBlendMode: CONFIG.canvasBlendMode,
+      opacity: String(CONFIG.canvasOpacity)
+    });
 
-  let dpr = 1, w = 0, h = 0;
-  function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, CONFIG.pixelRatioClamp);
-    w = Math.floor(window.innerWidth * dpr);
-    h = Math.floor(window.innerHeight * dpr);
-    canvas.width = w;
-    canvas.height = h;
-  }
-  resize();
-  addEventListener('resize', resize, { passive: true });
+    dpr = 1; w = 0; h = 0;
+    resize = function() {
+      dpr = Math.min(window.devicePixelRatio || 1, CONFIG.pixelRatioClamp);
+      w = Math.floor(window.innerWidth * dpr);
+      h = Math.floor(window.innerHeight * dpr);
+      canvas.width = w;
+      canvas.height = h;
+    };
+    resize();
+    addEventListener('resize', resize, { passive: true });
 
-  // =============== Utils ===============
-  const rand = Math.random, TAU = Math.PI * 2;
-  const mix = (a, b, t) => a + (b - a) * t;
-  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-  const nowSec = () => performance.now() / 1000;
-  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
-  const easeInOutQuad = t => (t < 0.5) ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
-  const rgbaArr = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+    // =============== Utils ===============
+    const rand = Math.random, TAU = Math.PI * 2;
+    const mix = (a, b, t) => a + (b - a) * t;
+    const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+    const nowSec = () => performance.now() / 1000;
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+    const easeInOutQuad = t => (t < 0.5) ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+    const rgbaArr = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
   // =============== Scroll root autodetect ===============
   let scrollRoot = null;
@@ -347,6 +367,7 @@
   const baseColor = CONFIG.baseColor;
 
   function step() {
+    if (stopLoop) return;
     const tMs = performance.now();
     const dtMs = tMs - prevT;
     prevT = tMs;
@@ -733,6 +754,45 @@
 
     requestAnimationFrame(step);
   }
+  
   step();
+  }
+  
+  // Функция очистки (СНАРУЖИ initParticles)
+  cleanup = function() {
+    if (!isActive) return;
+    isActive = false;
+    window.__particleSystemActive = false;
+    stopLoop = true;
+    
+    if (canvas && canvas.parentNode) {
+      canvas.parentNode.removeChild(canvas);
+    }
+    
+    console.log('Particles stopped');
+  };
+  
+  // Запуск при загрузке
+  initParticles();
+  
+  // Отслеживание навигации
+  document.addEventListener('click', () => {
+    setTimeout(() => {
+      if (!window.location.href.includes('grisha-tsvetkov.com/cv')) {
+        cleanup();
+      } else if (!window.__particleSystemActive) {
+        initParticles();
+      }
+    }, 100);
+  }, { capture: true });
+  
+  window.addEventListener('popstate', () => {
+    if (!window.location.href.includes('grisha-tsvetkov.com/cv')) {
+      cleanup();
+    } else if (!window.__particleSystemActive) {
+      initParticles();
+    }
+  });
+  
 })();
 </script>
