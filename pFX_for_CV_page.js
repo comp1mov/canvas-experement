@@ -66,11 +66,12 @@
     baseReturn: 0.000005,          // коэф: мягкий возврат к базовой позиции bx0,by0
     jitterAmp: 0.12,               // коэф: амплитуда микроколебаний
     jitterFreq: 0.1,               // коэф: частота микроколебаний
+    constantWindY: -0.1,          // коэф: постоянный ветер вверх (отрицательный = вверх)
 
     // --- импульс от скролла внутри поля (обычно выкл для стабильности) ---
-    enableScrollKick: false,       // bool: включить влияние скролла на vy
-    scrollKickStrength: 0.2,       // коэф: сила импульса от дельты скролла
-    scrollKickHalflife: 0.5,       // сек: полураспад этого импульса
+    enableScrollKick: true,       // bool: включить влияние скролла на vy
+    scrollKickStrength: 0.8,       // коэф: сила импульса от дельты скролла
+    scrollKickHalflife: 1.5,       // сек: полураспад этого импульса
 
     // --- влияние указателя в базовом режиме ---
     pointerInfluenceRadius: 500,   // px: радиус влияния указателя, умножается на dpr
@@ -178,9 +179,14 @@
       pointerEvents: 'none',
       background: 'transparent',
       mixBlendMode: CONFIG.canvasBlendMode,
-      opacity: String(CONFIG.canvasOpacity)
+      opacity: '0', // ← НАЧИНАЕМ С 0
+      transition: 'opacity 1s ease-in-out'
     });
-
+    
+    // Плавно появляемся
+  setTimeout(() => {
+  canvas.style.opacity = String(CONFIG.canvasOpacity);
+  }, 50);
     dpr = 1; w = 0; h = 0;
     resize = function() {
       dpr = Math.min(window.devicePixelRatio || 1, CONFIG.pixelRatioClamp);
@@ -463,6 +469,7 @@
         p.vy += (p.by0 - p.y) * CONFIG.baseReturn;
 
         if (CONFIG.enableScrollKick) p.vy += scrollKickY * 0.001;
+        if (CONFIG.constantWindY) p.vy += CONFIG.constantWindY;
 
         p.pulse += CONFIG.jitterFreq * 0.016;
         p.vx += Math.sin(p.pulse + i) * CONFIG.jitterAmp * 0.02;
@@ -784,11 +791,19 @@
     stopLoop = true;
     
     if (canvas && canvas.parentNode) {
-      canvas.parentNode.removeChild(canvas);
-    }
+     // Плавно исчезаем
+    canvas.style.opacity = '0';
     
-    console.log('Particles stopped');
-  };
+    // Удаляем после анимации
+    setTimeout(() => {
+      if (canvas.parentNode) {
+        canvas.parentNode.removeChild(canvas);
+      }
+    }, 1000); // 1 секунда на fade-out
+  }
+  
+  console.log('Particles stopped');
+};
   
   // Запуск при загрузке
   initParticles();
