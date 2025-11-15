@@ -75,9 +75,9 @@
     jitterFreq: 0.1,
     
     // === НОВОЕ: Постоянный ветер вверх с параллакс-эффектом ===
-    constantWindY: -1.2,              // базовая сила ветра (отрицательное = вверх)
+    constantWindY: -0.2,               // базовая сила ветра (отрицательное = вверх)
     windParallaxMultiplier: 1.5,       // множитель для дальних слоёв
-    windAffectedThreshold: 0.6,        // 40% частиц (с par < 0.4) не двигаются ветром
+    windAffectedThreshold: 0.6,        // 0.6 = нижние 60% частиц не двигаются (диапазон 0.0-1.0)
 
 
 
@@ -99,7 +99,7 @@
     
     // === НОВОЕ: Слабое притяжение вместо полного стягивания ===
     prePullSec: 1.4,           // длительность фазы притяжения (0 = мгновенный burst)
-    pullStrength: 0.9,         // сила притяжения к точке клика (0.2 = 20% расстояния)
+    pullStrength: 0.9,         // сила притяжения к точке клика (0.9 = 90% расстояния)
     pullGrowFactor: 1,
     
     burstLife: 3.8,
@@ -467,13 +467,18 @@
         p.vy += (p.by0 - p.y) * CONFIG.baseReturn;
 
         // === НОВОЕ: Постоянный ветер вверх с параллакс-эффектом ===
-        // Только частицы с par > windAffectedThreshold получают ветер
-        if (CONFIG.constantWindY && p.par > CONFIG.windAffectedThreshold) {
-          // Нормализуем par в диапазоне [threshold, max] -> [0, 1]
-          const parNorm = (p.par - CONFIG.windAffectedThreshold) / (CONFIG.parallaxRangeMax - CONFIG.windAffectedThreshold);
-          // Применяем ветер с нелинейным ростом (квадратичный для плавности)
-          const windStrength = CONFIG.constantWindY * Math.pow(parNorm, 1.5) * CONFIG.windParallaxMultiplier;
-          p.vy += windStrength;
+        // windAffectedThreshold = 0.4 означает что 40% ближних частиц не двигаются
+        if (CONFIG.constantWindY) {
+          // Вычисляем граничное значение par (40% от диапазона)
+          const parThreshold = CONFIG.parallaxRangeMin + (CONFIG.parallaxRangeMax - CONFIG.parallaxRangeMin) * CONFIG.windAffectedThreshold;
+          
+          if (p.par > parThreshold) {
+            // Нормализуем par в диапазоне [parThreshold, max] -> [0, 1]
+            const parNorm = (p.par - parThreshold) / (CONFIG.parallaxRangeMax - parThreshold);
+            // Применяем ветер с нелинейным ростом (степень 1.5 для плавности)
+            const windStrength = CONFIG.constantWindY * Math.pow(parNorm, 1.5) * CONFIG.windParallaxMultiplier;
+            p.vy += windStrength;
+          }
         }
 
         p.pulse += CONFIG.jitterFreq * 0.016;
