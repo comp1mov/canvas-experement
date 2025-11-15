@@ -9,26 +9,29 @@
   let stopLoop = false;
   let cleanup, resize, onPointerMove, triggerTapSequence;
   
-  // Функция инициализации
-  function initParticles() {
-    // Проверяем: уже запущены или не на той странице
-    if (window.__particleSystemActive) return;
-     // Список разрешённых страниц
+  // === СПИСОК РАЗРЕШЁННЫХ СТРАНИЦ ===
   const allowedPages = [
     'grisha-tsvetkov.com/cv',
     'grisha-tsvetkov.com/contacts',
     'grisha-tsvetkov.com/portfolio'
   ];
   
-  const isAllowed = allowedPages.some(page => window.location.href.includes(page));
-  if (!isAllowed) return;
+  // Функция проверки
+  function isOnAllowedPage() {
+    return allowedPages.some(page => window.location.href.includes(page));
+  }
+  
+  // Функция инициализации
+  function initParticles() {
+    // Проверяем: уже запущены или не на той странице
+    if (window.__particleSystemActive) return;
+    if (!isOnAllowedPage()) return;
     
     window.__particleSystemActive = true;
     isActive = true;
     stopLoop = false;
-    console.log('Particles started');
-
-
+    console.log('Particles started on:', window.location.href);
+    
 
   // =============== CONFIG ===============
   // комментарии даны к каждой опции: смысл, единицы, диапазоны, что лочит стабильность
@@ -74,17 +77,17 @@
     enablePointerSwirl: true,      // bool: тангенциальный вихрь
     pointerSwirlStrength: 1.0,     // коэф: сила вихря
     pointerSwirlFalloffExp: 3.0,   // коэф: затухание по радиусу, 1..3
-    pointerAttractionStrength: 0.05,// коэф: сила притяжения (0.1-2.0)
+    pointerAttractionStrength: 0.025,// коэф: сила притяжения (0.1-2.0)
     enablePointerAttraction: true, // bool: притяжение к указателю 
     enablePointerNoise: true,      // bool: синус нойз-вектор от указателя
-    pointerNoiseAmp: 2.0,          // коэф: амплитуда нойза
-    pointerNoiseHz: 0.5,           // Гц: частота нойза
+    pointerNoiseAmp: 4.0,          // коэф: амплитуда нойза
+    pointerNoiseHz: 0.2,           // Гц: частота нойза
     pointerNoiseSmooth: 0.9,      // 0..0.999: сглаживание нойз-вектора
 
     // --- клик: pull -> burst ---
     clickAffectsAll: false,        // bool: true трогать все точки, false только в радиусе
     clickRadius: 150,              // px: радиус набора точек для клика, умножается на dpr
-    prePullSec: 0.6,               // сек: длительность стягивания к центру
+    prePullSec: 0.0,               // сек: длительность стягивания к центру
     pullGrowFactor: 0.5,           // коэф: масштаб точки в pull (1.0 без изменений)
     burstLife: 3.8,                // сек: длительность разлёта
     explodeTimeJitter: 0.35,       // доля: разброс длительности burst ±
@@ -98,7 +101,7 @@
     explodeNoiseSmooth: 0.99,      // 0..0.999: сглаживание нойз-скорости
     explodeAlphaBoost: 1.0,        // 0..1+: альфа в burst
     explodeStartJitterFramesMin: 1,// кадры: минимальная микрозадержка старта burst
-    explodeStartJitterFramesMax: 2,// кадры: максимальная микрозадержка старта burst
+    explodeStartJitterFramesMax: 10,// кадры: максимальная микрозадержка старта burst
 
     // --- линии между точками ---
     linkLines: true,               // bool: рисовать соединения
@@ -790,39 +793,40 @@
   // Запуск при загрузке
   initParticles();
   
-// Отслеживание навигации
-document.addEventListener('click', () => {
-  setTimeout(() => {
-    const allowedPages = [
-      'grisha-tsvetkov.com/cv',
-      'grisha-tsvetkov.com/about',
-      'grisha-tsvetkov.com/projects'
-    ];
-    
-    const isAllowed = allowedPages.some(page => window.location.href.includes(page));
-    
-    if (!isAllowed) {
-      cleanup();
-    } else if (!window.__particleSystemActive) {
-      initParticles();
+  // Отслеживание навигации с ЗАДЕРЖКОЙ
+  document.addEventListener('click', () => {
+    setTimeout(() => {
+      if (!isOnAllowedPage()) {
+        cleanup();
+      } else if (!window.__particleSystemActive) {
+        initParticles();
+      }
+    }, 300); // ← УВЕЛИЧИЛ ЗАДЕРЖКУ до 300ms
+  }, { capture: true });
+  
+  window.addEventListener('popstate', () => {
+    setTimeout(() => {
+      if (!isOnAllowedPage()) {
+        cleanup();
+      } else if (!window.__particleSystemActive) {
+        initParticles();
+      }
+    }, 300);
+  });
+  
+  // === ДОПОЛНИТЕЛЬНО: следим за изменением URL ===
+  let lastUrl = window.location.href;
+  setInterval(() => {
+    if (window.location.href !== lastUrl) {
+      lastUrl = window.location.href;
+      setTimeout(() => {
+        if (!isOnAllowedPage()) {
+          cleanup();
+        } else if (!window.__particleSystemActive) {
+          initParticles();
+        }
+      }, 100);
     }
-  }, 100);
-}, { capture: true });
-
-window.addEventListener('popstate', () => {
-  const allowedPages = [
-    'grisha-tsvetkov.com/cv',
-    'grisha-tsvetkov.com/contacts',
-    'grisha-tsvetkov.com/portfolio'
-  ];
-  
-  const isAllowed = allowedPages.some(page => window.location.href.includes(page));
-  
-  if (!isAllowed) {
-    cleanup();
-  } else if (!window.__particleSystemActive) {
-    initParticles();
-  }
-});
+  }, 500);
   
 })();
