@@ -74,15 +74,12 @@
     jitterAmp: 0.12,
     jitterFreq: 0.1,
     
-    // === НОВОЕ: Постоянный ветер вверх с параллаксом ===
-    constantWindY: -0.005,          // постоянный ветер вверх (отрицательное значение = вверх)
-    windParallaxMultiplier: 2,   // влияние глубины частицы на ветер (дальние = быстрее)
+    // === НОВОЕ: Постоянный ветер вверх с параллакс-эффектом ===
+    constantWindY: -0.02,              // базовая сила ветра (отрицательное = вверх)
+    windParallaxMultiplier: 1.5,       // множитель для дальних слоёв
+    windAffectedThreshold: 0.6,        // 40% частиц (с par < 0.4) не двигаются ветром
 
-    // --- импульс от скролла ---
-    // На мобильных отключаем автоматически
-    enableScrollKick: !isMobileDevice(),
-    scrollKickStrength: 0.3,
-    scrollKickHalflife: 0.6,
+
 
     // --- влияние указателя ---
     pointerInfluenceRadius: 500,
@@ -101,8 +98,8 @@
     clickRadius: 150,
     
     // === НОВОЕ: Слабое притяжение вместо полного стягивания ===
-    prePullSec: 0.5,           // длительность фазы притяжения (0 = мгновенный burst)
-    pullStrength: 0.5,         // сила притяжения к точке клика (0.2 = 20% расстояния)
+    prePullSec: 0.1,           // длительность фазы притяжения (0 = мгновенный burst)
+    pullStrength: 0.0,         // сила притяжения к точке клика (0.2 = 20% расстояния)
     pullGrowFactor: 0.5,
     
     burstLife: 3.8,
@@ -134,7 +131,7 @@
     lineWidthPx: 0.4,
     lineOpacity: 0.6,
     lineColorA: [255,255,255],
-    lineColorB: [207,255,4],
+    lineColorB: [200,200,200],
     lineGradientMode: 'autoCenter',
     lineGradientCenter: 'screen',
     lineGradientInvert: true,
@@ -353,27 +350,38 @@
     }
   }
 
+  // === DOUBLE TAP DETECTION ДЛЯ МОБИЛЬНЫХ ===
+  let lastTapTime = 0;
+  const DOUBLE_TAP_DELAY = 300; // мс между тапами
+  const isMobile = isMobileDevice();
+
   addEventListener('pointermove', onPointerMove, { passive: true });
+  
   addEventListener('pointerdown', e => {
     const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
-    triggerTapSequence(cx, cy);
+    
+    if (isMobile) {
+      // На мобильных - только double tap
+      const now = Date.now();
+      if (now - lastTapTime < DOUBLE_TAP_DELAY) {
+        triggerTapSequence(cx, cy);
+        lastTapTime = 0; // сбрасываем после двойного тапа
+      } else {
+        lastTapTime = now;
+      }
+    } else {
+      // На десктопе - обычный клик
+      triggerTapSequence(cx, cy);
+    }
   }, { passive: true });
+  
   addEventListener('click', e => {
+    if (isMobile) return; // на мобильных игнорируем click, используем только pointerdown
     const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
     triggerTapSequence(cx, cy);
   }, { passive: true });
 
-  let lastScrollY_forKick = getScrollXY()[1];
-  let scrollKickY = 0;
-  addEventListener('scroll', () => {
-    if (!CONFIG.enableScrollKick) return;
-    const [, y] = getScrollXY();
-    const dy = y - lastScrollY_forKick;
-    lastScrollY_forKick = y;
-    scrollKickY += -dy * CONFIG.scrollKickStrength * dpr;
-  }, { passive: true, capture: true });
-
-  // =============== Parallax spring state ===============
+// =============== Parallax spring state ===============
   let [prevScrollX, prevScrollY] = getScrollXY();
   let parOffX = 0, parOffY = 0;
   let parVelX = 0, parVelY = 0;
@@ -396,9 +404,6 @@
     }
     const t = nowSec();
     const dt = Math.max(0.001, Math.min(0.05, dtMs / 1000));
-
-    const kKick = Math.pow(0.5, dt / CONFIG.scrollKickHalflife);
-    scrollKickY *= kKick;
 
     const [curSX, curSY] = getScrollXY();
     let vScrollX = (curSX - prevScrollX) / dt;
@@ -462,8 +467,12 @@
         p.vy += (p.by0 - p.y) * CONFIG.baseReturn;
 
         // === НОВОЕ: Постоянный ветер вверх с параллакс-эффектом ===
-        if (CONFIG.constantWindY) {
-          const windStrength = CONFIG.constantWindY * (1 + p.par * CONFIG.windParallaxMultiplier);
+        // Только частицы с par > windAffectedThreshold получают ветер
+        if (CONFIG.constantWindY && p.par > CONFIG.windAffectedThreshold) {
+          // Нормализуем par в диапазоне [threshold, max] -> [0, 1]
+          const parNorm = (p.par - CONFIG.windAffectedThreshold) / (CONFIG.parallaxRangeMax - CONFIG.windAffectedThreshold);
+          // Применяем ветер с нелинейным ростом (квадратичный для плавности)
+          const windStrength = CONFIG.constantWindY * Math.pow(parNorm, 1.5) * CONFIG.windParallaxMultiplier;
           p.vy += windStrength;
         }
 
