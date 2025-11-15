@@ -72,12 +72,12 @@
     // --- влияние указателя в базовом режиме ---
     pointerInfluenceRadius: 500,   // px: радиус влияния указателя, умножается на dpr
     enablePointerSwirl: true,      // bool: тангенциальный вихрь
-    pointerSwirlStrength: 1.0,     // коэф: сила вихря
+    pointerSwirlStrength: 1.5,     // коэф: сила вихря
     pointerSwirlFalloffExp: 10.4,   // коэф: затухание по радиусу, 1..3
-    pointerAttractionStrength: 0.1,// коэф: сила притяжения (0.1-2.0)
+    pointerAttractionStrength: 0.05,// коэф: сила притяжения (0.1-2.0)
     enablePointerAttraction: true, // bool: притяжение к указателю 
     enablePointerNoise: true,      // bool: синус нойз-вектор от указателя
-    pointerNoiseAmp: 2.0,          // коэф: амплитуда нойза
+    pointerNoiseAmp: 3.0,          // коэф: амплитуда нойза
     pointerNoiseHz: 0.1,           // Гц: частота нойза
     pointerNoiseSmooth: 0.95,      // 0..0.999: сглаживание нойз-вектора
 
