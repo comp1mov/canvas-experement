@@ -60,16 +60,18 @@
     fadeOutSec: 3.0,               // сек: время исчезновения
     globalOpacity: 0.95,           // 0..1: общий множитель альфы
     minAlpha: 1,                   // 1..255: нижний порог альфы для difference
+    
 
     // --- базовая динамика поля ---
     friction: 0.98,                // коэф: трение скорости каждый кадр (0.9..0.99)
     baseReturn: 0.000005,          // коэф: мягкий возврат к базовой позиции bx0,by0
     jitterAmp: 0.12,               // коэф: амплитуда микроколебаний
     jitterFreq: 0.1,               // коэф: частота микроколебаний
-    constantWindY: -0.01,          // коэф: постоянный ветер вверх (отрицательный = вверх)
+    constantWindY: -0.05,          // коэф: постоянный ветер вверх (отрицательный = вверх)
+    windParallaxMultiplier: 1.0,   // коэф: насколько сильно параллакс влияет на ветер
 
     // --- импульс от скролла внутри поля (обычно выкл для стабильности) ---
-    enableScrollKick: true,       // bool: включить влияние скролла на vy
+    enableScrollKick: false,       // bool: включить влияние скролла на vy
     scrollKickStrength: 0.3,       // коэф: сила импульса от дельты скролла
     scrollKickHalflife: 0.6,       // сек: полураспад этого импульса
 
@@ -468,8 +470,11 @@
         p.vx += (p.bx0 - p.x) * CONFIG.baseReturn;
         p.vy += (p.by0 - p.y) * CONFIG.baseReturn;
 
-        if (CONFIG.enableScrollKick) p.vy += scrollKickY * 0.001;
-        if (CONFIG.constantWindY) p.vy += CONFIG.constantWindY;
+        if (CONFIG.constantWindY) {
+        // Ветер пропорционален глубине частицы
+        const windStrength = CONFIG.constantWindY * (1 + p.par * CONFIG.windParallaxMultiplier);
+        p.vy += windStrength;
+        }
 
         p.pulse += CONFIG.jitterFreq * 0.016;
         p.vx += Math.sin(p.pulse + i) * CONFIG.jitterAmp * 0.02;
