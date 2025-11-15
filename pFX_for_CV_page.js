@@ -75,9 +75,9 @@
     jitterFreq: 0.1,
     
     // === НОВОЕ: Постоянный ветер вверх с параллакс-эффектом ===
-    constantWindY: -0.005,               // базовая сила ветра (отрицательное = вверх)
-    windParallaxMultiplier: 1.5,       // множитель для дальних слоёв
-    windAffectedThreshold: 0.3,        // 0.6 = нижние 60% частиц не двигаются (диапазон 0.0-1.0)
+    constantWindY: -0.002,               // базовая сила ветра (отрицательное = вверх)
+    windParallaxMultiplier: 1.2,       // множитель для дальних слоёв
+    windAffectedThreshold: 0.6,        // 0.6 = нижние 60% частиц не двигаются (диапазон 0.0-1.0)
 
 
 
@@ -87,7 +87,7 @@
     pointerSwirlStrength: 1.0,
     pointerSwirlFalloffExp: 3.0,
     enablePointerAttraction: true,
-    pointerAttractionStrength: 0.055,
+    pointerAttractionStrength: 0.1,
     enablePointerNoise: true,
     pointerNoiseAmp: 4.0,
     pointerNoiseHz: 0.2,
