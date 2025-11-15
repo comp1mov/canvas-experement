@@ -45,7 +45,7 @@
   const CONFIG = {
     // --- количество частиц ---
     densityByArea: true,
-    numParticles: 160,
+    numParticles: 190,
     densityK: 0.00009,
     pixelRatioClamp: 1,
 
@@ -75,7 +75,7 @@
     jitterFreq: 0.1,
     
     // === НОВОЕ: Постоянный ветер вверх с параллакс-эффектом ===
-    constantWindY: -0.01,               // базовая сила ветра (отрицательное = вверх)
+    constantWindY: -0.005,               // базовая сила ветра (отрицательное = вверх)
     windParallaxMultiplier: 1.5,       // множитель для дальних слоёв
     windAffectedThreshold: 0.3,        // 0.6 = нижние 60% частиц не двигаются (диапазон 0.0-1.0)
 
@@ -87,7 +87,7 @@
     pointerSwirlStrength: 1.0,
     pointerSwirlFalloffExp: 3.0,
     enablePointerAttraction: true,
-    pointerAttractionStrength: 0.025,
+    pointerAttractionStrength: 0.055,
     enablePointerNoise: true,
     pointerNoiseAmp: 4.0,
     pointerNoiseHz: 0.2,
