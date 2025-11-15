@@ -13,7 +13,15 @@
   function initParticles() {
     // Проверяем: уже запущены или не на той странице
     if (window.__particleSystemActive) return;
-    if (!window.location.href.includes('grisha-tsvetkov.com/cv')) return;
+     // Список разрешённых страниц
+  const allowedPages = [
+    'grisha-tsvetkov.com/cv',
+    'grisha-tsvetkov.com/portfolio',
+    'grisha-tsvetkov.com/contacts'
+  ];
+  
+  const isAllowed = allowedPages.some(page => window.location.href.includes(page));
+  if (!isAllowed) return;
     
     window.__particleSystemActive = true;
     isActive = true;
@@ -64,10 +72,10 @@
     // --- влияние указателя в базовом режиме ---
     pointerInfluenceRadius: 500,   // px: радиус влияния указателя, умножается на dpr
     enablePointerSwirl: true,      // bool: тангенциальный вихрь
-    pointerSwirlStrength: 1.5,     // коэф: сила вихря
-    pointerSwirlFalloffExp: 2.4,   // коэф: затухание по радиусу, 1..3
+    pointerSwirlStrength: 0.5,     // коэф: сила вихря
+    pointerSwirlFalloffExp: 3.4,   // коэф: затухание по радиусу, 1..3
     pointerAttractionStrength: 0.1,// коэф: сила притяжения (0.1-2.0)
-    enablePointerAttraction: true, // bool: притяжение к указателю ← ДОБАВЬ ЭТУ СТРОКУ
+    enablePointerAttraction: true, // bool: притяжение к указателю 
     enablePointerNoise: true,      // bool: синус нойз-вектор от указателя
     pointerNoiseAmp: 0.5,          // коэф: амплитуда нойза
     pointerNoiseHz: 0.1,           // Гц: частота нойза
@@ -782,23 +790,39 @@
   // Запуск при загрузке
   initParticles();
   
-  // Отслеживание навигации
-  document.addEventListener('click', () => {
-    setTimeout(() => {
-      if (!window.location.href.includes('grisha-tsvetkov.com/cv')) {
-        cleanup();
-      } else if (!window.__particleSystemActive) {
-        initParticles();
-      }
-    }, 100);
-  }, { capture: true });
-  
-  window.addEventListener('popstate', () => {
-    if (!window.location.href.includes('grisha-tsvetkov.com/cv')) {
+// Отслеживание навигации
+document.addEventListener('click', () => {
+  setTimeout(() => {
+    const allowedPages = [
+      'grisha-tsvetkov.com/cv',
+      'grisha-tsvetkov.com/about',
+      'grisha-tsvetkov.com/projects'
+    ];
+    
+    const isAllowed = allowedPages.some(page => window.location.href.includes(page));
+    
+    if (!isAllowed) {
       cleanup();
     } else if (!window.__particleSystemActive) {
       initParticles();
     }
-  });
+  }, 100);
+}, { capture: true });
+
+window.addEventListener('popstate', () => {
+  const allowedPages = [
+    'grisha-tsvetkov.com/cv',
+    'grisha-tsvetkov.com/contacts',
+    'grisha-tsvetkov.com/portfolio'
+  ];
+  
+  const isAllowed = allowedPages.some(page => window.location.href.includes(page));
+  
+  if (!isAllowed) {
+    cleanup();
+  } else if (!window.__particleSystemActive) {
+    initParticles();
+  }
+});
   
 })();
