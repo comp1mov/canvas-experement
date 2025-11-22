@@ -13,7 +13,7 @@
         let currentIndex = 0;
         let autoplayTimer = null;
 
-        // Простая настройка - только текущая карточка видна
+        // Настройка карточек
         cards.forEach((card, i) => {
             card.classList.remove('active');
             card.style.transition = 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
@@ -60,7 +60,6 @@
                     card.style.opacity = '1';
                     card.style.pointerEvents = 'auto';
                     card.style.zIndex = '1';
-                    // Сброс трансформации при переключении
                     card.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1)';
                 } else {
                     card.style.opacity = '0';
@@ -88,13 +87,13 @@
 
         gallery.carouselNav = { goToPrev, goToNext };
 
-        // ===== AUTOPLAY FUNCTIONALITY =====
+        // Autoplay
         const startAutoplay = () => {
-            if (cards.length <= 1) return; // Не запускаем для одной карточки
-            
+            if (cards.length <= 1) return;
+            if (autoplayTimer) clearInterval(autoplayTimer);
             autoplayTimer = setInterval(() => {
                 goToNext();
-            }, 30000); // 30 секунд
+            }, 30000);
         };
 
         const stopAutoplay = () => {
@@ -109,25 +108,21 @@
             startAutoplay();
         };
 
-        // Останавливаем autoplay при взаимодействии и возобновляем после паузы
         let interactionTimeout = null;
-        
         const pauseAutoplay = () => {
             stopAutoplay();
             if (interactionTimeout) clearTimeout(interactionTimeout);
-            // Возобновляем через 5 секунд после последнего взаимодействия
             interactionTimeout = setTimeout(() => {
                 startAutoplay();
             }, 5000);
         };
 
-        // Запускаем autoplay
         startAutoplay();
-        // ===== END AUTOPLAY FUNCTIONALITY =====
 
-        // ===== FISHEYE EFFECT ON HOVER (Desktop) =====
+        // Fisheye на desktop с мертвой зоной
         if (window.innerWidth > 768) {
             let isMouseInside = false;
+            let animationFrameId = null;
 
             gallery.addEventListener('mouseenter', () => {
                 isMouseInside = true;
@@ -137,63 +132,85 @@
             gallery.addEventListener('mousemove', (e) => {
                 if (!isMouseInside) return;
                 
-                const activeCard = cards[currentIndex];
-                if (!activeCard) return;
+                // Отменяем предыдущий frame для оптимизации
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
 
-                const rect = gallery.getBoundingClientRect();
-                const x = (e.clientX - rect.left) / rect.width;
-                const y = (e.clientY - rect.top) / rect.height;
+                animationFrameId = requestAnimationFrame(() => {
+                    const activeCard = cards[currentIndex];
+                    if (!activeCard) return;
 
-                const centerX = 0.5;
-                const centerY = 0.5;
-                const distX = (x - centerX) * 2;
-                const distY = (y - centerY) * 2;
+                    const rect = gallery.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width; // 0-1
+                    const y = (e.clientY - rect.top) / rect.height; // 0-1
 
-                const perspectiveX = distX * 8;
-                const perspectiveY = distY * -8;
-                const scale = 1 + (Math.abs(distX) + Math.abs(distY)) * 0.02;
+                    const centerX = 0.5;
+                    const centerY = 0.5;
+                    
+                    // Расстояние от центра (0 в центре, 1 на краях)
+                    const distX = (x - centerX) * 2; // -1 to 1
+                    const distY = (y - centerY) * 2; // -1 to 1
+                    const distanceFromCenter = Math.sqrt(distX * distX + distY * distY); // 0-1.4
 
-                // Быстрый отклик при движении мыши
-                activeCard.style.transition = 'transform 0.15s ease-out';
-                activeCard.style.transform = `
-                    perspective(1000px) 
-                    rotateY(${perspectiveX}deg) 
-                    rotateX(${perspectiveY}deg) 
-                    scale(${scale})
-                `;
+                    // МЕРТВАЯ ЗОНА: если мышка близко к центру (30% области), эффект = 0
+                    const deadZone = 0.3; // 30% радиус мертвой зоны
+                    
+                    let effectStrength = 0;
+                    if (distanceFromCenter > deadZone) {
+                        // Постепенное нарастание эффекта после мертвой зоны
+                        // Нормализуем от 0 (на границе мертвой зоны) до 1 (на краю)
+                        effectStrength = (distanceFromCenter - deadZone) / (1.4 - deadZone);
+                        // Применяем ease-out для более плавного нарастания
+                        effectStrength = Math.pow(effectStrength, 1.5);
+                    }
+
+                    // Применяем эффект с учетом силы
+                    const maxRotation = 12; // максимальный угол поворота
+                    const perspectiveX = distX * maxRotation * effectStrength;
+                    const perspectiveY = distY * -maxRotation * effectStrength;
+                    const scale = 1 + (effectStrength * 0.03);
+
+                    activeCard.style.transition = 'transform 0.1s ease-out';
+                    activeCard.style.transform = `
+                        perspective(1000px) 
+                        rotateY(${perspectiveX}deg) 
+                        rotateX(${perspectiveY}deg) 
+                        scale(${scale})
+                    `;
+                });
             });
 
             gallery.addEventListener('mouseleave', () => {
                 isMouseInside = false;
+                
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                
                 const activeCard = cards[currentIndex];
                 if (activeCard) {
-                    // ПЛАВНЫЙ сброс при выходе мыши
-                    activeCard.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                    // ПЛАВНЫЙ СБРОС при выходе мыши
+                    activeCard.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
                     activeCard.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1)';
                 }
                 pauseAutoplay();
             });
         }
-        // ===== END FISHEYE EFFECT =====
 
-        // ===== MOBILE SWIPE FEEDBACK EFFECT =====
+        // Mobile swipe feedback
         let swipeFeedbackTimeout = null;
-        
         const triggerSwipeFeedback = (direction) => {
             const activeCard = cards[currentIndex];
             if (!activeCard) return;
 
-            // Очищаем предыдущий таймаут
-            if (swipeFeedbackTimeout) {
-                clearTimeout(swipeFeedbackTimeout);
-            }
+            if (swipeFeedbackTimeout) clearTimeout(swipeFeedbackTimeout);
 
-            // Легкий наклон в направлении свайпа
             const tiltAngle = direction === 'left' ? -6 : 6;
             activeCard.style.transition = 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
             activeCard.style.transform = `perspective(1000px) rotateY(${tiltAngle}deg) rotateX(0deg) scale(1.02)`;
 
-            // Плавный возврат к нулевой позиции
             swipeFeedbackTimeout = setTimeout(() => {
                 activeCard.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
                 activeCard.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1)';
@@ -201,9 +218,8 @@
         };
 
         gallery.swipeFeedback = triggerSwipeFeedback;
-        // ===== END MOBILE SWIPE FEEDBACK =====
 
-        // ===== LIGHTBOX FUNCTIONALITY =====
+        // Lightbox
         const createLightbox = () => {
             const lightbox = document.createElement('div');
             lightbox.className = 'carousel-lightbox';
@@ -235,9 +251,10 @@
         };
 
         let lightbox = null;
+        let currentLightboxIndex = 0;
 
         const openLightbox = (index) => {
-            stopAutoplay(); // Останавливаем autoplay в lightbox
+            stopAutoplay();
             
             if (!lightbox) {
                 lightbox = createLightbox();
@@ -255,16 +272,15 @@
                     showLightboxImage((currentLightboxIndex + 1) % cards.length);
                 });
                 
-                const handleKeydown = (e) => {
+                document.addEventListener('keydown', (e) => {
                     if (!lightbox.classList.contains('active')) return;
                     if (e.key === 'Escape') closeLightbox();
                     if (e.key === 'ArrowLeft') showLightboxImage((currentLightboxIndex - 1 + cards.length) % cards.length);
                     if (e.key === 'ArrowRight') showLightboxImage((currentLightboxIndex + 1) % cards.length);
-                };
-                document.addEventListener('keydown', handleKeydown);
+                });
                 
-                let lightboxStartX = 0;
                 const lightboxContent = lightbox.querySelector('.lightbox-content');
+                let lightboxStartX = 0;
                 
                 lightboxContent.addEventListener('touchstart', (e) => {
                     if (e.target.closest('.lightbox-nav') || e.target.closest('.lightbox-close')) return;
@@ -292,11 +308,9 @@
             if (lightbox) {
                 lightbox.classList.remove('active');
                 document.body.style.overflow = '';
-                resetAutoplay(); // Возобновляем autoplay после закрытия
+                resetAutoplay();
             }
         };
-
-        let currentLightboxIndex = 0;
 
         const showLightboxImage = (index) => {
             currentLightboxIndex = index;
@@ -317,7 +331,6 @@
                 });
             }
         };
-        // ===== END LIGHTBOX FUNCTIONALITY =====
 
         leftBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -333,13 +346,11 @@
             pauseAutoplay();
         });
 
-        // ===== CLICK ON HALVES (Desktop only) =====
-        let clickStartX = 0;
-        let clickStartTime = 0;
-        const CLICK_THRESHOLD = 10;
-        const TIME_THRESHOLD = 300;
-
+        // Click на половинки (desktop)
         if (window.innerWidth > 768) {
+            let clickStartX = 0;
+            let clickStartTime = 0;
+
             gallery.addEventListener('mousedown', (e) => {
                 if (e.target.closest('.carousel-button') || e.target.closest('.carousel-indicators')) return;
                 clickStartX = e.clientX;
@@ -354,7 +365,7 @@
                 const movedDistance = Math.abs(clickEndX - clickStartX);
                 const timeDiff = clickEndTime - clickStartTime;
                 
-                if (movedDistance < CLICK_THRESHOLD && timeDiff < TIME_THRESHOLD) {
+                if (movedDistance < 10 && timeDiff < 300) {
                     const rect = gallery.getBoundingClientRect();
                     const clickX = e.clientX - rect.left;
                     const halfWidth = rect.width / 2;
@@ -373,9 +384,8 @@
                 }
             });
         }
-        // ===== END CLICK ON HALVES =====
 
-        // Long press for lightbox on mobile
+        // Long press для lightbox (mobile)
         let longPressTimer = null;
         gallery.addEventListener('touchstart', (e) => {
             if (e.target.closest('.carousel-button') || e.target.closest('.carousel-indicators')) return;
@@ -398,7 +408,6 @@
             }
         });
 
-        // Prevent browser drag behavior on images
         cards.forEach(card => {
             card.setAttribute('draggable', 'false');
         });
@@ -422,14 +431,12 @@
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
-
     initializeAllGalleries();
 
-    // ===== CLOSEST GALLERY SWIPE FOR MOBILE (Вариант B) =====
+    // Mobile swipe (Вариант B - ближайшая галерея)
     if (window.innerWidth <= 768) {
         let swipeStartX = 0;
         let swipeStartY = 0;
-        let swipeStartTime = 0;
         let activeGallery = null;
         let isSwipingCarousel = false;
 
@@ -478,7 +485,6 @@
             if (activeGallery) {
                 swipeStartX = touchX;
                 swipeStartY = touchY;
-                swipeStartTime = Date.now();
                 isSwipingCarousel = false;
             }
         }, { passive: true });
@@ -505,16 +511,10 @@
             }
             
             const swipeEndX = e.changedTouches[0].clientX;
-            const swipeEndTime = Date.now();
             const diffX = swipeEndX - swipeStartX;
-            const timeDiff = swipeEndTime - swipeStartTime;
             
-            const minSwipeDistance = 30;
-            const maxSwipeTime = 500;
-            
-            if (Math.abs(diffX) > minSwipeDistance && timeDiff < maxSwipeTime) {
+            if (Math.abs(diffX) > 30) {
                 if (activeGallery.carouselNav) {
-                    // Определяем направление для feedback эффекта
                     const direction = diffX > 0 ? 'right' : 'left';
                     
                     if (diffX > 0) {
@@ -523,7 +523,6 @@
                         activeGallery.carouselNav.goToNext();
                     }
                     
-                    // Триггерим feedback эффект ПОСЛЕ переключения
                     if (activeGallery.swipeFeedback) {
                         setTimeout(() => {
                             activeGallery.swipeFeedback(direction);
@@ -536,5 +535,4 @@
             isSwipingCarousel = false;
         });
     }
-    // ===== END CLOSEST GALLERY SWIPE =====
 })();
