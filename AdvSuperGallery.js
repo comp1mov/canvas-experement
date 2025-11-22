@@ -12,61 +12,20 @@
 
         let currentIndex = 0;
 
-        // ===== PEEK EFFECT SETUP =====
-        const usePeekEffect = true; // можно сделать опциональным
-
-        // Настройка начального состояния карточек
+        // Простая настройка без peek - только текущая карточка видна
         cards.forEach((card, i) => {
             card.classList.remove('active');
+            card.style.transition = 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
             
-            // Сохраняем оригинальные стили от Super.so
-            // position: absolute, top: 0, left: 0 уже установлены их CSS
-            
-            // Добавляем наши стили для peek эффекта
-            card.style.transition = 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease';
-            card.style.width = '100%';
-            card.style.pointerEvents = 'none';
-            
-            if (usePeekEffect) {
-                if (i === 0) {
-                    // Текущий (активный) кадр
-                    card.classList.add('active');
-                    card.style.opacity = '1';
-                    card.style.zIndex = '2';
-                    card.style.transform = 'translateX(0%) scale(1)';
-                    card.style.filter = 'blur(0px)';
-                    card.style.pointerEvents = 'auto';
-                } else if (i === 1) {
-                    // Следующий кадр (справа)
-                    card.style.opacity = '0.3';
-                    card.style.zIndex = '1';
-                    card.style.transform = 'translateX(70%) scale(0.9)';
-                    card.style.filter = 'blur(1.5px)';
-                } else if (i === cards.length - 1) {
-                    // Предыдущий кадр (слева)
-                    card.style.opacity = '0.3';
-                    card.style.zIndex = '1';
-                    card.style.transform = 'translateX(-70%) scale(0.9)';
-                    card.style.filter = 'blur(1.5px)';
-                } else {
-                    // Все остальные скрыты
-                    card.style.opacity = '0';
-                    card.style.zIndex = '0';
-                    card.style.transform = 'translateX(0%) scale(0.8)';
-                    card.style.filter = 'blur(5px)';
-                }
+            if (i === 0) {
+                card.classList.add('active');
+                card.style.opacity = '1';
+                card.style.pointerEvents = 'auto';
+                card.style.zIndex = '1';
             } else {
-                // Обычный режим без peek
-                if (i === 0) {
-                    card.classList.add('active');
-                    card.style.opacity = '1';
-                    card.style.pointerEvents = 'auto';
-                    card.style.zIndex = '1';
-                } else {
-                    card.style.opacity = '0';
-                    card.style.pointerEvents = 'none';
-                    card.style.zIndex = '0';
-                }
+                card.style.opacity = '0';
+                card.style.pointerEvents = 'none';
+                card.style.zIndex = '0';
             }
         });
 
@@ -91,62 +50,20 @@
         gallery.appendChild(indicators);
 
         const updateCarousel = () => {
-            const prevIndex = (currentIndex - 1 + cards.length) % cards.length;
-            const nextIndex = (currentIndex + 1) % cards.length;
-
-            if (usePeekEffect) {
-                // Peek режим
-                cards.forEach((card, i) => {
-                    card.classList.remove('active');
-                    
-                    if (i === currentIndex) {
-                        // Текущий кадр
-                        card.classList.add('active');
-                        card.style.opacity = '1';
-                        card.style.zIndex = '2';
-                        card.style.transform = 'translateX(0%) scale(1)';
-                        card.style.filter = 'blur(0px)';
-                        card.style.pointerEvents = 'auto';
-                    } else if (i === prevIndex) {
-                        // Предыдущий кадр (слева)
-                        card.style.opacity = '0.3';
-                        card.style.zIndex = '1';
-                        card.style.transform = 'translateX(-70%) scale(0.9)';
-                        card.style.filter = 'blur(1.5px)';
-                        card.style.pointerEvents = 'none';
-                    } else if (i === nextIndex) {
-                        // Следующий кадр (справа)
-                        card.style.opacity = '0.3';
-                        card.style.zIndex = '1';
-                        card.style.transform = 'translateX(70%) scale(0.9)';
-                        card.style.filter = 'blur(1.5px)';
-                        card.style.pointerEvents = 'none';
-                    } else {
-                        // Все остальные скрыты
-                        card.style.opacity = '0';
-                        card.style.zIndex = '0';
-                        card.style.transform = 'translateX(0%) scale(0.8)';
-                        card.style.filter = 'blur(5px)';
-                        card.style.pointerEvents = 'none';
-                    }
-                });
-            } else {
-                // Обычный режим
-                cards.forEach((card, i) => {
-                    const isActive = i === currentIndex;
-                    card.classList.toggle('active', isActive);
-                    
-                    if (isActive) {
-                        card.style.opacity = '1';
-                        card.style.pointerEvents = 'auto';
-                        card.style.zIndex = '1';
-                    } else {
-                        card.style.opacity = '0';
-                        card.style.pointerEvents = 'none';
-                        card.style.zIndex = '0';
-                    }
-                });
-            }
+            cards.forEach((card, i) => {
+                const isActive = i === currentIndex;
+                card.classList.toggle('active', isActive);
+                
+                if (isActive) {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                    card.style.zIndex = '1';
+                } else {
+                    card.style.opacity = '0';
+                    card.style.pointerEvents = 'none';
+                    card.style.zIndex = '0';
+                }
+            });
 
             indicators.querySelectorAll('span').forEach((dot, i) => {
                 dot.classList.toggle('active', i === currentIndex);
@@ -164,6 +81,45 @@
         };
 
         gallery.carouselNav = { goToPrev, goToNext };
+
+        // ===== FISHEYE EFFECT ON HOVER =====
+        // Добавляем fisheye искажение при наведении мыши
+        if (window.innerWidth > 768) {
+            gallery.addEventListener('mousemove', (e) => {
+                const activeCard = cards[currentIndex];
+                if (!activeCard) return;
+
+                const rect = gallery.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width; // 0-1
+                const y = (e.clientY - rect.top) / rect.height; // 0-1
+
+                // Создаем эффект искажения относительно центра
+                const centerX = 0.5;
+                const centerY = 0.5;
+                const distX = (x - centerX) * 2; // -1 to 1
+                const distY = (y - centerY) * 2; // -1 to 1
+
+                // Применяем перспективу и легкое искажение
+                const perspectiveX = distX * 8; // градусы наклона
+                const perspectiveY = distY * -8;
+                const scale = 1 + (Math.abs(distX) + Math.abs(distY)) * 0.02;
+
+                activeCard.style.transform = `
+                    perspective(1000px) 
+                    rotateY(${perspectiveX}deg) 
+                    rotateX(${perspectiveY}deg) 
+                    scale(${scale})
+                `;
+            });
+
+            gallery.addEventListener('mouseleave', () => {
+                const activeCard = cards[currentIndex];
+                if (activeCard) {
+                    activeCard.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1)';
+                }
+            });
+        }
+        // ===== END FISHEYE EFFECT =====
 
         // ===== LIGHTBOX FUNCTIONALITY =====
         const createLightbox = () => {
@@ -389,7 +345,6 @@
         let activeGallery = null;
         let isSwipingCarousel = false;
 
-        // Функция для поиска ближайшей галереи к точке касания
         const findClosestGallery = (touchX, touchY) => {
             const galleries = document.querySelectorAll('.notion-callout.bg-brown-light .notion-collection-gallery[data-carousel-initialized="true"]');
             if (galleries.length === 0) return null;
@@ -401,7 +356,6 @@
             galleries.forEach(gallery => {
                 const rect = gallery.getBoundingClientRect();
                 
-                // Сначала проверяем, находится ли точка касания внутри галереи
                 if (touchX >= rect.left && touchX <= rect.right &&
                     touchY >= rect.top && touchY <= rect.bottom) {
                     closest = gallery;
@@ -409,7 +363,6 @@
                     return;
                 }
 
-                // Если не внутри, считаем расстояние до центра галереи
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
                 const distance = Math.sqrt(
@@ -423,19 +376,15 @@
                 }
             });
 
-            // Возвращаем галерею только если она в пределах разумного расстояния
-            // (например, в пределах высоты экрана)
             return minDistance < window.innerHeight * 0.8 ? closest : null;
         };
 
         document.addEventListener('touchstart', (e) => {
-            // Игнорируем свайпы на кнопках и индикаторах
             if (e.target.closest('.carousel-button') || e.target.closest('.carousel-indicators')) return;
             
             const touchX = e.touches[0].clientX;
             const touchY = e.touches[0].clientY;
             
-            // Находим ближайшую галерею
             activeGallery = findClosestGallery(touchX, touchY);
             
             if (activeGallery) {
@@ -454,11 +403,8 @@
             const diffX = Math.abs(currentX - swipeStartX);
             const diffY = Math.abs(currentY - swipeStartY);
             
-            // Определяем, что это горизонтальный свайп (для карусели)
-            // Требуем, чтобы горизонтальное движение было значительно больше вертикального
             if (diffX > 15 && diffX > diffY * 1.5) {
                 isSwipingCarousel = true;
-                // Предотвращаем вертикальный скролл страницы только при горизонтальном свайпе
                 e.preventDefault();
             }
         }, { passive: false });
@@ -475,17 +421,14 @@
             const diffX = swipeEndX - swipeStartX;
             const timeDiff = swipeEndTime - swipeStartTime;
             
-            // Свайп должен быть достаточно быстрым и длинным
             const minSwipeDistance = 30;
             const maxSwipeTime = 500;
             
             if (Math.abs(diffX) > minSwipeDistance && timeDiff < maxSwipeTime) {
                 if (activeGallery.carouselNav) {
                     if (diffX > 0) {
-                        // Свайп вправо - предыдущее изображение
                         activeGallery.carouselNav.goToPrev();
                     } else {
-                        // Свайп влево - следующее изображение
                         activeGallery.carouselNav.goToNext();
                     }
                 }
