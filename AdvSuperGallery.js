@@ -163,10 +163,10 @@
                     const smoothStrength = Math.pow(effectStrength, 0.7);
 
                     // Применяем эффект
-                    const maxRotation = 10; // максимальный угол поворота в центре
+                    const maxRotation = 5; // максимальный угол поворота в центре
                     const perspectiveX = distX * maxRotation * smoothStrength;
                     const perspectiveY = distY * -maxRotation * smoothStrength;
-                    const scale = 1 + (0.03 * smoothStrength);
+                    const scale = 1 + (0.01 * smoothStrength);
 
                     activeCard.style.transition = 'transform 0.1s ease-out';
                     activeCard.style.transform = `
