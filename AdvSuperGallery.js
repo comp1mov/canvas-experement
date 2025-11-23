@@ -154,10 +154,10 @@
                     const distanceFromCenter = Math.sqrt(distX * distX + distY * distY); // 0-1.4
 
                     // МЕРТВАЯ ЗОНА НА КРАЯХ: последние 10% от края = 0 эффекта
-                    const edgeDeadZone = 0.1; // 10% мертвая зона от края
+                    const edgeDeadZone = 0.2; // 10% мертвая зона от края
                     const maxDistance = 1.0; // максимальное расстояние где начинается мертвая зона
                     
-                    let effectStrength = 1.0; // по умолчанию полная сила
+                    let effectStrength = 0.4; // по умолчанию полная сила
                     
                     if (distanceFromCenter > maxDistance - edgeDeadZone) {
                         // Близко к краю - уменьшаем эффект до 0
