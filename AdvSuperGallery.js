@@ -119,7 +119,7 @@
 
         startAutoplay();
 
-        // Fisheye на desktop с мертвой зоной на краях
+        // Fisheye на desktop - простое затухание от центра к краям
         if (window.innerWidth > 768) {
             let isMouseInside = false;
             let animationFrameId = null;
@@ -132,7 +132,6 @@
             gallery.addEventListener('mousemove', (e) => {
                 if (!isMouseInside) return;
                 
-                // Отменяем предыдущий frame для оптимизации
                 if (animationFrameId) {
                     cancelAnimationFrame(animationFrameId);
                 }
@@ -148,30 +147,26 @@
                     const centerX = 0.5;
                     const centerY = 0.5;
                     
-                    // Расстояние от центра (0 в центре, ~0.7 на краях)
+                    // Расстояние от центра (0 в центре, 1 на краях)
                     const distX = (x - centerX) * 2; // -1 to 1
                     const distY = (y - centerY) * 2; // -1 to 1
-                    const distanceFromCenter = Math.sqrt(distX * distX + distY * distY); // 0-1.4
+                    const distanceFromCenter = Math.sqrt(distX * distX + distY * distY); // 0 до ~1.4
 
-                    // МЕРТВАЯ ЗОНА НА КРАЯХ: последние 10% от края = 0 эффекта
-                    const edgeDeadZone = 0.2; // 10% мертвая зона от края
-                    const maxDistance = 1.0; // максимальное расстояние где начинается мертвая зона
+                    // ПРОСТОЕ ЗАТУХАНИЕ: сила = 100% в центре, 0% на краях
+                    // Нормализуем расстояние: 0 (центр) до 1 (край)
+                    const normalizedDistance = Math.min(distanceFromCenter / 1.0, 1.0);
                     
-                    let effectStrength = 0.4; // по умолчанию полная сила
+                    // Инвертируем: 1 в центре, 0 на краях
+                    const effectStrength = 1.0 - normalizedDistance;
                     
-                    if (distanceFromCenter > maxDistance - edgeDeadZone) {
-                        // Близко к краю - уменьшаем эффект до 0
-                        const distanceFromEdge = (maxDistance - distanceFromCenter) / edgeDeadZone;
-                        effectStrength = Math.max(0, distanceFromEdge);
-                        // Плавное затухание
-                        effectStrength = Math.pow(effectStrength, 0.8);
-                    }
+                    // Применяем плавную кривую для более естественного затухания
+                    const smoothStrength = Math.pow(effectStrength, 0.7);
 
-                    // Применяем эффект с учетом силы
-                    const maxRotation = 12; // максимальный угол поворота
-                    const perspectiveX = distX * maxRotation * effectStrength;
-                    const perspectiveY = distY * -maxRotation * effectStrength;
-                    const scale = 1 + (distanceFromCenter * 0.03 * effectStrength);
+                    // Применяем эффект
+                    const maxRotation = 10; // максимальный угол поворота в центре
+                    const perspectiveX = distX * maxRotation * smoothStrength;
+                    const perspectiveY = distY * -maxRotation * smoothStrength;
+                    const scale = 1 + (0.03 * smoothStrength);
 
                     activeCard.style.transition = 'transform 0.1s ease-out';
                     activeCard.style.transform = `
@@ -193,7 +188,7 @@
                 
                 const activeCard = cards[currentIndex];
                 if (activeCard) {
-                    // ПЛАВНЫЙ СБРОС при выходе мыши с bounce эффектом
+                    // ПЛАВНЫЙ СБРОС при выходе мыши
                     activeCard.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
                     activeCard.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1)';
                 }
