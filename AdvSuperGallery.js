@@ -119,7 +119,7 @@
 
         startAutoplay();
 
-        // Fisheye на desktop с мертвой зоной
+        // Fisheye на desktop с мертвой зоной на краях
         if (window.innerWidth > 768) {
             let isMouseInside = false;
             let animationFrameId = null;
@@ -148,28 +148,30 @@
                     const centerX = 0.5;
                     const centerY = 0.5;
                     
-                    // Расстояние от центра (0 в центре, 1 на краях)
+                    // Расстояние от центра (0 в центре, ~0.7 на краях)
                     const distX = (x - centerX) * 2; // -1 to 1
                     const distY = (y - centerY) * 2; // -1 to 1
                     const distanceFromCenter = Math.sqrt(distX * distX + distY * distY); // 0-1.4
 
-                    // МЕРТВАЯ ЗОНА: если мышка близко к центру (30% области), эффект = 0
-                    const deadZone = 0.3; // 30% радиус мертвой зоны
+                    // МЕРТВАЯ ЗОНА НА КРАЯХ: последние 10% от края = 0 эффекта
+                    const edgeDeadZone = 0.1; // 10% мертвая зона от края
+                    const maxDistance = 1.0; // максимальное расстояние где начинается мертвая зона
                     
-                    let effectStrength = 0;
-                    if (distanceFromCenter > deadZone) {
-                        // Постепенное нарастание эффекта после мертвой зоны
-                        // Нормализуем от 0 (на границе мертвой зоны) до 1 (на краю)
-                        effectStrength = (distanceFromCenter - deadZone) / (1.4 - deadZone);
-                        // Применяем ease-out для более плавного нарастания
-                        effectStrength = Math.pow(effectStrength, 1.5);
+                    let effectStrength = 1.0; // по умолчанию полная сила
+                    
+                    if (distanceFromCenter > maxDistance - edgeDeadZone) {
+                        // Близко к краю - уменьшаем эффект до 0
+                        const distanceFromEdge = (maxDistance - distanceFromCenter) / edgeDeadZone;
+                        effectStrength = Math.max(0, distanceFromEdge);
+                        // Плавное затухание
+                        effectStrength = Math.pow(effectStrength, 0.8);
                     }
 
                     // Применяем эффект с учетом силы
                     const maxRotation = 12; // максимальный угол поворота
                     const perspectiveX = distX * maxRotation * effectStrength;
                     const perspectiveY = distY * -maxRotation * effectStrength;
-                    const scale = 1 + (effectStrength * 0.03);
+                    const scale = 1 + (distanceFromCenter * 0.03 * effectStrength);
 
                     activeCard.style.transition = 'transform 0.1s ease-out';
                     activeCard.style.transform = `
@@ -191,7 +193,7 @@
                 
                 const activeCard = cards[currentIndex];
                 if (activeCard) {
-                    // ПЛАВНЫЙ СБРОС при выходе мыши
+                    // ПЛАВНЫЙ СБРОС при выходе мыши с bounce эффектом
                     activeCard.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
                     activeCard.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1)';
                 }
