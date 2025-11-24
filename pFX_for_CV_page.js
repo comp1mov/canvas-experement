@@ -16,12 +16,11 @@
     'grisha-tsvetkov.com/portfolio'
   ];
   
-  // Функция проверки
   function isOnAllowedPage() {
     return allowedPages.some(page => window.location.href.includes(page));
   }
   
-  // === ДЕТЕКТ МОБИЛЬНЫХ УСТРОЙСТВ И ТИП ЭКРАНА ===
+  // === ДЕТЕКТ УСТРОЙСТВА И ТИПА ЭКРАНА ===
   function isMobileDevice() {
     const ua = navigator.userAgent || '';
     const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
@@ -31,11 +30,10 @@
 
   const BASE_MOBILE = isMobileDevice();
   const viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
-  const IS_PHONE  = BASE_MOBILE && viewportW <= 768;   // телефоны
-  const IS_TABLET = BASE_MOBILE && !IS_PHONE;          // планшеты (iPad и т.п.)
+  const IS_PHONE  = BASE_MOBILE && viewportW <= 768;
+  const IS_TABLET = BASE_MOBILE && !IS_PHONE;
   const IS_DESKTOP = !BASE_MOBILE;
 
-  // Функция инициализации
   function initParticles() {
     if (window.__particleSystemActive) return;
     if (!isOnAllowedPage()) return;
@@ -49,15 +47,13 @@
     const CONFIG = {
       // --- количество частиц ---
       densityByArea: true,
-      // базовое количество по типам устройств
-      numParticles: IS_DESKTOP ? 160 : (IS_TABLET ? 220 : 240),
-      // плотность тоже выше на мобильных
-      densityK: IS_DESKTOP ? 0.00006 : (IS_TABLET ? 0.00011 : 0.00013),
-      pixelRatioClamp: 1,
+      numParticles: IS_DESKTOP ? 220 : (IS_TABLET ? 340 : 380),
+      densityK: IS_DESKTOP ? 0.00009 : (IS_TABLET ? 0.00016 : 0.00018),
+      pixelRatioClamp: IS_DESKTOP ? 1.3 : 2.0,
 
       // --- геометрия частицы ---
-      sizeMin: IS_DESKTOP ? 0.25 : 0.3,
-      sizeMax: IS_DESKTOP ? 1.2 : 1.8,
+      sizeMin: IS_DESKTOP ? 0.25 : (IS_TABLET ? 0.22 : 0.18),
+      sizeMax: IS_DESKTOP ? 1.0  : (IS_TABLET ? 0.8  : 0.6),
       baseColor: [255, 255, 255],
       particleBlend: 'difference',
 
@@ -86,35 +82,36 @@
       windAffectedThreshold: 0.6,
 
       // --- влияние указателя ---
-      pointerInfluenceRadius: IS_PHONE ? 0 : 500,
+      pointerInfluenceRadius: IS_PHONE ? 0 : 420,
       enablePointerSwirl: !IS_PHONE,
-      pointerSwirlStrength: 1.0,
+      pointerSwirlStrength: 0.7,
       pointerSwirlFalloffExp: 3.0,
       enablePointerAttraction: !IS_PHONE,
       pointerAttractionStrength: 0.1,
       enablePointerNoise: !IS_PHONE,
-      pointerNoiseAmp: 4.0,
+      pointerNoiseAmp: 3.0,
       pointerNoiseHz: 0.2,
       pointerNoiseSmooth: 0.9,
 
-      // --- клик: сразу burst без притягивания ---
+      // --- клик: сразу burst ---
       clickAffectsAll: false,
-      clickRadius: IS_DESKTOP ? 150 : 130,
+      clickRadius: IS_DESKTOP ? 150 : (IS_TABLET ? 55 : 40),
       
-      // параметры взрыва
-      prePullSec: 0.0,          // больше не используется как притяжение
+      // притягивание больше не актуально, оставляем как заглушки
+      prePullSec: 0.0,
       pullStrength: 1.0,
       pullGrowFactor: 1,
       
+      // --- взрыв ---
       burstLife: 3.2,
-      explodeTimeJitter: 0.2,   // сейчас используется только в power
+      explodeTimeJitter: 0.2,
       explosionPower: 40,
       explosionPowerJitter: 0.2,
       explosionAngleJitter: 0.25,
       frictionBurst: 0.8,
-      explodeGrowMul: 100.0,
-      explodeNoiseHz: 0.02,
-      explodeNoiseAmp: 152.0,
+      explodeGrowMul: IS_DESKTOP ? 80.0 : (IS_TABLET ? 40.0 : 45.0),
+      explodeNoiseHz: 0.024,
+      explodeNoiseAmp: 180.0,
       explodeNoiseSmooth: 0.99,
       explodeAlphaBoost: 1.0,
       explodeStartJitterFramesMin: 0,
@@ -215,6 +212,12 @@
     const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
     const easeInOutQuad = t =>
       (t < 0.5) ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const easeOutBack = t => {
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      const tt = t - 1;
+      return 1 + c3 * tt * tt * tt + c1 * tt * tt;
+    };
     const rgbaArr = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
     // =============== Scroll root autodetect ===============
@@ -324,7 +327,6 @@
       particlesLocal.push(makeParticle(i));
     }
 
-    // синхронизируем с внешней ссылкой
     particles = particlesLocal;
 
     // =============== Pointer ===============
@@ -341,6 +343,9 @@
       duration: 3.0,
       arcAmp: 0
     };
+
+    let pointerIdlePhaseX = rand() * 1000;
+    let pointerIdlePhaseY = rand() * 1000;
 
     function resetPointerToCenter() {
       pointerLocal.x = w * 0.5;
@@ -362,7 +367,6 @@
       const dx = targetX - pointerLocal.x;
       const dy = targetY - pointerLocal.y;
       const dist = Math.hypot(dx, dy) || 1;
-      // амплитуда дуги завязана на дистанцию, но ограничена
       pointerTween.arcAmp = Math.min(dist * 0.25, 160);
       pointerTween.active = true;
     }
@@ -370,7 +374,7 @@
     function pageToCanvas(px, py) { return [px * dpr, py * dpr]; }
 
     onPointerMove = function(e) {
-      // только десктопная мышь управляет поинтером
+      // только десктопная мышь управляет поинтером напрямую
       if (!IS_DESKTOP) return;
       const t = nowSec();
       const dt = Math.max(1 / 120, t - pointerLocal.tPrev);
@@ -386,7 +390,7 @@
       pointerTween.active = false;
     };
 
-    // взрыв без фазы притягивания, сразу из текущих позиций
+    // взрыв: каждая частица летит из своей точки в случайном направлении
     triggerTapSequence = function(screenX, screenY) {
       const tnow = nowSec();
       const r = CONFIG.clickRadius * dpr;
@@ -403,14 +407,14 @@
           if (dxS * dxS + dyS * dyS > r2) continue;
         }
 
-        // координаты тапа в "мире" частиц с учётом параллакса
+        // тач-точка в системе координат частиц
         const tapWorldX = screenX - parOffX * p.par;
         const tapWorldY = screenY - parOffY * p.par;
+        // dx, dy нам больше не нужны для направления, только ради локальности
+        void tapWorldX;
+        void tapWorldY;
 
-        const dx = p.x - tapWorldX;
-        const dy = p.y - tapWorldY;
-
-        const baseAng = Math.atan2(dy, dx);
+        const baseAng = rand() * TAU;
         const ang = baseAng + (rand() - 0.5) * CONFIG.explosionAngleJitter;
         const powMul = 1 + (rand() * 2 - 1) * CONFIG.explosionPowerJitter;
 
@@ -431,10 +435,9 @@
       const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
 
       if (IS_TABLET) {
-        // на iPad поинтер красиво летит по дуге к точке тапа
+        // на iPad поинтер летит по дуге с лёгким баунсом
         startPointerTween(cx, cy, 2.2);
       } else if (IS_DESKTOP) {
-        // синхронизация поинтера с кликом мыши
         pointerLocal.x = cx;
         pointerLocal.y = cy;
         pointerLocal.tPrev = nowSec();
@@ -506,7 +509,7 @@
       // анимация поинтера на планшетах
       if (IS_TABLET && pointerTween.active) {
         const k = clamp((t - pointerTween.startTime) / pointerTween.duration, 0, 1);
-        const eased = easeInOutQuad(k);
+        const eased = easeOutBack(k);
 
         const dx = pointerTween.endX - pointerTween.startX;
         const dy = pointerTween.endY - pointerTween.startY;
@@ -531,6 +534,20 @@
         pointerLocal.vy = (pointerLocal.y - prevY) * invDt;
 
         if (k >= 1) pointerTween.active = false;
+      }
+
+      // лёгкий idle-нойз поинтера (десктоп + планшет, когда он "успокоился")
+      if (!pointerTween.active) {
+        const speed = Math.hypot(pointerLocal.vx, pointerLocal.vy);
+        if (speed < 60) {
+          pointerIdlePhaseX += dt * 0.6;
+          pointerIdlePhaseY += dt * 0.8;
+          const idleAmp = 4 * dpr;
+          pointerLocal.x += Math.sin(pointerIdlePhaseX) * idleAmp * dt;
+          pointerLocal.y += Math.cos(pointerIdlePhaseY) * idleAmp * dt;
+          pointerLocal.x = clamp(pointerLocal.x, 0, w);
+          pointerLocal.y = clamp(pointerLocal.y, 0, h);
+        }
       }
 
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -626,7 +643,7 @@
           p.y += p.vy;
 
         } else if (p.mode === 1) {
-          // запасной режим, сейчас не используется
+          // запасной путь, сейчас не используется
           p.mode = 2;
           p.burstStart = t;
 
