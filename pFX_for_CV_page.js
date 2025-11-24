@@ -21,14 +21,20 @@
     return allowedPages.some(page => window.location.href.includes(page));
   }
   
-  // === ДЕТЕКТ МОБИЛЬНЫХ УСТРОЙСТВ ===
+  // === ДЕТЕКТ МОБИЛЬНЫХ УСТРОЙСТВ И ТИП ЭКРАНА ===
   function isMobileDevice() {
     const ua = navigator.userAgent || '';
     const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
     const isTouchOnly = matchMedia('(pointer: coarse)').matches;
     return isMobile || isTouchOnly;
   }
-  
+
+  const BASE_MOBILE = isMobileDevice();
+  const viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
+  const IS_PHONE  = BASE_MOBILE && viewportW <= 768;   // телефоны
+  const IS_TABLET = BASE_MOBILE && !IS_PHONE;          // планшеты (iPad и т.п.)
+  const IS_DESKTOP = !BASE_MOBILE;
+
   // Функция инициализации
   function initParticles() {
     if (window.__particleSystemActive) return;
@@ -43,13 +49,15 @@
     const CONFIG = {
       // --- количество частиц ---
       densityByArea: true,
-      numParticles: 190,
-      densityK: 0.00009,
+      // базовое количество по типам устройств
+      numParticles: IS_DESKTOP ? 160 : (IS_TABLET ? 220 : 240),
+      // плотность тоже выше на мобильных
+      densityK: IS_DESKTOP ? 0.00006 : (IS_TABLET ? 0.00011 : 0.00013),
       pixelRatioClamp: 1,
 
       // --- геометрия частицы ---
-      sizeMin: 0.3,
-      sizeMax: 1.5,
+      sizeMin: IS_DESKTOP ? 0.25 : 0.3,
+      sizeMax: IS_DESKTOP ? 1.2 : 1.8,
       baseColor: [255, 255, 255],
       particleBlend: 'difference',
 
@@ -78,28 +86,28 @@
       windAffectedThreshold: 0.6,
 
       // --- влияние указателя ---
-      pointerInfluenceRadius: 500,
-      enablePointerSwirl: true,
+      pointerInfluenceRadius: IS_PHONE ? 0 : 500,
+      enablePointerSwirl: !IS_PHONE,
       pointerSwirlStrength: 1.0,
       pointerSwirlFalloffExp: 3.0,
-      enablePointerAttraction: true,
+      enablePointerAttraction: !IS_PHONE,
       pointerAttractionStrength: 0.1,
-      enablePointerNoise: true,
+      enablePointerNoise: !IS_PHONE,
       pointerNoiseAmp: 4.0,
       pointerNoiseHz: 0.2,
       pointerNoiseSmooth: 0.9,
 
-      // --- клик: pull -> burst ---
+      // --- клик: сразу burst без притягивания ---
       clickAffectsAll: false,
-      clickRadius: 150,
+      clickRadius: IS_DESKTOP ? 150 : 130,
       
-      // слабое притяжение
-      prePullSec: 1.4,
-      pullStrength: 0.9,
+      // параметры взрыва
+      prePullSec: 0.0,          // больше не используется как притяжение
+      pullStrength: 1.0,
       pullGrowFactor: 1,
       
-      burstLife: 3.8,
-      explodeTimeJitter: 0.35,
+      burstLife: 3.2,
+      explodeTimeJitter: 0.2,   // сейчас используется только в power
       explosionPower: 40,
       explosionPowerJitter: 0.2,
       explosionAngleJitter: 0.25,
@@ -109,8 +117,8 @@
       explodeNoiseAmp: 152.0,
       explodeNoiseSmooth: 0.99,
       explodeAlphaBoost: 1.0,
-      explodeStartJitterFramesMin: 1,
-      explodeStartJitterFramesMax: 10,
+      explodeStartJitterFramesMin: 0,
+      explodeStartJitterFramesMax: 0,
 
       // --- линии между точками ---
       linkLines: true,
@@ -124,8 +132,7 @@
       shortCount: 3,
       midCount: 0,
       longCount: 0,
-      // здесь сделал x1.5
-      lineWidthPx: 0.6,
+      lineWidthPx: IS_DESKTOP ? 0.5 : 0.7,
       lineOpacity: 0.6,
       lineColorA: [255,255,255],
       lineColorB: [200,200,200],
@@ -135,7 +142,7 @@
       lineFadeDistPx: 30,
 
       // --- кривые от указателя ---
-      pointerCurves: true,
+      pointerCurves: !IS_PHONE,
       pointerCurveComposite: 'screen',
       pointerCurveCount: 30,
       pointerCurveMaxDist: 260,
@@ -331,7 +338,8 @@
       endX: 0,
       endY: 0,
       startTime: 0,
-      duration: 3.0
+      duration: 3.0,
+      arcAmp: 0
     };
 
     function resetPointerToCenter() {
@@ -343,28 +351,27 @@
     }
     resetPointerToCenter();
 
-    function startPointerTween(targetX, targetY, durationSec = 3.0) {
+    function startPointerTween(targetX, targetY, durationSec = 2.2) {
       pointerTween.startX = pointerLocal.x;
       pointerTween.startY = pointerLocal.y;
       pointerTween.endX = targetX;
       pointerTween.endY = targetY;
       pointerTween.startTime = nowSec();
       pointerTween.duration = durationSec;
+
+      const dx = targetX - pointerLocal.x;
+      const dy = targetY - pointerLocal.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      // амплитуда дуги завязана на дистанцию, но ограничена
+      pointerTween.arcAmp = Math.min(dist * 0.25, 160);
       pointerTween.active = true;
-    }
-
-    const isMobile = isMobileDevice();
-
-     // мобильная настройка: меньше радиус взрыва и максимальный размер частиц
-    if (isMobile) {
-      CONFIG.clickRadius = 20;   // было 150, теперь взрыв компактнее
-      CONFIG.sizeMax = 0.2;      // было 1.5, частицы заметно меньше
     }
 
     function pageToCanvas(px, py) { return [px * dpr, py * dpr]; }
 
     onPointerMove = function(e) {
-      if (isMobile) return;
+      // только десктопная мышь управляет поинтером
+      if (!IS_DESKTOP) return;
       const t = nowSec();
       const dt = Math.max(1 / 120, t - pointerLocal.tPrev);
       const [mx, my] = pageToCanvas(e.clientX, e.clientY);
@@ -379,6 +386,7 @@
       pointerTween.active = false;
     };
 
+    // взрыв без фазы притягивания, сразу из текущих позиций
     triggerTapSequence = function(screenX, screenY) {
       const tnow = nowSec();
       const r = CONFIG.clickRadius * dpr;
@@ -390,32 +398,30 @@
         if (!CONFIG.clickAffectsAll) {
           const drawX = p.x + parOffX * p.par;
           const drawY = p.y + parOffY * p.par;
-          const dxS = drawX - screenX, dyS = drawY - screenY;
+          const dxS = drawX - screenX;
+          const dyS = drawY - screenY;
           if (dxS * dxS + dyS * dyS > r2) continue;
         }
 
-        p.tapX = screenX - parOffX * p.par;
-        p.tapY = screenY - parOffY * p.par;
-        p.mode = 1;
-        p.pullStart = tnow;
-        p.pullFromX = p.x;
-        p.pullFromY = p.y;
+        // координаты тапа в "мире" частиц с учётом параллакса
+        const tapWorldX = screenX - parOffX * p.par;
+        const tapWorldY = screenY - parOffY * p.par;
 
-        const j = (Math.random() * 2 - 1) * CONFIG.explodeTimeJitter;
-        p.burstDur = Math.max(0.35, CONFIG.burstLife * (1 + j));
+        const dx = p.x - tapWorldX;
+        const dy = p.y - tapWorldY;
 
-        const fps = CONFIG.capFPS || 60;
-        const frames = Math.floor(
-          mix(
-            CONFIG.explodeStartJitterFramesMin,
-            CONFIG.explodeStartJitterFramesMax,
-            rand()
-          )
-        );
-        p.burstDelay = frames / fps;
+        const baseAng = Math.atan2(dy, dx);
+        const ang = baseAng + (rand() - 0.5) * CONFIG.explosionAngleJitter;
+        const powMul = 1 + (rand() * 2 - 1) * CONFIG.explosionPowerJitter;
 
-        p.vx = 0;
-        p.vy = 0;
+        p.mode = 2;
+        p.burstStart = tnow;
+        p.burstDur = Math.max(0.35, CONFIG.burstLife);
+        p.vx = Math.cos(ang) * CONFIG.explosionPower * powMul;
+        p.vy = Math.sin(ang) * CONFIG.explosionPower * powMul;
+
+        p.bnPhaseX = 0;
+        p.bnPhaseY = 0;
       }
     };
 
@@ -424,12 +430,16 @@
     addEventListener('pointerdown', e => {
       const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
 
-      if (isMobile) {
-        // поинтер плавно едет к месту тапа
-        startPointerTween(cx, cy, 3.0);
+      if (IS_TABLET) {
+        // на iPad поинтер красиво летит по дуге к точке тапа
+        startPointerTween(cx, cy, 2.2);
+      } else if (IS_DESKTOP) {
+        // синхронизация поинтера с кликом мыши
+        pointerLocal.x = cx;
+        pointerLocal.y = cy;
+        pointerLocal.tPrev = nowSec();
       }
-
-      // взрыв в момент тапа
+      // на всех устройствах тап/клик даёт взрыв
       triggerTapSequence(cx, cy);
     }, { passive: true });
 
@@ -493,16 +503,28 @@
         parOffY = clamp(parOffY, -xLim, xLim);
       }
 
-      // анимация поинтера на мобильных
-      if (isMobile && pointerTween.active) {
+      // анимация поинтера на планшетах
+      if (IS_TABLET && pointerTween.active) {
         const k = clamp((t - pointerTween.startTime) / pointerTween.duration, 0, 1);
         const eased = easeInOutQuad(k);
+
+        const dx = pointerTween.endX - pointerTween.startX;
+        const dy = pointerTween.endY - pointerTween.startY;
+
+        const baseX = mix(pointerTween.startX, pointerTween.endX, eased);
+        const baseY = mix(pointerTween.startY, pointerTween.endY, eased);
+
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+
+        const bump = Math.sin(Math.PI * k) * (pointerTween.arcAmp || 0);
 
         const prevX = pointerLocal.x;
         const prevY = pointerLocal.y;
 
-        pointerLocal.x = mix(pointerTween.startX, pointerTween.endX, eased);
-        pointerLocal.y = mix(pointerTween.startY, pointerTween.endY, eased);
+        pointerLocal.x = baseX + nx * bump;
+        pointerLocal.y = baseY + ny * bump;
 
         const invDt = dt > 0 ? 1 / dt : 0;
         pointerLocal.vx = (pointerLocal.x - prevX) * invDt;
@@ -564,7 +586,7 @@
           const dym = pointerLocal.y - (p.y + parOffY * p.par);
           const d2 = dxm * dxm + dym * dym;
           const prR = CONFIG.pointerInfluenceRadius * dpr;
-          if (d2 < prR * prR) {
+          if (prR > 0 && d2 < prR * prR) {
             const dlen = Math.sqrt(d2) || 1;
             const fall = Math.pow(
               1 - clamp(dlen / prR, 0, 1),
@@ -604,41 +626,15 @@
           p.y += p.vy;
 
         } else if (p.mode === 1) {
-          const k = clamp((t - p.pullStart) / CONFIG.prePullSec, 0, 1);
-          const kk = easeOutCubic(k);
-          
-          const targetX = mix(p.pullFromX, p.tapX, CONFIG.pullStrength);
-          const targetY = mix(p.pullFromY, p.tapY, CONFIG.pullStrength);
-          
-          p.x = mix(p.pullFromX, targetX, kk);
-          p.y = mix(p.pullFromY, targetY, kk);
-          sizeNow = p.size * mix(1, CONFIG.pullGrowFactor, kk);
-          p.vx = 0; p.vy = 0;
-
-          if (k >= 1) {
-            if (!p.__delayStamp) p.__delayStamp = t;
-            if (t - p.__delayStamp >= p.burstDelay) {
-              p.mode = 2;
-              p.__delayStamp = 0;
-              p.burstStart = t;
-
-              const baseAng = Math.atan2(p.pullFromY - p.tapY, p.pullFromX - p.tapX);
-              const ang = baseAng + (rand() - 0.5) * CONFIG.explosionAngleJitter;
-              const powMul = 1 + (rand()*2 - 1) * CONFIG.explosionPowerJitter;
-              p.vx = Math.cos(ang) * CONFIG.explosionPower * powMul;
-              p.vy = Math.sin(ang) * CONFIG.explosionPower * powMul;
-
-              p.bnPhaseX = 0; p.bnPhaseY = 0;
-            }
-          }
-
-          alpha = CONFIG.explodeAlphaBoost;
+          // запасной режим, сейчас не используется
+          p.mode = 2;
+          p.burstStart = t;
 
         } else if (p.mode === 2) {
           const k = clamp((t - p.burstStart) / p.burstDur, 0, 1);
 
           const grow = (k <= 0.5)
-            ? mix(CONFIG.pullGrowFactor, CONFIG.explodeGrowMul, easeInOutQuad(k / 0.5))
+            ? mix(1, CONFIG.explodeGrowMul, easeInOutQuad(k / 0.5))
             : mix(CONFIG.explodeGrowMul, 1, easeInOutQuad((k - 0.5) / 0.5));
           sizeNow = p.size * grow;
 
