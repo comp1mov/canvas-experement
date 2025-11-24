@@ -16,6 +16,7 @@
     'grisha-tsvetkov.com/portfolio'
   ];
   
+  // Функция проверки
   function isOnAllowedPage() {
     return allowedPages.some(page => window.location.href.includes(page));
   }
@@ -71,7 +72,7 @@
       jitterAmp: 0.12,
       jitterFreq: 0.1,
       
-      // === НОВОЕ: Постоянный ветер вверх с параллакс-эффектом ===
+      // постоянный "ветер"
       constantWindY: 0.006,
       windParallaxMultiplier: 1.2,
       windAffectedThreshold: 0.6,
@@ -92,7 +93,7 @@
       clickAffectsAll: false,
       clickRadius: 150,
       
-      // === НОВОЕ: Слабое притяжение вместо полного стягивания ===
+      // слабое притяжение
       prePullSec: 1.4,
       pullStrength: 0.9,
       pullGrowFactor: 1,
@@ -123,7 +124,8 @@
       shortCount: 3,
       midCount: 0,
       longCount: 0,
-      lineWidthPx: 0.4,
+      // здесь сделал x1.5
+      lineWidthPx: 0.6,
       lineOpacity: 0.6,
       lineColorA: [255,255,255],
       lineColorB: [200,200,200],
@@ -166,15 +168,6 @@
       canvasOpacity: 1
     };
 
-    const isMobileRuntime = isMobileDevice();
-
-    // чуть утолщаем линии на мобильных
-    if (isMobileRuntime && !CONFIG.__mobileWidthAdjusted) {
-      CONFIG.lineWidthPx *= 1.5;
-      CONFIG.pointerCurveWidthPx *= 1.5;
-      CONFIG.__mobileWidthAdjusted = true;
-    }
-
     // =============== Canvas ===============
     canvas = document.createElement('canvas');
     ctx = canvas.getContext('2d', { alpha: true });
@@ -213,17 +206,9 @@
     const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
     const nowSec = () => performance.now() / 1000;
     const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
-    const easeInOutQuad = t => (t < 0.5) ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+    const easeInOutQuad = t =>
+      (t < 0.5) ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     const rgbaArr = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
-
-    // масштаб взрыва в зависимости от ширины экрана
-    function getExplosionScale() {
-      const minW = 360;
-      const maxW = 1440;
-      const wWin = clamp(window.innerWidth || minW, minW, maxW);
-      const t = (wWin - minW) / (maxW - minW);
-      return mix(0.5, 1.0, t); // телефон ~0.5, планшет ~0.7–0.8, десктоп 1.0
-    }
 
     // =============== Scroll root autodetect ===============
     let scrollRoot = null;
@@ -234,15 +219,23 @@
         const el = document.querySelector(CONFIG.scrollRootSelector);
         if (el) { scrollRoot = el; scrollRootIsWindow = false; return; }
       }
-      scrollRoot = document.scrollingElement || document.documentElement || document.body || window;
-      scrollRootIsWindow = (scrollRoot === document.scrollingElement) || (scrollRoot === document.documentElement) || (scrollRoot === document.body) || (scrollRoot === window);
+      scrollRoot = document.scrollingElement
+        || document.documentElement
+        || document.body
+        || window;
+      scrollRootIsWindow =
+        (scrollRoot === document.scrollingElement)
+        || (scrollRoot === document.documentElement)
+        || (scrollRoot === document.body)
+        || (scrollRoot === window);
     }
     resolveInitialScrollRoot();
 
     addEventListener('scroll', (e) => {
       if (!scrollRoot || scrollRootIsWindow) {
         const t = e.target;
-        if (t && t !== document && t !== window && t.scrollHeight && (t.scrollHeight - t.clientHeight > 1)) {
+        if (t && t !== document && t !== window && t.scrollHeight &&
+            (t.scrollHeight - t.clientHeight > 1)) {
           scrollRoot = t;
           scrollRootIsWindow = false;
         }
@@ -262,12 +255,11 @@
     // =============== Particles ===============
     let count = CONFIG.numParticles;
     if (CONFIG.densityByArea) {
-      count = Math.max(80, Math.floor(window.innerWidth * window.innerHeight * CONFIG.densityK));
+      count = Math.max(
+        80,
+        Math.floor(innerWidth * innerHeight * CONFIG.densityK)
+      );
     }
-
-    // мягкий лимит по количеству частиц для снижения нагрузки
-    const maxParticles = isMobileRuntime ? 160 : 230;
-    count = Math.min(count, maxParticles);
 
     function buildParallaxArray(n) {
       const arr = new Array(n);
@@ -287,11 +279,14 @@
     }
     const parArray = buildParallaxArray(count);
 
-    const particles = [];
-    function makeParticle(i = (particles.length % count)) {
+    const particlesLocal = [];
+    function makeParticle(i = (particlesLocal.length % count)) {
       const bx0 = rand() * w;
       const by0 = rand() * h;
-      const life = Math.max(1.0, CONFIG.lifeMean + (rand() * 2 - 1) * CONFIG.lifeJitter);
+      const life = Math.max(
+        1.0,
+        CONFIG.lifeMean + (rand() * 2 - 1) * CONFIG.lifeJitter
+      );
       const t0 = nowSec() - rand() * life;
       return {
         x: bx0, y: by0,
@@ -318,138 +313,124 @@
         par: parArray[i] || CONFIG.parallaxRangeMin
       };
     }
-    for (let i = 0; i < count; i++) particles.push(makeParticle(i));
+    for (let i = 0; i < count; i++) {
+      particlesLocal.push(makeParticle(i));
+    }
+
+    // синхронизируем с внешней ссылкой
+    particles = particlesLocal;
 
     // =============== Pointer ===============
-    const pointer = { x: w*0.5, y: h*0.5, vx:0, vy:0, tPrev: nowSec() };
+    const pointerLocal = { x: 0, y: 0, vx: 0, vy: 0, tPrev: nowSec() };
+    pointer = pointerLocal;
+
+    let pointerTween = {
+      active: false,
+      startX: 0,
+      startY: 0,
+      endX: 0,
+      endY: 0,
+      startTime: 0,
+      duration: 3.0
+    };
+
+    function resetPointerToCenter() {
+      pointerLocal.x = w * 0.5;
+      pointerLocal.y = h * 0.5;
+      pointerLocal.vx = 0;
+      pointerLocal.vy = 0;
+      pointerLocal.tPrev = nowSec();
+    }
+    resetPointerToCenter();
+
+    function startPointerTween(targetX, targetY, durationSec = 3.0) {
+      pointerTween.startX = pointerLocal.x;
+      pointerTween.startY = pointerLocal.y;
+      pointerTween.endX = targetX;
+      pointerTween.endY = targetY;
+      pointerTween.startTime = nowSec();
+      pointerTween.duration = durationSec;
+      pointerTween.active = true;
+    }
+
+    const isMobile = isMobileDevice();
+
+     // мобильная настройка: меньше радиус взрыва и максимальный размер частиц
+    if (isMobile) {
+      CONFIG.clickRadius = 20;   // было 150, теперь взрыв компактнее
+      CONFIG.sizeMax = 0.2;      // было 1.5, частицы заметно меньше
+    }
+
     function pageToCanvas(px, py) { return [px * dpr, py * dpr]; }
 
-    // плавное движение поинтера к точке тапа
-    let pointerAnim = null;
-    const POINTER_MOVE_DURATION = 3.0; // секунды
-
-    function startPointerAnimation(targetX, targetY) {
-      pointerAnim = {
-        startX: pointer.x,
-        startY: pointer.y,
-        targetX,
-        targetY,
-        startTime: nowSec(),
-        duration: POINTER_MOVE_DURATION
-      };
-    }
-
-    function updatePointerAnimation(t, dt) {
-      if (!pointerAnim) return;
-
-      const elapsed = t - pointerAnim.startTime;
-      let k = elapsed / pointerAnim.duration;
-
-      if (k >= 1) {
-        pointer.x = pointerAnim.targetX;
-        pointer.y = pointerAnim.targetY;
-        pointer.vx = 0;
-        pointer.vy = 0;
-        pointerAnim = null;
-        return;
-      }
-
-      k = clamp(k, 0, 1);
-      const eased = easeInOutQuad(k);
-
-      const oldX = pointer.x;
-      const oldY = pointer.y;
-
-      pointer.x = mix(pointerAnim.startX, pointerAnim.targetX, eased);
-      pointer.y = mix(pointerAnim.startY, pointerAnim.targetY, eased);
-
-      const invDt = dt > 0 ? 1 / dt : 0;
-      pointer.vx = (pointer.x - oldX) * invDt;
-      pointer.vy = (pointer.y - oldY) * invDt;
-    }
-
-    function onPointerMove(e) {
+    onPointerMove = function(e) {
+      if (isMobile) return;
       const t = nowSec();
-      const dt = Math.max(1/120, t - pointer.tPrev);
+      const dt = Math.max(1 / 120, t - pointerLocal.tPrev);
       const [mx, my] = pageToCanvas(e.clientX, e.clientY);
-      const vx = (mx - pointer.x) / dt;
-      const vy = (my - pointer.y) / dt;
+      const vx = (mx - pointerLocal.x) / dt;
+      const vy = (my - pointerLocal.y) / dt;
       const k = Math.pow(0.5, dt / 5.0);
-      pointer.vx = pointer.vx * k + vx * (1 - k);
-      pointer.vy = pointer.vy * k + vy * (1 - k);
-      pointer.x = mx;
-      pointer.y = my;
-      pointer.tPrev = t;
+      pointerLocal.vx = pointerLocal.vx * k + vx * (1 - k);
+      pointerLocal.vy = pointerLocal.vy * k + vy * (1 - k);
+      pointerLocal.x = mx;
+      pointerLocal.y = my;
+      pointerLocal.tPrev = t;
+      pointerTween.active = false;
+    };
 
-      // если пользователь двигает курсор/палец, отменяем автоперелёт
-      pointerAnim = null;
-    }
-
-    function triggerTapSequence(screenX, screenY) {
+    triggerTapSequence = function(screenX, screenY) {
       const tnow = nowSec();
+      const r = CONFIG.clickRadius * dpr;
+      const r2 = r * r;
 
-      // масштаб радиуса и силы взрыва от ширины экрана
-      const explScale = getExplosionScale();
-      const r = CONFIG.clickRadius * explScale * dpr;
-      const r2 = r*r;
-
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
+      for (let i = 0; i < particlesLocal.length; i++) {
+        const p = particlesLocal[i];
 
         if (!CONFIG.clickAffectsAll) {
           const drawX = p.x + parOffX * p.par;
           const drawY = p.y + parOffY * p.par;
           const dxS = drawX - screenX, dyS = drawY - screenY;
-          if (dxS*dxS + dyS*dyS > r2) continue;
+          if (dxS * dxS + dyS * dyS > r2) continue;
         }
 
         p.tapX = screenX - parOffX * p.par;
         p.tapY = screenY - parOffY * p.par;
         p.mode = 1;
         p.pullStart = tnow;
-        p.pullFromX = p.x; p.pullFromY = p.y;
+        p.pullFromX = p.x;
+        p.pullFromY = p.y;
 
-        const j = (Math.random()*2 - 1) * CONFIG.explodeTimeJitter;
+        const j = (Math.random() * 2 - 1) * CONFIG.explodeTimeJitter;
         p.burstDur = Math.max(0.35, CONFIG.burstLife * (1 + j));
 
         const fps = CONFIG.capFPS || 60;
-        const frames = Math.floor(mix(CONFIG.explodeStartJitterFramesMin, CONFIG.explodeStartJitterFramesMax, rand()));
+        const frames = Math.floor(
+          mix(
+            CONFIG.explodeStartJitterFramesMin,
+            CONFIG.explodeStartJitterFramesMax,
+            rand()
+          )
+        );
         p.burstDelay = frames / fps;
 
-        p.vx = 0; p.vy = 0;
+        p.vx = 0;
+        p.vy = 0;
       }
-    }
-
-    // === DOUBLE TAP DETECTION ДЛЯ МОБИЛЬНЫХ ===
-    let lastTapTime = 0;
-    const DOUBLE_TAP_DELAY = 300;
-    const isMobile = isMobileDevice();
+    };
 
     addEventListener('pointermove', onPointerMove, { passive: true });
     
     addEventListener('pointerdown', e => {
       const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
-      
+
       if (isMobile) {
-        const now = Date.now();
-        if (now - lastTapTime < DOUBLE_TAP_DELAY) {
-          triggerTapSequence(cx, cy);      // взрыв
-          startPointerAnimation(cx, cy);   // плавный перелёт
-          lastTapTime = 0;
-        } else {
-          lastTapTime = now;
-        }
-      } else {
-        triggerTapSequence(cx, cy);
-        startPointerAnimation(cx, cy);
+        // поинтер плавно едет к месту тапа
+        startPointerTween(cx, cy, 3.0);
       }
-    }, { passive: true });
-    
-    addEventListener('click', e => {
-      if (isMobile) return;
-      const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
+
+      // взрыв в момент тапа
       triggerTapSequence(cx, cy);
-      // click дополнительно не двигает поинтер, перелёт уже стартовал на pointerdown
     }, { passive: true });
 
     // =============== Parallax spring state ===============
@@ -470,19 +451,20 @@
 
       if (frameInterval) {
         acc += dtMs;
-        if (acc < frameInterval) { requestAnimationFrame(step); return; }
+        if (acc < frameInterval) {
+          requestAnimationFrame(step);
+          return;
+        }
         acc = 0;
       }
       const t = nowSec();
       const dt = Math.max(0.001, Math.min(0.05, dtMs / 1000));
 
-      // обновляем плавный перелёт поинтера
-      updatePointerAnimation(t, dt);
-
       const [curSX, curSY] = getScrollXY();
       let vScrollX = (curSX - prevScrollX) / dt;
       let vScrollY = (curSY - prevScrollY) / dt;
-      prevScrollX = curSX; prevScrollY = curSY;
+      prevScrollX = curSX;
+      prevScrollY = curSY;
 
       const vmax = CONFIG.parallaxMaxScrollVel;
       if (isFinite(vmax) && vmax > 0) {
@@ -511,19 +493,37 @@
         parOffY = clamp(parOffY, -xLim, xLim);
       }
 
-      ctx.setTransform(1,0,0,1,0,0);
+      // анимация поинтера на мобильных
+      if (isMobile && pointerTween.active) {
+        const k = clamp((t - pointerTween.startTime) / pointerTween.duration, 0, 1);
+        const eased = easeInOutQuad(k);
+
+        const prevX = pointerLocal.x;
+        const prevY = pointerLocal.y;
+
+        pointerLocal.x = mix(pointerTween.startX, pointerTween.endX, eased);
+        pointerLocal.y = mix(pointerTween.startY, pointerTween.endY, eased);
+
+        const invDt = dt > 0 ? 1 / dt : 0;
+        pointerLocal.vx = (pointerLocal.x - prevX) * invDt;
+        pointerLocal.vy = (pointerLocal.y - prevY) * invDt;
+
+        if (k >= 1) pointerTween.active = false;
+      }
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
       ctx.clearRect(0, 0, w, h);
 
       ctx.globalCompositeOperation = CONFIG.particleBlend;
 
-      for (let i = 0; i < particles.length; i++) {
-        let p = particles[i];
+      for (let i = 0; i < particlesLocal.length; i++) {
+        let p = particlesLocal[i];
 
         let age = t - p.born;
         if (p.mode === 0 && age >= p.life) {
           const delay = 0.02;
-          particles[i] = p = makeParticle(i);
+          particlesLocal[i] = p = makeParticle(i);
           p.born = t - rand() * delay;
           age = t - p.born;
         }
@@ -541,10 +541,17 @@
           p.vy += (p.by0 - p.y) * CONFIG.baseReturn;
 
           if (CONFIG.constantWindY) {
-            const parThreshold = CONFIG.parallaxRangeMin + (CONFIG.parallaxRangeMax - CONFIG.parallaxRangeMin) * CONFIG.windAffectedThreshold;
+            const parThreshold =
+              CONFIG.parallaxRangeMin
+              + (CONFIG.parallaxRangeMax - CONFIG.parallaxRangeMin)
+                * CONFIG.windAffectedThreshold;
             if (p.par > parThreshold) {
-              const parNorm = (p.par - parThreshold) / (CONFIG.parallaxRangeMax - parThreshold);
-              const windStrength = CONFIG.constantWindY * Math.pow(parNorm, 1.5) * CONFIG.windParallaxMultiplier;
+              const parNorm = (p.par - parThreshold)
+                              / (CONFIG.parallaxRangeMax - parThreshold);
+              const windStrength =
+                CONFIG.constantWindY
+                * Math.pow(parNorm, 1.5)
+                * CONFIG.windParallaxMultiplier;
               p.vy += windStrength;
             }
           }
@@ -553,14 +560,17 @@
           p.vx += Math.sin(p.pulse + i) * CONFIG.jitterAmp * 0.02;
           p.vy += Math.cos(p.pulse * 1.23 + i) * CONFIG.jitterAmp * 0.02;
 
-          const dxm = pointer.x - (p.x + parOffX * p.par);
-          const dym = pointer.y - (p.y + parOffY * p.par);
-          const d2 = dxm*dxm + dym*dym;
+          const dxm = pointerLocal.x - (p.x + parOffX * p.par);
+          const dym = pointerLocal.y - (p.y + parOffY * p.par);
+          const d2 = dxm * dxm + dym * dym;
           const prR = CONFIG.pointerInfluenceRadius * dpr;
-          if (d2 < prR*prR) {
+          if (d2 < prR * prR) {
             const dlen = Math.sqrt(d2) || 1;
-            const fall = Math.pow(1 - clamp(dlen / prR, 0, 1), CONFIG.pointerSwirlFalloffExp);
-            const speed = Math.hypot(pointer.vx, pointer.vy) / 1000;
+            const fall = Math.pow(
+              1 - clamp(dlen / prR, 0, 1),
+              CONFIG.pointerSwirlFalloffExp
+            );
+            const speed = Math.hypot(pointerLocal.vx, pointerLocal.vy) / 1000;
 
             if (CONFIG.enablePointerSwirl) {
               const swirl = CONFIG.pointerSwirlStrength * fall * speed;
@@ -615,12 +625,8 @@
               const baseAng = Math.atan2(p.pullFromY - p.tapY, p.pullFromX - p.tapX);
               const ang = baseAng + (rand() - 0.5) * CONFIG.explosionAngleJitter;
               const powMul = 1 + (rand()*2 - 1) * CONFIG.explosionPowerJitter;
-
-              const explScale = getExplosionScale();
-              const power = CONFIG.explosionPower * explScale;
-
-              p.vx = Math.cos(ang) * power * powMul;
-              p.vy = Math.sin(ang) * power * powMul;
+              p.vx = Math.cos(ang) * CONFIG.explosionPower * powMul;
+              p.vy = Math.sin(ang) * CONFIG.explosionPower * powMul;
 
               p.bnPhaseX = 0; p.bnPhaseY = 0;
             }
@@ -652,8 +658,19 @@
           p.x += p.vx;
           p.y += p.vy;
 
-          if (k < 0.5) strokeW = mix(CONFIG.particleStrokeBase, CONFIG.particleStrokePeak, k / 0.5) * dpr;
-          else          strokeW = mix(CONFIG.particleStrokePeak, CONFIG.particleStrokeEnd, (k - 0.5) / 0.5) * dpr;
+          if (k < 0.5) {
+            strokeW = mix(
+              CONFIG.particleStrokeBase,
+              CONFIG.particleStrokePeak,
+              k / 0.5
+            ) * dpr;
+          } else {
+            strokeW = mix(
+              CONFIG.particleStrokePeak,
+              CONFIG.particleStrokeEnd,
+              (k - 0.5) / 0.5
+            ) * dpr;
+          }
 
           alpha = CONFIG.explodeAlphaBoost;
 
@@ -679,8 +696,11 @@
         ctx.globalCompositeOperation = CONFIG.lineComposite;
         const lw = CONFIG.lineWidthPx * dpr;
         let cx, cy;
-        if (CONFIG.lineGradientCenter === 'pointer') { cx = pointer.x; cy = pointer.y; }
-        else { cx = w * 0.5; cy = h * 0.5; }
+        if (CONFIG.lineGradientCenter === 'pointer') {
+          cx = pointerLocal.x; cy = pointerLocal.y;
+        } else {
+          cx = w * 0.5; cy = h * 0.5;
+        }
         const fadeZone = Math.max(0, CONFIG.lineFadeDistPx) * dpr;
         function taperedWidthByDistance(d, maxD) {
           if (fadeZone <= 0) return lw;
@@ -694,14 +714,14 @@
         const Rmid = CONFIG.midRadius * dpr;
         const Rlong = CONFIG.longRadius * dpr;
 
-        for (let i = 0; i < particles.length; i++) {
-          const p = particles[i];
+        for (let i = 0; i < particlesLocal.length; i++) {
+          const p = particlesLocal[i];
           const px = p.x + parOffX * p.par;
           const py = p.y + parOffY * p.par;
           const cand = [];
-          for (let j = 0; j < particles.length; j++) {
+          for (let j = 0; j < particlesLocal.length; j++) {
             if (i === j) continue;
-            const q = particles[j];
+            const q = particlesLocal[j];
             const qx = q.x + parOffX * q.par;
             const qy = q.y + parOffY * q.par;
             const d = Math.hypot(qx - px, qy - py);
@@ -739,8 +759,13 @@
             if (wpx > 0.001) {
               const grad = ctx.createLinearGradient(px, py, qx, qy);
               const colA = CONFIG.lineColorA, colB = CONFIG.lineColorB;
-              if (!invert) { grad.addColorStop(0, rgbaArr(colA, a)); grad.addColorStop(1, rgbaArr(colB, a)); }
-              else          { grad.addColorStop(0, rgbaArr(colB, a)); grad.addColorStop(1, rgbaArr(colA, a)); }
+              if (!invert) {
+                grad.addColorStop(0, rgbaArr(colA, a));
+                grad.addColorStop(1, rgbaArr(colB, a));
+              } else {
+                grad.addColorStop(0, rgbaArr(colB, a));
+                grad.addColorStop(1, rgbaArr(colA, a));
+              }
               ctx.strokeStyle = grad;
               ctx.lineWidth = Math.max(0.001, wpx);
               ctx.beginPath();
@@ -758,11 +783,11 @@
         const maxD = CONFIG.pointerCurveMaxDist * dpr;
         const wpx = CONFIG.pointerCurveWidthPx * dpr;
         const candidates = [];
-        for (let i = 0; i < particles.length; i++) {
-          const q = particles[i];
+        for (let i = 0; i < particlesLocal.length; i++) {
+          const q = particlesLocal[i];
           const qx = q.x + parOffX * q.par;
           const qy = q.y + parOffY * q.par;
-          const d = Math.hypot(qx - pointer.x, qy - pointer.y);
+          const d = Math.hypot(qx - pointerLocal.x, qy - pointerLocal.y);
           if (d > 1 && d <= maxD) candidates.push({ qx, qy, d });
         }
         candidates.sort((a,b)=>a.d-b.d);
@@ -774,23 +799,28 @@
           let invert = false;
           if (CONFIG.pointerCurveInvertByDistance) {
             const cx = w * 0.5, cy = h * 0.5;
-            const dP = Math.hypot(pointer.x - cx, pointer.y - cy);
+            const dP = Math.hypot(pointerLocal.x - cx, pointerLocal.y - cy);
             const dQ = Math.hypot(qx - cx, qy - cy);
             invert = dQ > dP;
           }
-          const dx = qx - pointer.x, dy = qy - pointer.y;
+          const dx = qx - pointerLocal.x, dy = qy - pointerLocal.y;
           const dLen = Math.hypot(dx, dy) || 1;
           const nx = -dy / dLen, ny = dx / dLen;
-          const cx1 = pointer.x + dx * 0.5 + nx * dLen * CONFIG.pointerCurveBend;
-          const cy1 = pointer.y + dy * 0.5 + ny * dLen * CONFIG.pointerCurveBend;
-          const grad = ctx.createLinearGradient(pointer.x, pointer.y, qx, qy);
+          const cx1 = pointerLocal.x + dx * 0.5 + nx * dLen * CONFIG.pointerCurveBend;
+          const cy1 = pointerLocal.y + dy * 0.5 + ny * dLen * CONFIG.pointerCurveBend;
+          const grad = ctx.createLinearGradient(pointerLocal.x, pointerLocal.y, qx, qy);
           const colA = CONFIG.pointerCurveColorA, colB = CONFIG.pointerCurveColorB;
-          if (!invert) { grad.addColorStop(0, rgbaArr(colA, alpha)); grad.addColorStop(1, rgbaArr(colB, alpha*0.95)); }
-          else          { grad.addColorStop(0, rgbaArr(colB, alpha)); grad.addColorStop(1, rgbaArr(colA, alpha*0.95)); }
+          if (!invert) {
+            grad.addColorStop(0, rgbaArr(colA, alpha));
+            grad.addColorStop(1, rgbaArr(colB, alpha * 0.95));
+          } else {
+            grad.addColorStop(0, rgbaArr(colB, alpha));
+            grad.addColorStop(1, rgbaArr(colA, alpha * 0.95));
+          }
           ctx.strokeStyle = grad;
           ctx.lineWidth = Math.max(0.001, wpx);
           ctx.beginPath();
-          ctx.moveTo(pointer.x, pointer.y);
+          ctx.moveTo(pointerLocal.x, pointerLocal.y);
           ctx.quadraticCurveTo(cx1, cy1, qx, qy);
           ctx.stroke();
         }
