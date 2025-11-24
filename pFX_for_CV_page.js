@@ -16,7 +16,6 @@
     'grisha-tsvetkov.com/portfolio'
   ];
   
-  // Функция проверки
   function isOnAllowedPage() {
     return allowedPages.some(page => window.location.href.includes(page));
   }
@@ -28,13 +27,9 @@
     const isTouchOnly = matchMedia('(pointer: coarse)').matches;
     return isMobile || isTouchOnly;
   }
-
-  // Глобальный флаг устройства
-  const IS_MOBILE = isMobileDevice();
   
   // Функция инициализации
   function initParticles() {
-    // Проверяем: уже запущены или не на той странице
     if (window.__particleSystemActive) return;
     if (!isOnAllowedPage()) return;
     
@@ -76,7 +71,7 @@
       jitterAmp: 0.12,
       jitterFreq: 0.1,
       
-      // === Постоянный ветер вверх с параллакс-эффектом ===
+      // === НОВОЕ: Постоянный ветер вверх с параллакс-эффектом ===
       constantWindY: 0.006,
       windParallaxMultiplier: 1.2,
       windAffectedThreshold: 0.6,
@@ -97,7 +92,7 @@
       clickAffectsAll: false,
       clickRadius: 150,
       
-      // === Слабое притяжение вместо полного стягивания ===
+      // === НОВОЕ: Слабое притяжение вместо полного стягивания ===
       prePullSec: 1.4,
       pullStrength: 0.9,
       pullGrowFactor: 1,
@@ -171,20 +166,13 @@
       canvasOpacity: 1
     };
 
-    // === МОБИЛЬНЫЕ ТЮНИНГИ ===
-    if (IS_MOBILE) {
-      // точки чуть серее, чтобы не светились
-      CONFIG.baseColor = [215, 215, 215];
+    const isMobileRuntime = isMobileDevice();
 
-      // взрыв немного мягче и компактнее
-      CONFIG.clickRadius *= 0.75;
-      CONFIG.explosionPower *= 0.8;
-
-      // чуть больше частиц и немного уменьшенный размер,
-      // чтобы ощущение зума было мягче
-      CONFIG.densityK *= 1.7;
-      CONFIG.sizeMin *= 0.95;
-      CONFIG.sizeMax *= 0.95;
+    // чуть утолщаем линии на мобильных
+    if (isMobileRuntime && !CONFIG.__mobileWidthAdjusted) {
+      CONFIG.lineWidthPx *= 1.5;
+      CONFIG.pointerCurveWidthPx *= 1.5;
+      CONFIG.__mobileWidthAdjusted = true;
     }
 
     // =============== Canvas ===============
@@ -204,15 +192,11 @@
       transition: 'opacity 1s ease-in-out'
     });
     
-    // Fade in при загрузке
     setTimeout(() => {
       canvas.style.opacity = String(CONFIG.canvasOpacity);
     }, 50);
 
-    dpr = 1; 
-    w = 0; 
-    h = 0;
-
+    dpr = 1; w = 0; h = 0;
     resize = function() {
       dpr = Math.min(window.devicePixelRatio || 1, CONFIG.pixelRatioClamp);
       w = Math.floor(window.innerWidth * dpr);
@@ -232,6 +216,15 @@
     const easeInOutQuad = t => (t < 0.5) ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
     const rgbaArr = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
+    // масштаб взрыва в зависимости от ширины экрана
+    function getExplosionScale() {
+      const minW = 360;
+      const maxW = 1440;
+      const wWin = clamp(window.innerWidth || minW, minW, maxW);
+      const t = (wWin - minW) / (maxW - minW);
+      return mix(0.5, 1.0, t); // телефон ~0.5, планшет ~0.7–0.8, десктоп 1.0
+    }
+
     // =============== Scroll root autodetect ===============
     let scrollRoot = null;
     let scrollRootIsWindow = true;
@@ -239,19 +232,10 @@
     function resolveInitialScrollRoot() {
       if (CONFIG.scrollRootSelector) {
         const el = document.querySelector(CONFIG.scrollRootSelector);
-        if (el) { 
-          scrollRoot = el; 
-          scrollRootIsWindow = false; 
-          return; 
-        }
+        if (el) { scrollRoot = el; scrollRootIsWindow = false; return; }
       }
       scrollRoot = document.scrollingElement || document.documentElement || document.body || window;
-      scrollRootIsWindow = (
-        scrollRoot === document.scrollingElement || 
-        scrollRoot === document.documentElement || 
-        scrollRoot === document.body || 
-        scrollRoot === window
-      );
+      scrollRootIsWindow = (scrollRoot === document.scrollingElement) || (scrollRoot === document.documentElement) || (scrollRoot === document.body) || (scrollRoot === window);
     }
     resolveInitialScrollRoot();
 
@@ -278,10 +262,12 @@
     // =============== Particles ===============
     let count = CONFIG.numParticles;
     if (CONFIG.densityByArea) {
-      const baseCount = Math.floor(innerWidth * innerHeight * CONFIG.densityK);
-      const minCount = IS_MOBILE ? 130 : 80;
-      count = Math.max(minCount, baseCount);
+      count = Math.max(80, Math.floor(window.innerWidth * window.innerHeight * CONFIG.densityK));
     }
+
+    // мягкий лимит по количеству частиц для снижения нагрузки
+    const maxParticles = isMobileRuntime ? 160 : 230;
+    count = Math.min(count, maxParticles);
 
     function buildParallaxArray(n) {
       const arr = new Array(n);
@@ -335,34 +321,31 @@
     for (let i = 0; i < count; i++) particles.push(makeParticle(i));
 
     // =============== Pointer ===============
-    const pointerObj = { x: w*0.5, y: h*0.5, vx:0, vy:0, tPrev: nowSec() };
-    pointer = pointerObj;
+    const pointer = { x: w*0.5, y: h*0.5, vx:0, vy:0, tPrev: nowSec() };
+    function pageToCanvas(px, py) { return [px * dpr, py * dpr]; }
 
-    function pageToCanvas(px, py) { 
-      return [px * dpr, py * dpr]; 
-    }
-
-    // плавная анимация поинтера к точке тапа
+    // плавное движение поинтера к точке тапа
     let pointerAnim = null;
     const POINTER_MOVE_DURATION = 3.0; // секунды
 
-    function startPointerAnim(targetX, targetY) {
-      const t = nowSec();
+    function startPointerAnimation(targetX, targetY) {
       pointerAnim = {
         startX: pointer.x,
         startY: pointer.y,
         targetX,
         targetY,
-        startTime: t,
+        startTime: nowSec(),
         duration: POINTER_MOVE_DURATION
       };
     }
 
-    function updatePointerAnim(t, dt) {
+    function updatePointerAnimation(t, dt) {
       if (!pointerAnim) return;
 
-      const raw = (t - pointerAnim.startTime) / pointerAnim.duration;
-      if (raw >= 1) {
+      const elapsed = t - pointerAnim.startTime;
+      let k = elapsed / pointerAnim.duration;
+
+      if (k >= 1) {
         pointer.x = pointerAnim.targetX;
         pointer.y = pointerAnim.targetY;
         pointer.vx = 0;
@@ -371,25 +354,21 @@
         return;
       }
 
-      const tt = clamp(raw, 0, 1);
-      const k = easeInOutQuad(tt); // медленный старт, быстрый центр, медленная остановка
+      k = clamp(k, 0, 1);
+      const eased = easeInOutQuad(k);
 
-      const newX = mix(pointerAnim.startX, pointerAnim.targetX, k);
-      const newY = mix(pointerAnim.startY, pointerAnim.targetY, k);
+      const oldX = pointer.x;
+      const oldY = pointer.y;
 
-      const vx = (newX - pointer.x) / dt;
-      const vy = (newY - pointer.y) / dt;
+      pointer.x = mix(pointerAnim.startX, pointerAnim.targetX, eased);
+      pointer.y = mix(pointerAnim.startY, pointerAnim.targetY, eased);
 
-      pointer.vx = vx;
-      pointer.vy = vy;
-      pointer.x = newX;
-      pointer.y = newY;
+      const invDt = dt > 0 ? 1 / dt : 0;
+      pointer.vx = (pointer.x - oldX) * invDt;
+      pointer.vy = (pointer.y - oldY) * invDt;
     }
 
-    function onPointerMoveLocal(e) {
-      // любое реальное движение мыши/тача отменяет автополет
-      pointerAnim = null;
-
+    function onPointerMove(e) {
       const t = nowSec();
       const dt = Math.max(1/120, t - pointer.tPrev);
       const [mx, my] = pageToCanvas(e.clientX, e.clientY);
@@ -398,15 +377,20 @@
       const k = Math.pow(0.5, dt / 5.0);
       pointer.vx = pointer.vx * k + vx * (1 - k);
       pointer.vy = pointer.vy * k + vy * (1 - k);
-      pointer.x = mx; 
-      pointer.y = my; 
+      pointer.x = mx;
+      pointer.y = my;
       pointer.tPrev = t;
-    }
-    onPointerMove = onPointerMoveLocal;
 
-    function triggerTapSequenceLocal(screenX, screenY) {
+      // если пользователь двигает курсор/палец, отменяем автоперелёт
+      pointerAnim = null;
+    }
+
+    function triggerTapSequence(screenX, screenY) {
       const tnow = nowSec();
-      const r = CONFIG.clickRadius * dpr;
+
+      // масштаб радиуса и силы взрыва от ширины экрана
+      const explScale = getExplosionScale();
+      const r = CONFIG.clickRadius * explScale * dpr;
       const r2 = r*r;
 
       for (let i = 0; i < particles.length; i++) {
@@ -423,8 +407,7 @@
         p.tapY = screenY - parOffY * p.par;
         p.mode = 1;
         p.pullStart = tnow;
-        p.pullFromX = p.x; 
-        p.pullFromY = p.y;
+        p.pullFromX = p.x; p.pullFromY = p.y;
 
         const j = (Math.random()*2 - 1) * CONFIG.explodeTimeJitter;
         p.burstDur = Math.max(0.35, CONFIG.burstLife * (1 + j));
@@ -433,40 +416,40 @@
         const frames = Math.floor(mix(CONFIG.explodeStartJitterFramesMin, CONFIG.explodeStartJitterFramesMax, rand()));
         p.burstDelay = frames / fps;
 
-        p.vx = 0; 
-        p.vy = 0;
+        p.vx = 0; p.vy = 0;
       }
     }
-    triggerTapSequence = triggerTapSequenceLocal;
 
     // === DOUBLE TAP DETECTION ДЛЯ МОБИЛЬНЫХ ===
     let lastTapTime = 0;
-    const DOUBLE_TAP_DELAY = 300; // мс между тапами
+    const DOUBLE_TAP_DELAY = 300;
+    const isMobile = isMobileDevice();
 
-    addEventListener('pointermove', onPointerMoveLocal, { passive: true });
+    addEventListener('pointermove', onPointerMove, { passive: true });
     
     addEventListener('pointerdown', e => {
       const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
       
-      if (IS_MOBILE) {
-        // На мобильных - double tap
+      if (isMobile) {
         const now = Date.now();
         if (now - lastTapTime < DOUBLE_TAP_DELAY) {
-          triggerTapSequenceLocal(cx, cy);
-          startPointerAnim(cx, cy);
+          triggerTapSequence(cx, cy);      // взрыв
+          startPointerAnimation(cx, cy);   // плавный перелёт
           lastTapTime = 0;
         } else {
           lastTapTime = now;
         }
-      } 
-      // на десктопе взрыв запускается в click
+      } else {
+        triggerTapSequence(cx, cy);
+        startPointerAnimation(cx, cy);
+      }
     }, { passive: true });
     
     addEventListener('click', e => {
-      if (IS_MOBILE) return;
+      if (isMobile) return;
       const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
-      triggerTapSequenceLocal(cx, cy);
-      startPointerAnim(cx, cy);
+      triggerTapSequence(cx, cy);
+      // click дополнительно не двигает поинтер, перелёт уже стартовал на pointerdown
     }, { passive: true });
 
     // =============== Parallax spring state ===============
@@ -493,8 +476,8 @@
       const t = nowSec();
       const dt = Math.max(0.001, Math.min(0.05, dtMs / 1000));
 
-      // плавное движение поинтера (для тапа/клика)
-      updatePointerAnim(t, dt);
+      // обновляем плавный перелёт поинтера
+      updatePointerAnimation(t, dt);
 
       const [curSX, curSY] = getScrollXY();
       let vScrollX = (curSX - prevScrollX) / dt;
@@ -557,10 +540,8 @@
           p.vx += (p.bx0 - p.x) * CONFIG.baseReturn;
           p.vy += (p.by0 - p.y) * CONFIG.baseReturn;
 
-          // постоянный ветер вверх с параллакс-эффектом
           if (CONFIG.constantWindY) {
             const parThreshold = CONFIG.parallaxRangeMin + (CONFIG.parallaxRangeMax - CONFIG.parallaxRangeMin) * CONFIG.windAffectedThreshold;
-            
             if (p.par > parThreshold) {
               const parNorm = (p.par - parThreshold) / (CONFIG.parallaxRangeMax - parThreshold);
               const windStrength = CONFIG.constantWindY * Math.pow(parNorm, 1.5) * CONFIG.windParallaxMultiplier;
@@ -613,7 +594,6 @@
           p.y += p.vy;
 
         } else if (p.mode === 1) {
-          // фаза притяжения
           const k = clamp((t - p.pullStart) / CONFIG.prePullSec, 0, 1);
           const kk = easeOutCubic(k);
           
@@ -623,8 +603,7 @@
           p.x = mix(p.pullFromX, targetX, kk);
           p.y = mix(p.pullFromY, targetY, kk);
           sizeNow = p.size * mix(1, CONFIG.pullGrowFactor, kk);
-          p.vx = 0; 
-          p.vy = 0;
+          p.vx = 0; p.vy = 0;
 
           if (k >= 1) {
             if (!p.__delayStamp) p.__delayStamp = t;
@@ -636,11 +615,14 @@
               const baseAng = Math.atan2(p.pullFromY - p.tapY, p.pullFromX - p.tapX);
               const ang = baseAng + (rand() - 0.5) * CONFIG.explosionAngleJitter;
               const powMul = 1 + (rand()*2 - 1) * CONFIG.explosionPowerJitter;
-              p.vx = Math.cos(ang) * CONFIG.explosionPower * powMul;
-              p.vy = Math.sin(ang) * CONFIG.explosionPower * powMul;
 
-              p.bnPhaseX = 0; 
-              p.bnPhaseY = 0;
+              const explScale = getExplosionScale();
+              const power = CONFIG.explosionPower * explScale;
+
+              p.vx = Math.cos(ang) * power * powMul;
+              p.vy = Math.sin(ang) * power * powMul;
+
+              p.bnPhaseX = 0; p.bnPhaseY = 0;
             }
           }
 
@@ -692,21 +674,20 @@
         ctx.stroke();
       }
 
-      // линии между частицами
+      // линии
       if (CONFIG.linkLines) {
         ctx.globalCompositeOperation = CONFIG.lineComposite;
-        const lwBase = CONFIG.lineWidthPx * dpr * (IS_MOBILE ? 1.5 : 1.0);
+        const lw = CONFIG.lineWidthPx * dpr;
         let cx, cy;
         if (CONFIG.lineGradientCenter === 'pointer') { cx = pointer.x; cy = pointer.y; }
         else { cx = w * 0.5; cy = h * 0.5; }
         const fadeZone = Math.max(0, CONFIG.lineFadeDistPx) * dpr;
-
         function taperedWidthByDistance(d, maxD) {
-          if (fadeZone <= 0) return lwBase;
-          if (d <= maxD) return lwBase;
+          if (fadeZone <= 0) return lw;
+          if (d <= maxD) return lw;
           if (d >= maxD + fadeZone) return 0;
           const t = 1 - (d - maxD) / fadeZone;
-          return lwBase * t;
+          return lw * t;
         }
 
         const Rshort = CONFIG.shortRadius * dpr;
@@ -758,13 +739,8 @@
             if (wpx > 0.001) {
               const grad = ctx.createLinearGradient(px, py, qx, qy);
               const colA = CONFIG.lineColorA, colB = CONFIG.lineColorB;
-              if (!invert) { 
-                grad.addColorStop(0, rgbaArr(colA, a)); 
-                grad.addColorStop(1, rgbaArr(colB, a)); 
-              } else {          
-                grad.addColorStop(0, rgbaArr(colB, a)); 
-                grad.addColorStop(1, rgbaArr(colA, a)); 
-              }
+              if (!invert) { grad.addColorStop(0, rgbaArr(colA, a)); grad.addColorStop(1, rgbaArr(colB, a)); }
+              else          { grad.addColorStop(0, rgbaArr(colB, a)); grad.addColorStop(1, rgbaArr(colA, a)); }
               ctx.strokeStyle = grad;
               ctx.lineWidth = Math.max(0.001, wpx);
               ctx.beginPath();
@@ -780,7 +756,7 @@
       if (CONFIG.pointerCurves) {
         ctx.globalCompositeOperation = CONFIG.pointerCurveComposite;
         const maxD = CONFIG.pointerCurveMaxDist * dpr;
-        const wpxBase = CONFIG.pointerCurveWidthPx * dpr * (IS_MOBILE ? 1.5 : 1.0);
+        const wpx = CONFIG.pointerCurveWidthPx * dpr;
         const candidates = [];
         for (let i = 0; i < particles.length; i++) {
           const q = particles[i];
@@ -809,15 +785,10 @@
           const cy1 = pointer.y + dy * 0.5 + ny * dLen * CONFIG.pointerCurveBend;
           const grad = ctx.createLinearGradient(pointer.x, pointer.y, qx, qy);
           const colA = CONFIG.pointerCurveColorA, colB = CONFIG.pointerCurveColorB;
-          if (!invert) { 
-            grad.addColorStop(0, rgbaArr(colA, alpha)); 
-            grad.addColorStop(1, rgbaArr(colB, alpha*0.95)); 
-          } else {          
-            grad.addColorStop(0, rgbaArr(colB, alpha)); 
-            grad.addColorStop(1, rgbaArr(colA, alpha*0.95)); 
-          }
+          if (!invert) { grad.addColorStop(0, rgbaArr(colA, alpha)); grad.addColorStop(1, rgbaArr(colB, alpha*0.95)); }
+          else          { grad.addColorStop(0, rgbaArr(colB, alpha)); grad.addColorStop(1, rgbaArr(colA, alpha*0.95)); }
           ctx.strokeStyle = grad;
-          ctx.lineWidth = Math.max(0.001, wpxBase);
+          ctx.lineWidth = Math.max(0.001, wpx);
           ctx.beginPath();
           ctx.moveTo(pointer.x, pointer.y);
           ctx.quadraticCurveTo(cx1, cy1, qx, qy);
