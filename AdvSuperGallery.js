@@ -163,10 +163,10 @@
                     const smoothStrength = Math.pow(effectStrength, 0.7);
 
                     // Применяем эффект
-                    const maxRotation = 5; // максимальный угол поворота в центре
+                    const maxRotation = 10; // максимальный угол поворота в центре
                     const perspectiveX = distX * maxRotation * smoothStrength;
                     const perspectiveY = distY * -maxRotation * smoothStrength;
-                    const scale = 1 + (0.01 * smoothStrength);
+                    const scale = 1 + (0.03 * smoothStrength);
 
                     activeCard.style.transition = 'transform 0.1s ease-out';
                     activeCard.style.transform = `
@@ -276,21 +276,37 @@
                     if (e.key === 'ArrowRight') showLightboxImage((currentLightboxIndex + 1) % cards.length);
                 });
                 
-                const lightboxContent = lightbox.querySelector('.lightbox-content');
+                // Swipe для lightbox (горизонтальный для переключения, вертикальный для закрытия)
                 let lightboxStartX = 0;
+                let lightboxStartY = 0;
+                const lightboxContent = lightbox.querySelector('.lightbox-content');
                 
                 lightboxContent.addEventListener('touchstart', (e) => {
                     if (e.target.closest('.lightbox-nav') || e.target.closest('.lightbox-close')) return;
                     lightboxStartX = e.touches[0].clientX;
+                    lightboxStartY = e.touches[0].clientY;
                 }, { passive: true });
                 
                 lightboxContent.addEventListener('touchend', (e) => {
                     if (e.target.closest('.lightbox-nav') || e.target.closest('.lightbox-close')) return;
-                    const diff = e.changedTouches[0].clientX - lightboxStartX;
-                    if (Math.abs(diff) > 50) {
-                        diff > 0 ? 
-                            showLightboxImage((currentLightboxIndex - 1 + cards.length) % cards.length) :
-                            showLightboxImage((currentLightboxIndex + 1) % cards.length);
+                    
+                    const diffX = e.changedTouches[0].clientX - lightboxStartX;
+                    const diffY = e.changedTouches[0].clientY - lightboxStartY;
+                    
+                    // Определяем направление свайпа
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        // Горизонтальный свайп - переключение слайдов
+                        if (Math.abs(diffX) > 50) {
+                            diffX > 0 ? 
+                                showLightboxImage((currentLightboxIndex - 1 + cards.length) % cards.length) :
+                                showLightboxImage((currentLightboxIndex + 1) % cards.length);
+                        }
+                    } else {
+                        // Вертикальный свайп - закрытие lightbox
+                        if (diffY > 100) {
+                            // Свайп вниз (> 100px) - закрываем
+                            closeLightbox();
+                        }
                     }
                 });
             }
@@ -382,7 +398,36 @@
             });
         }
 
-        // Long press для lightbox (mobile)
+        // Double tap для lightbox на мобильных
+        let lastTapTime = 0;
+        let tapTimeout = null;
+
+        gallery.addEventListener('touchend', (e) => {
+            if (e.target.closest('.carousel-button') || e.target.closest('.carousel-indicators')) return;
+            
+            const currentTime = Date.now();
+            const tapInterval = currentTime - lastTapTime;
+            
+            // Double tap обнаружен (между тапами < 300ms)
+            if (tapInterval < 300 && tapInterval > 0) {
+                // Отменяем долгое нажатие если оно было
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                
+                // Открываем lightbox
+                openLightbox(currentIndex);
+                
+                // Сбрасываем таймер
+                lastTapTime = 0;
+            } else {
+                // Первый тап - запоминаем время
+                lastTapTime = currentTime;
+            }
+        });
+
+        // Long press для lightbox на mobile (оставляем как запасной вариант)
         let longPressTimer = null;
         gallery.addEventListener('touchstart', (e) => {
             if (e.target.closest('.carousel-button') || e.target.closest('.carousel-indicators')) return;
@@ -431,7 +476,8 @@
     initializeAllGalleries();
 
     // Mobile swipe (Вариант B - ближайшая галерея)
-    if (window.innerWidth <= 768) {
+    // Работает на всех touch устройствах (телефоны и планшеты)
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
         let swipeStartX = 0;
         let swipeStartY = 0;
         let activeGallery = null;
