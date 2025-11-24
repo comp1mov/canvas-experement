@@ -48,13 +48,14 @@
       // --- количество частиц ---
       densityByArea: true,
       numParticles: IS_DESKTOP ? 220 : (IS_TABLET ? 340 : 380),
-      densityK: IS_DESKTOP ? 0.00009 : (IS_TABLET ? 0.00016 : 0.00018),
+      // на планшете в ~2 раза больше частиц за счёт densityK
+      densityK: IS_DESKTOP ? 0.00009 : (IS_TABLET ? 0.00032 : 0.00018),
       pixelRatioClamp: IS_DESKTOP ? 1.3 : 2.0,
 
       // --- геометрия частицы ---
-      sizeMin: IS_DESKTOP ? 0.25 : (IS_TABLET ? 0.22 : 0.18),
-      sizeMax: IS_DESKTOP ? 1.0  : (IS_TABLET ? 0.8  : 0.6),
-      baseColor: [255, 255, 255],
+      sizeMin: IS_DESKTOP ? 0.25 : (IS_TABLET ? 0.16 : 0.18),
+      sizeMax: IS_DESKTOP ? 1.0  : (IS_TABLET ? 0.55 : 0.6),
+      baseColor: [230, 230, 230], // ~90% яркости
       particleBlend: 'difference',
 
       // --- stroke частицы ---
@@ -93,11 +94,11 @@
       pointerNoiseHz: 0.2,
       pointerNoiseSmooth: 0.9,
 
-      // --- клик: сразу burst ---
+      // --- клик: сразу burst, без pull ---
       clickAffectsAll: false,
       clickRadius: IS_DESKTOP ? 150 : (IS_TABLET ? 55 : 40),
       
-      // притягивание больше не актуально, оставляем как заглушки
+      // эти параметры больше не используются, но пусть живут
       prePullSec: 0.0,
       pullStrength: 1.0,
       pullGrowFactor: 1,
@@ -110,8 +111,8 @@
       explosionAngleJitter: 0.25,
       frictionBurst: 0.8,
       explodeGrowMul: IS_DESKTOP ? 80.0 : (IS_TABLET ? 40.0 : 45.0),
-      explodeNoiseHz: 0.024,
-      explodeNoiseAmp: 180.0,
+      explodeNoiseHz: 0.026,
+      explodeNoiseAmp: 210.0,
       explodeNoiseSmooth: 0.99,
       explodeAlphaBoost: 1.0,
       explodeStartJitterFramesMin: 0,
@@ -123,20 +124,20 @@
       lineMode: 'tiers',
       connectionDist: 160,
       maxEdgesPerNode: 2,
-      shortRadius: 50,
-      midRadius: 680,
+      shortRadius: 70,   // чуть больше радиус "коротких" связей
+      midRadius: 720,
       longRadius: 1820,
       shortCount: 3,
       midCount: 0,
       longCount: 0,
-      lineWidthPx: IS_DESKTOP ? 0.5 : 0.7,
+      lineWidthPx: IS_DESKTOP ? 0.8 : 0.7, // на компе чуть толще
       lineOpacity: 0.6,
       lineColorA: [255,255,255],
       lineColorB: [200,200,200],
       lineGradientMode: 'autoCenter',
       lineGradientCenter: 'screen',
       lineGradientInvert: true,
-      lineFadeDistPx: 30,
+      lineFadeDistPx: 60, // плавнее появление/исчезновение линий
 
       // --- кривые от указателя ---
       pointerCurves: !IS_PHONE,
@@ -308,11 +309,7 @@
         life,
         pulse: rand() * TAU,
         mode: 0,
-        tapX: 0, tapY: 0,
-        pullStart: 0,
-        pullFromX: 0, pullFromY: 0,
         burstStart: 0,
-        burstDelay: 0,
         burstDur: CONFIG.burstLife,
         seedX: rand() * 1000,
         seedY: rand() * 1000,
@@ -390,7 +387,7 @@
       pointerTween.active = false;
     };
 
-    // взрыв: каждая частица летит из своей точки в случайном направлении
+    // взрыв: каждая частица летит из своей текущей точки в случайном направлении
     triggerTapSequence = function(screenX, screenY) {
       const tnow = nowSec();
       const r = CONFIG.clickRadius * dpr;
@@ -406,13 +403,6 @@
           const dyS = drawY - screenY;
           if (dxS * dxS + dyS * dyS > r2) continue;
         }
-
-        // тач-точка в системе координат частиц
-        const tapWorldX = screenX - parOffX * p.par;
-        const tapWorldY = screenY - parOffY * p.par;
-        // dx, dy нам больше не нужны для направления, только ради локальности
-        void tapWorldX;
-        void tapWorldY;
 
         const baseAng = rand() * TAU;
         const ang = baseAng + (rand() - 0.5) * CONFIG.explosionAngleJitter;
@@ -641,11 +631,6 @@
           p.vy *= CONFIG.friction;
           p.x += p.vx;
           p.y += p.vy;
-
-        } else if (p.mode === 1) {
-          // запасной путь, сейчас не используется
-          p.mode = 2;
-          p.burstStart = t;
 
         } else if (p.mode === 2) {
           const k = clamp((t - p.burstStart) / p.burstDur, 0, 1);
