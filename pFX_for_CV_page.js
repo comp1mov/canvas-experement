@@ -39,6 +39,13 @@
     stopLoop = false;
     console.log('Particles started on:', window.location.href);
 
+    // детект устройства на момент инициализации
+    const isMobile = isMobileDevice();
+    const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+    const IS_PHONE  = isMobile && vw <= 768;
+    const IS_TABLET = isMobile && !IS_PHONE;
+    const IS_DESKTOP = !isMobile;
+
     // =============== CONFIG ===============
     const CONFIG = {
       // --- количество частиц ---
@@ -124,7 +131,6 @@
       shortCount: 3,
       midCount: 0,
       longCount: 0,
-      // здесь сделал x1.5
       lineWidthPx: 0.6,
       lineOpacity: 0.6,
       lineColorA: [255,255,255],
@@ -167,6 +173,28 @@
       canvasBlendMode: 'difference',
       canvasOpacity: 1
     };
+
+    // device-specific правки, не трогаем десктоп по производительности
+    if (IS_PHONE) {
+      // чуть больше частиц, меньший радиус тапа, поинтер без влияния
+      CONFIG.numParticles = 220;
+      CONFIG.densityK     = 0.00012;
+      CONFIG.clickRadius  = 80;
+      CONFIG.pixelRatioClamp = 1.3;
+
+      CONFIG.pointerInfluenceRadius = 0;
+      CONFIG.enablePointerSwirl = false;
+      CONFIG.enablePointerAttraction = false;
+      CONFIG.enablePointerNoise = false;
+      CONFIG.pointerCurves = false;
+    } else if (IS_TABLET) {
+      // на iPad плотнее поле, радиус тапа поменьше, но не как на телефоне
+      CONFIG.numParticles = 260;
+      CONFIG.densityK     = 0.00016;
+      CONFIG.clickRadius  = 110;
+      CONFIG.pixelRatioClamp = 1.4;
+      // остальное (поинтер, кривые) как на десктопе
+    }
 
     // =============== Canvas ===============
     canvas = document.createElement('canvas');
@@ -334,6 +362,10 @@
       duration: 3.0
     };
 
+    // фазы для "живого" нойза поинтера
+    let pointerIdlePhaseX = rand() * 1000;
+    let pointerIdlePhaseY = rand() * 1000;
+
     function resetPointerToCenter() {
       pointerLocal.x = w * 0.5;
       pointerLocal.y = h * 0.5;
@@ -353,11 +385,10 @@
       pointerTween.active = true;
     }
 
-    const isMobile = isMobileDevice();
-
     function pageToCanvas(px, py) { return [px * dpr, py * dpr]; }
 
     onPointerMove = function(e) {
+      // поинтер мыши управляет только на десктопе, на планшете тапы через tween
       if (isMobile) return;
       const t = nowSec();
       const dt = Math.max(1 / 120, t - pointerLocal.tPrev);
@@ -419,11 +450,11 @@
       const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
 
       if (isMobile) {
-        // поинтер плавно едет к месту тапа
+        // на планшете/телефоне виртуальный поинтер плавно едет к месту тапа
         startPointerTween(cx, cy, 3.0);
       }
 
-      // взрыв в момент тапа
+      // взрыв в момент тапа/клика
       triggerTapSequence(cx, cy);
     }, { passive: true });
 
@@ -487,7 +518,7 @@
         parOffY = clamp(parOffY, -xLim, xLim);
       }
 
-      // анимация поинтера на мобильных
+      // анимация поинтера на мобильных (tween)
       if (isMobile && pointerTween.active) {
         const k = clamp((t - pointerTween.startTime) / pointerTween.duration, 0, 1);
         const eased = easeInOutQuad(k);
@@ -503,6 +534,20 @@
         pointerLocal.vy = (pointerLocal.y - prevY) * invDt;
 
         if (k >= 1) pointerTween.active = false;
+      }
+
+      // лёгкий "живой" нойз поинтера на десктопе и планшете
+      if (!IS_PHONE) {
+        const speed = Math.hypot(pointerLocal.vx, pointerLocal.vy);
+        if (!pointerTween.active && speed < 40) {
+          pointerIdlePhaseX += dt * 0.6;
+          pointerIdlePhaseY += dt * 0.8;
+          const amp = 4 * dpr;
+          pointerLocal.x += Math.sin(pointerIdlePhaseX) * amp * dt;
+          pointerLocal.y += Math.cos(pointerIdlePhaseY) * amp * dt;
+          pointerLocal.x = clamp(pointerLocal.x, 0, w);
+          pointerLocal.y = clamp(pointerLocal.y, 0, h);
+        }
       }
 
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -558,16 +603,16 @@
           const dym = pointerLocal.y - (p.y + parOffY * p.par);
           const d2 = dxm * dxm + dym * dym;
           const prR = CONFIG.pointerInfluenceRadius * dpr;
-          if (d2 < prR * prR) {
+          if (prR > 0 && d2 < prR * prR) {
             const dlen = Math.sqrt(d2) || 1;
             const fall = Math.pow(
               1 - clamp(dlen / prR, 0, 1),
               CONFIG.pointerSwirlFalloffExp
             );
-            const speed = Math.hypot(pointerLocal.vx, pointerLocal.vy) / 1000;
+            const speedP = Math.hypot(pointerLocal.vx, pointerLocal.vy) / 1000;
 
             if (CONFIG.enablePointerSwirl) {
-              const swirl = CONFIG.pointerSwirlStrength * fall * speed;
+              const swirl = CONFIG.pointerSwirlStrength * fall * speedP;
               p.vx += (-dym / dlen) * swirl;
               p.vy += ( dxm / dlen) * swirl;
             }
