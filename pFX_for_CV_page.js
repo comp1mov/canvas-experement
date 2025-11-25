@@ -100,7 +100,6 @@
       clickAffectsAll: false,
       clickRadius: 150,
       
-      // слабое притяжение
       prePullSec: 1.4,
       pullStrength: 0.9,
       pullGrowFactor: 1,
@@ -174,13 +173,18 @@
       canvasOpacity: 1
     };
 
-    // device-specific правки, не трогаем десктоп по производительности
+    // device-specific правки
+
     if (IS_PHONE) {
-      // чуть больше частиц, меньший радиус тапа, поинтер без влияния
-      CONFIG.numParticles = 220;
-      CONFIG.densityK     = 0.00012;
-      CONFIG.clickRadius  = 80;
-      CONFIG.pixelRatioClamp = 1.3;
+      // телефон: больше частиц, меньше радиус тапа и рост, но разлёт дальше
+      CONFIG.numParticles = 230;
+      CONFIG.densityK     = 0.00014;
+      CONFIG.clickRadius  = 60;
+      CONFIG.pixelRatioClamp = 1.4;
+
+      CONFIG.explodeGrowMul   = 4.0;    // вместо 100, рост 3–5x
+      CONFIG.explosionPower   = 65;     // разлетаются дальше
+      CONFIG.explodeNoiseAmp  = 190.0;
 
       CONFIG.pointerInfluenceRadius = 0;
       CONFIG.enablePointerSwirl = false;
@@ -188,13 +192,17 @@
       CONFIG.enablePointerNoise = false;
       CONFIG.pointerCurves = false;
     } else if (IS_TABLET) {
-      // на iPad плотнее поле, радиус тапа поменьше, но не как на телефоне
-      CONFIG.numParticles = 260;
-      CONFIG.densityK     = 0.00016;
-      CONFIG.clickRadius  = 110;
-      CONFIG.pixelRatioClamp = 1.4;
-      // остальное (поинтер, кривые) как на десктопе
+      // iPad: ещё плотнее поле, меньше радиус тапа, умеренный рост, дальний разлёт
+      CONFIG.numParticles = 280;
+      CONFIG.densityK     = 0.00018;
+      CONFIG.clickRadius  = 80;
+      CONFIG.pixelRatioClamp = 1.5;
+
+      CONFIG.explodeGrowMul   = 4.0;
+      CONFIG.explosionPower   = 75;
+      CONFIG.explodeNoiseAmp  = 200.0;
     }
+    // Desktop остаётся с исходными explodeGrowMul/Power
 
     // =============== Canvas ===============
     canvas = document.createElement('canvas');
@@ -362,7 +370,19 @@
       duration: 3.0
     };
 
-    // фазы для "живого" нойза поинтера
+    // пружинная "парковка" после tween
+    let pointerBounce = {
+      active: false,
+      restX: 0,
+      restY: 0,
+      amp0: 0,
+      t0: 0,
+      dur: 0.6,
+      axisX: 1,
+      axisY: 0
+    };
+
+    // фазы для idle-движения поинтера
     let pointerIdlePhaseX = rand() * 1000;
     let pointerIdlePhaseY = rand() * 1000;
 
@@ -383,6 +403,7 @@
       pointerTween.startTime = nowSec();
       pointerTween.duration = durationSec;
       pointerTween.active = true;
+      pointerBounce.active = false;
     }
 
     function pageToCanvas(px, py) { return [px * dpr, py * dpr]; }
@@ -402,6 +423,7 @@
       pointerLocal.y = my;
       pointerLocal.tPrev = t;
       pointerTween.active = false;
+      pointerBounce.active = false;
     };
 
     triggerTapSequence = function(screenX, screenY) {
@@ -449,10 +471,11 @@
     addEventListener('pointerdown', e => {
       const [cx, cy] = pageToCanvas(e.clientX, e.clientY);
 
-      if (isMobile) {
-        // на планшете/телефоне виртуальный поинтер плавно едет к месту тапа
-        startPointerTween(cx, cy, 3.0);
+      if (IS_TABLET) {
+        // на iPad поинтер быстро едет к тапу, потом пружинится
+        startPointerTween(cx, cy, 1.1);
       }
+      // на телефоне поинтером не управляем вообще, только взрыв
 
       // взрыв в момент тапа/клика
       triggerTapSequence(cx, cy);
@@ -518,8 +541,8 @@
         parOffY = clamp(parOffY, -xLim, xLim);
       }
 
-      // анимация поинтера на мобильных (tween)
-      if (isMobile && pointerTween.active) {
+      // анимация поинтера на планшете (tween)
+      if (IS_TABLET && pointerTween.active) {
         const k = clamp((t - pointerTween.startTime) / pointerTween.duration, 0, 1);
         const eased = easeInOutQuad(k);
 
@@ -533,16 +556,51 @@
         pointerLocal.vx = (pointerLocal.x - prevX) * invDt;
         pointerLocal.vy = (pointerLocal.y - prevY) * invDt;
 
-        if (k >= 1) pointerTween.active = false;
+        if (k >= 1) {
+          pointerTween.active = false;
+          const sp = Math.hypot(pointerLocal.vx, pointerLocal.vy);
+
+          if (!IS_PHONE && sp > 10) {
+            pointerBounce.active = true;
+            pointerBounce.restX = pointerLocal.x;
+            pointerBounce.restY = pointerLocal.y;
+            pointerBounce.t0   = t;
+            pointerBounce.dur  = 0.6;
+            const ampFromSpeed = Math.min(40 * dpr, sp * 0.05);
+            pointerBounce.amp0 = ampFromSpeed || 0;
+            const nx = pointerLocal.vx / (sp || 1);
+            const ny = pointerLocal.vy / (sp || 1);
+            pointerBounce.axisX = isFinite(nx) ? nx : 1;
+            pointerBounce.axisY = isFinite(ny) ? ny : 0;
+          }
+          pointerLocal.vx = 0;
+          pointerLocal.vy = 0;
+        }
       }
 
-      // лёгкий "живой" нойз поинтера на десктопе и планшете
+      // затухающая пружинная парковка поинтера (таблет / десктоп)
+      if (pointerBounce.active && !IS_PHONE) {
+        const tb = t - pointerBounce.t0;
+        if (tb >= pointerBounce.dur) {
+          pointerBounce.active = false;
+          pointerLocal.x = pointerBounce.restX;
+          pointerLocal.y = pointerBounce.restY;
+        } else {
+          const phase = tb * 16; // частота колебаний
+          const env   = Math.pow(1 - tb / pointerBounce.dur, 2);
+          const off   = Math.sin(phase) * pointerBounce.amp0 * env;
+          pointerLocal.x = pointerBounce.restX + pointerBounce.axisX * off;
+          pointerLocal.y = pointerBounce.restY + pointerBounce.axisY * off;
+        }
+      }
+
+      // более заметный idle-дрейф поинтера (когда нет tween и bounce)
       if (!IS_PHONE) {
         const speed = Math.hypot(pointerLocal.vx, pointerLocal.vy);
-        if (!pointerTween.active && speed < 40) {
-          pointerIdlePhaseX += dt * 0.6;
-          pointerIdlePhaseY += dt * 0.8;
-          const amp = 4 * dpr;
+        if (!pointerTween.active && !pointerBounce.active && speed < 80) {
+          pointerIdlePhaseX += dt * 1.4;
+          pointerIdlePhaseY += dt * 1.9;
+          const amp = 20 * dpr;
           pointerLocal.x += Math.sin(pointerIdlePhaseX) * amp * dt;
           pointerLocal.y += Math.cos(pointerIdlePhaseY) * amp * dt;
           pointerLocal.x = clamp(pointerLocal.x, 0, w);
