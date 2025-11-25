@@ -98,22 +98,22 @@
 
       // --- клик: pull -> burst ---
       clickAffectsAll: false,
-      clickRadius: 70,
+      clickRadius: 80,
       
       // слабое притяжение
-      prePullSec: 0.2,
-      pullStrength: 0.3,
+      prePullSec: 0.1,
+      pullStrength: 0.5,
       pullGrowFactor: 1,
       
       burstLife: 3.8,
       explodeTimeJitter: 0.01,
-      explosionPower: 40,
+      explosionPower: 3,
       explosionPowerJitter: 0.2,
       explosionAngleJitter: 0.25,
-      frictionBurst: 0.998,
+      frictionBurst: 0.4,
       explodeGrowMul: 20.0,
-      explodeNoiseHz: 0.06,
-      explodeNoiseAmp: 352.0,
+      explodeNoiseHz: 0.1,
+      explodeNoiseAmp: 52.0,
       explodeNoiseSmooth: 0.99,
       explodeAlphaBoost: 1.0,
       explodeStartJitterFramesMin: 1,
