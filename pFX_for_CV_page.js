@@ -57,7 +57,7 @@
       // --- геометрия частицы ---
       sizeMin: 0.3,
       sizeMax: 1.5,
-      baseColor: [230, 230, 230],
+      baseColor: [255, 255, 255],
       particleBlend: 'difference',
 
       // --- stroke частицы ---
@@ -98,47 +98,47 @@
 
       // --- клик: pull -> burst ---
       clickAffectsAll: false,
-      clickRadius: 80,
+      clickRadius: 150,
       
       // слабое притяжение
-      prePullSec: 0.1,
-      pullStrength: 0.5,
+      prePullSec: 1.4,
+      pullStrength: 0.9,
       pullGrowFactor: 1,
       
       burstLife: 3.8,
-      explodeTimeJitter: 0.01,
-      explosionPower: 3,
+      explodeTimeJitter: 0.35,
+      explosionPower: 40,
       explosionPowerJitter: 0.2,
       explosionAngleJitter: 0.25,
-      frictionBurst: 0.4,
-      explodeGrowMul: 20.0,
-      explodeNoiseHz: 0.1,
-      explodeNoiseAmp: 52.0,
+      frictionBurst: 0.8,
+      explodeGrowMul: 100.0,
+      explodeNoiseHz: 0.02,
+      explodeNoiseAmp: 152.0,
       explodeNoiseSmooth: 0.99,
       explodeAlphaBoost: 1.0,
       explodeStartJitterFramesMin: 1,
-      explodeStartJitterFramesMax: 3,
+      explodeStartJitterFramesMax: 10,
 
       // --- линии между точками ---
       linkLines: true,
       lineComposite: 'screen',
       lineMode: 'tiers',
-      connectionDist: 180,
-      maxEdgesPerNode: 3,
-      shortRadius: 70,
+      connectionDist: 160,
+      maxEdgesPerNode: 2,
+      shortRadius: 50,
       midRadius: 680,
       longRadius: 1820,
-      shortCount: 4,
+      shortCount: 3,
       midCount: 0,
       longCount: 0,
-      lineWidthPx: 1,
-      lineOpacity: 0.7,
+      lineWidthPx: 0.6,
+      lineOpacity: 0.6,
       lineColorA: [255,255,255],
       lineColorB: [200,200,200],
       lineGradientMode: 'autoCenter',
       lineGradientCenter: 'screen',
       lineGradientInvert: true,
-      lineFadeDistPx: 40,
+      lineFadeDistPx: 30,
 
       // --- кривые от указателя ---
       pointerCurves: true,
@@ -146,8 +146,8 @@
       pointerCurveCount: 30,
       pointerCurveMaxDist: 260,
       pointerCurveBend: 0,
-      pointerCurveWidthPx: 4,
-      pointerCurveOpacity: 0.95,
+      pointerCurveWidthPx: 3,
+      pointerCurveOpacity: 0.85,
       pointerCurveColorA: [255,255,255],
       pointerCurveColorB: [0,0,0],
       pointerCurveInvertByDistance: true,
@@ -179,8 +179,8 @@
       // чуть больше частиц, меньший радиус тапа, поинтер без влияния
       CONFIG.numParticles = 220;
       CONFIG.densityK     = 0.00012;
-      CONFIG.clickRadius  = 40;
-      CONFIG.pixelRatioClamp = 1.5;
+      CONFIG.clickRadius  = 80;
+      CONFIG.pixelRatioClamp = 1.3;
 
       CONFIG.pointerInfluenceRadius = 0;
       CONFIG.enablePointerSwirl = false;
@@ -189,10 +189,10 @@
       CONFIG.pointerCurves = false;
     } else if (IS_TABLET) {
       // на iPad плотнее поле, радиус тапа поменьше, но не как на телефоне
-      CONFIG.numParticles = 200;
+      CONFIG.numParticles = 260;
       CONFIG.densityK     = 0.00016;
-      CONFIG.clickRadius  = 40;
-      CONFIG.pixelRatioClamp = 1.0;
+      CONFIG.clickRadius  = 110;
+      CONFIG.pixelRatioClamp = 1.4;
       // остальное (поинтер, кривые) как на десктопе
     }
 
