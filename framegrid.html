@@ -1,30 +1,16 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.12.4 FIXED -(2026)        ║
+║      FRAMEGRID v0.12.6 FIXED - Исправленная версия (2026)      ║
 ╚════════════════════════════════════════════════════════════════╝
 
-✅ ИСПРАВЛЕНИЯ:
-
-1. MP4 Export - Codec изменен на avc1.640028 (H.264 Level 4.0)
-   Решает ошибку: "coded area exceeds the maximum coded area"
-   Поддерживает до 2,073,600 пикселей (было 921,600)
-
-2. Оптимизированы разрешения:
-   - MP4 Grid: 120px/кадр, макс 1080px
-   - MP4 Single: макс 720px
-   - Файлы меньше в 3 раза, экспорт быстрее
-
-
-⚠️  Требования: Chrome 94+, Edge 94+, Safari 16.4+
--->
 
 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.10</title>
+  <title>FRAMEGRID v0.12</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -295,7 +281,7 @@
 <body>
   <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-      <div class="metadata-logo">FRAMEGRID v0.10</div>
+      <div class="metadata-logo">FRAMEGRID v0.12</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -506,6 +492,8 @@
               <option value="forward">Forward</option>
               <option value="backward">Backward</option>
               <option value="pingpong">Ping-pong</option>
+              <option value="sync">Sync (all same)</option>
+              <option value="random">Random</option>
             </select>
           </div>
           <div class="menu-row">
@@ -539,7 +527,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version 0.08</div>
+          <div class="about-version">Version 0.12</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
           <div class="about-hotkeys">
@@ -1020,15 +1008,15 @@
     const availW = rect.width - pad * 2;
     const availH = rect.height - pad * 2;
     
-    const maxFW = (availW - (state.gridCols - 1) * gap) / state.gridCols;
-    const maxFH = (availH - (rows - 1) * gap) / rows;
+    const maxFW = (availW - (state.gridCols + 1) * gap) / state.gridCols;
+    const maxFH = (availH - (rows + 1) * gap) / rows;
     
     let fw, fh;
     if (maxFW / frameAspect <= maxFH) { fw = maxFW; fh = fw / frameAspect; }
     else { fh = maxFH; fw = fh * frameAspect; }
     
-    const gridW = state.gridCols * fw + (state.gridCols - 1) * gap;
-    const gridH = rows * fh + (rows - 1) * gap;
+    const gridW = state.gridCols * fw + (state.gridCols + 1) * gap;
+    const gridH = rows * fh + (rows + 1) * gap;
     
     state.scale = 1;
     state.panX = (rect.width - gridW) / 2;
@@ -1218,34 +1206,45 @@
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
     const totalCells = items.length - offset;
-    
-    let sequence = [];
     const frameCount = state.frames.length;
-    if (state.animDirection === 'forward') {
-      for (let i = 0; i < frameCount; i++) sequence.push(i);
-    } else if (state.animDirection === 'backward') {
-      for (let i = frameCount - 1; i >= 0; i--) sequence.push(i);
-    } else if (state.animDirection === 'pingpong') {
-      for (let i = 0; i < frameCount; i++) sequence.push(i);
-      for (let i = frameCount - 2; i > 0; i--) sequence.push(i);
-    }
     const cellOrder = generateCellOrder(totalCells, state.gridCols);
     const interval = 1000 / state.animFps;
     let tick = 0;
+    
+    // For ping-pong, we need cycle length = (frameCount-1)*2
+    const pingPongCycle = (frameCount - 1) * 2;
+    
     state.animInterval = setInterval(() => {
       tick++;
-      const seqIndex = tick % sequence.length;
       items.forEach((item, i) => {
         if (i < offset) return;
         const cellIdx = i - offset;
         const cellOrderIdx = cellOrder.indexOf(cellIdx);
-        const frameOffset = (cellOrderIdx + sequence[seqIndex]) % frameCount;
+        
+        let frameIdx;
+        if (state.animDirection === 'pingpong') {
+          // Each cell ping-pongs independently from its starting position
+          const baseFrame = cellOrderIdx % frameCount;
+          const pos = tick % pingPongCycle;
+          const delta = pos < frameCount ? pos : pingPongCycle - pos;
+          frameIdx = (baseFrame + delta) % frameCount;
+        } else if (state.animDirection === 'backward') {
+          frameIdx = (cellOrderIdx - tick % frameCount + frameCount * 100) % frameCount;
+        } else if (state.animDirection === 'sync') {
+          frameIdx = tick % frameCount;
+        } else if (state.animDirection === 'random') {
+          frameIdx = Math.floor(Math.random() * frameCount);
+        } else {
+          // forward
+          frameIdx = (cellOrderIdx + tick) % frameCount;
+        }
+        
         const img = item.querySelector('img');
         const tc = item.querySelector('.frame-timecode');
-        if (img && state.frames[frameOffset]) {
-          img.src = state.frames[frameOffset].dataUrl;
+        if (img && state.frames[frameIdx]) {
+          img.src = state.frames[frameIdx].dataUrl;
           if (tc && state.showTimecode) {
-            tc.textContent = `${formatTime(state.frames[frameOffset].time)} / F${state.frames[frameOffset].frameNumber}`;
+            tc.textContent = `${formatTime(state.frames[frameIdx].time)} / F${state.frames[frameIdx].frameNumber}`;
           }
         }
       });
@@ -1266,41 +1265,45 @@
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
     const totalCells = items.length - offset;
-    
-    // Generate animation sequence based on direction
-    let sequence = [];
     const frameCount = state.frames.length;
-    
-    if (state.animDirection === 'forward') {
-      for (let i = 0; i < frameCount; i++) sequence.push(i);
-    } else if (state.animDirection === 'backward') {
-      for (let i = frameCount - 1; i >= 0; i--) sequence.push(i);
-    } else if (state.animDirection === 'pingpong') {
-      for (let i = 0; i < frameCount; i++) sequence.push(i);
-      for (let i = frameCount - 2; i > 0; i--) sequence.push(i);
-    }
-    
-    // Generate cell order based on pattern
     const cellOrder = generateCellOrder(totalCells, state.gridCols);
-    
     const interval = 1000 / state.animFps;
     let tick = 0;
     
+    // For ping-pong, we need cycle length = (frameCount-1)*2
+    const pingPongCycle = (frameCount - 1) * 2;
+    
     state.animInterval = setInterval(() => {
       tick++;
-      const seqIndex = tick % sequence.length;
-      
       items.forEach((item, i) => {
         if (i < offset) return;
         const cellIdx = i - offset;
         const cellOrderIdx = cellOrder.indexOf(cellIdx);
-        const frameOffset = (cellOrderIdx + sequence[seqIndex]) % frameCount;
+        
+        let frameIdx;
+        if (state.animDirection === 'pingpong') {
+          // Each cell ping-pongs independently from its starting position
+          const baseFrame = cellOrderIdx % frameCount;
+          const pos = tick % pingPongCycle;
+          const delta = pos < frameCount ? pos : pingPongCycle - pos;
+          frameIdx = (baseFrame + delta) % frameCount;
+        } else if (state.animDirection === 'backward') {
+          frameIdx = (cellOrderIdx - tick % frameCount + frameCount * 100) % frameCount;
+        } else if (state.animDirection === 'sync') {
+          frameIdx = tick % frameCount;
+        } else if (state.animDirection === 'random') {
+          frameIdx = Math.floor(Math.random() * frameCount);
+        } else {
+          // forward
+          frameIdx = (cellOrderIdx + tick) % frameCount;
+        }
+        
         const img = item.querySelector('img');
         const tc = item.querySelector('.frame-timecode');
-        if (img && state.frames[frameOffset]) {
-          img.src = state.frames[frameOffset].dataUrl;
+        if (img && state.frames[frameIdx]) {
+          img.src = state.frames[frameIdx].dataUrl;
           if (tc && state.showTimecode) {
-            tc.textContent = `${formatTime(state.frames[frameOffset].time)} / F${state.frames[frameOffset].frameNumber}`;
+            tc.textContent = `${formatTime(state.frames[frameIdx].time)} / F${state.frames[frameIdx].frameNumber}`;
           }
         }
       });
@@ -1387,8 +1390,8 @@
 
     let baseFrameW = 300;
     let baseFrameH = Math.round(baseFrameW / frameAspect);
-    let gridW = state.gridCols * baseFrameW + (state.gridCols - 1) * gap;
-    let gridH = rows * baseFrameH + (rows - 1) * gap;
+    let gridW = state.gridCols * baseFrameW + (state.gridCols + 1) * gap;
+    let gridH = rows * baseFrameH + (rows + 1) * gap;
     let totalW = gridW;
     let totalH = headerH + gridH;
 
@@ -1398,13 +1401,13 @@
     
     const frameW = Math.round(baseFrameW * exportScale);
     const frameH = Math.round(baseFrameH * exportScale);
-    gridW = state.gridCols * frameW + (state.gridCols - 1) * gap;
-    gridH = rows * frameH + (rows - 1) * gap;
+    gridW = state.gridCols * frameW + (state.gridCols + 1) * gap;
+    gridH = rows * frameH + (rows + 1) * gap;
     totalW = gridW;
     totalH = headerH + gridH;
 
     const screenGridWidth = framesGrid.offsetWidth || 600;
-    const screenFrameW = (screenGridWidth - (state.gridCols - 1) * gap) / state.gridCols;
+    const screenFrameW = (screenGridWidth - (state.gridCols + 1) * gap) / state.gridCols;
     const fontScale = frameW / screenFrameW;
     const tcFontSize = Math.round(state.fontSize * fontScale);
     const headerFontSize = Math.round(11 * fontScale);
@@ -1447,10 +1450,10 @@
         ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
         ctx.fillStyle = '#fff';
         ctx.font = `700 ${headerFontSize}px system-ui`;
-        ctx.fillText('FRAMEGRID v0.08', 22, headerH * 0.65);
+        ctx.fillText('FRAMEGRID v0.12', 22, headerH * 0.65);
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = `${headerFontSize}px system-ui`;
-        const logoWidth = ctx.measureText('FRAMEGRID v0.08').width;
+        const logoWidth = ctx.measureText('FRAMEGRID v0.12').width;
         const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
         const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${dateStr}`;
         ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
@@ -1580,10 +1583,10 @@
             ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
             ctx.fillStyle = '#fff';
             ctx.font = `700 ${headerFontSize}px system-ui`;
-            ctx.fillText('FRAMEGRID v0.08', 22, headerH * 0.65);
+            ctx.fillText('FRAMEGRID v0.12', 22, headerH * 0.65);
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.font = `${headerFontSize}px system-ui`;
-            const logoWidth = ctx.measureText('FRAMEGRID v0.08').width;
+            const logoWidth = ctx.measureText('FRAMEGRID v0.12').width;
             const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · Frame ${i + 1}/${state.frames.length}`;
             ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
           }
@@ -1657,8 +1660,8 @@
     if (mode === 'grid') {
       let baseFrameW = 120; // Reduced for faster encoding
       let baseFrameH = Math.round(baseFrameW / frameAspect);
-      let gridW = state.gridCols * baseFrameW + (state.gridCols - 1) * gap;
-      let gridH = rows * baseFrameH + (rows - 1) * gap;
+      let gridW = state.gridCols * baseFrameW + (state.gridCols + 1) * gap;
+      let gridH = rows * baseFrameH + (rows + 1) * gap;
       const headerH = state.showMetadata ? 56 : 0;
       canvasW = gridW;
       canvasH = headerH + gridH;
@@ -1802,12 +1805,12 @@
   }
   
   function renderMp4GridFrame(ctx, w, h, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b) {
-    const headerH = state.showMetadata ? Math.round(h * 0.04) : 0;
+    const headerH = state.showMetadata ? Math.round(h * 0.05) : 0;
     const gridH = h - headerH;
     const gap = state.spacing;
-    const frameH = (gridH - (rows - 1) * gap) / rows;
+    const frameH = (gridH - (rows + 1) * gap) / rows;
     const frameW = frameH * frameAspect;
-    const gridW = state.gridCols * frameW + (state.gridCols - 1) * gap;
+    const gridW = state.gridCols * frameW + (state.gridCols + 1) * gap;
     const offsetX = (w - gridW) / 2;
     const fontScale = frameW / 150;
     const tcFontSize = Math.max(Math.round(state.fontSize * fontScale), 8);
@@ -1816,19 +1819,41 @@
     if (state.showMetadata && headerH > 0) {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
+      
+      // Build full metadata string like JPEG/PNG export
+      const logoText = 'FRAMEGRID v0.12';
+      const dateStr = state.videoDate ? formatDate(state.videoDate) : '';
+      const metaText = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${dateStr ? ' · ' + dateStr : ''}`;
+      const fullText = logoText + ' · ' + metaText;
+      
+      // Auto-fit font size
+      let fontSize = Math.round(headerH * 0.5);
+      ctx.font = `700 ${fontSize}px system-ui`;
+      while (ctx.measureText(fullText).width > w - 30 && fontSize > 8) {
+        fontSize--;
+        ctx.font = `700 ${fontSize}px system-ui`;
+      }
+      
+      const dotSize = Math.max(4, fontSize * 0.4);
       ctx.fillStyle = '#35f2a3';
-      ctx.fillRect(8, headerH / 2 - 3, 5, 5);
+      ctx.fillRect(8, (headerH - dotSize) / 2, dotSize, dotSize);
+      
       ctx.fillStyle = '#fff';
-      ctx.font = `700 ${Math.round(headerH * 0.5)}px system-ui`;
-      ctx.fillText('FRAMEGRID v0.10', 18, headerH * 0.7);
+      ctx.font = `700 ${fontSize}px system-ui`;
+      const logoWidth = ctx.measureText(logoText).width;
+      ctx.fillText(logoText, 8 + dotSize + 6, headerH * 0.68);
+      
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = `${fontSize}px system-ui`;
+      ctx.fillText(' · ' + metaText, 8 + dotSize + 6 + logoWidth, headerH * 0.68);
     }
     
     let cellIdx = 0;
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < state.gridCols; col++) {
         if (cellIdx >= frameCount) break;
-        const x = offsetX + col * (frameW + gap);
-        const y = headerH + row * (frameH + gap);
+        const x = offsetX + gap + col * (frameW + gap);
+        const y = headerH + gap + row * (frameH + gap);
         
         const cellOrderIdx = cellOrder.indexOf(cellIdx);
         const animFrameIdx = (cellOrderIdx + sequence[tick % sequence.length]) % frameCount;
@@ -1862,11 +1887,32 @@
     if (state.showMetadata) {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
+      
+      // Build metadata string
+      const logoText = 'FRAMEGRID v0.12';
+      const metaText = `${state.videoFile?.name || 'video'} · Frame ${frameIdx + 1}/${frameCount} · ${formatTime(frame.time)}`;
+      const fullText = logoText + ' · ' + metaText;
+      
+      // Auto-fit font size
+      let fontSize = Math.round(headerH * 0.4);
+      ctx.font = `700 ${fontSize}px system-ui`;
+      while (ctx.measureText(fullText).width > w - 30 && fontSize > 8) {
+        fontSize--;
+        ctx.font = `700 ${fontSize}px system-ui`;
+      }
+      
+      const dotSize = Math.max(4, fontSize * 0.4);
       ctx.fillStyle = '#35f2a3';
-      ctx.fillRect(8, headerH / 2 - 3, 5, 5);
+      ctx.fillRect(8, (headerH - dotSize) / 2, dotSize, dotSize);
+      
       ctx.fillStyle = '#fff';
-      ctx.font = `700 ${Math.round(headerH * 0.4)}px system-ui`;
-      ctx.fillText(`FRAMEGRID v0.10 · Frame ${frameIdx + 1}/${frameCount}`, 18, headerH * 0.65);
+      ctx.font = `700 ${fontSize}px system-ui`;
+      const logoWidth = ctx.measureText(logoText).width;
+      ctx.fillText(logoText, 8 + dotSize + 6, headerH * 0.65);
+      
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = `${fontSize}px system-ui`;
+      ctx.fillText(' · ' + metaText, 8 + dotSize + 6 + logoWidth, headerH * 0.65);
     }
     
     ctx.drawImage(img, 0, headerH, w, frameH);
@@ -1894,14 +1940,14 @@
 
     // Calculate current screen frame size for reference
     const screenGridWidth = framesGrid.offsetWidth || 600;
-    const screenFrameW = (screenGridWidth - (state.gridCols - 1) * gap) / state.gridCols;
+    const screenFrameW = (screenGridWidth - (state.gridCols + 1) * gap) / state.gridCols;
 
     // Base export frame size
     let baseFrameW = 300;
     let baseFrameH = Math.round(baseFrameW / frameAspect);
     
-    let gridW = state.gridCols * baseFrameW + (state.gridCols - 1) * gap;
-    let gridH = rows * baseFrameH + (rows - 1) * gap;
+    let gridW = state.gridCols * baseFrameW + (state.gridCols + 1) * gap;
+    let gridH = rows * baseFrameH + (rows + 1) * gap;
     let totalW = gridW;
     let totalH = headerH + gridH;
 
@@ -1911,8 +1957,8 @@
     
     const frameW = Math.round(baseFrameW * exportScale);
     const frameH = Math.round(baseFrameH * exportScale);
-    gridW = state.gridCols * frameW + (state.gridCols - 1) * gap;
-    gridH = rows * frameH + (rows - 1) * gap;
+    gridW = state.gridCols * frameW + (state.gridCols + 1) * gap;
+    gridH = rows * frameH + (rows + 1) * gap;
     totalW = gridW;
     totalH = headerH + gridH;
 
@@ -1941,12 +1987,12 @@
       
       ctx.fillStyle = '#fff';
       ctx.font = `700 ${headerFontSize}px system-ui`;
-      ctx.fillText('FRAMEGRID v0.08', 22, headerH * 0.65);
+      ctx.fillText('FRAMEGRID v0.12', 22, headerH * 0.65);
       
       // Info text after logo
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.font = `${headerFontSize}px system-ui`;
-      const logoWidth = ctx.measureText('FRAMEGRID v0.08').width;
+      const logoWidth = ctx.measureText('FRAMEGRID v0.12').width;
       const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
       const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${dateStr}`;
       ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
@@ -1964,8 +2010,8 @@
     const promises = items.map((item, i) => new Promise(resolve => {
       const col = i % state.gridCols;
       const row = Math.floor(i / state.gridCols);
-      const x = col * (frameW + gap);
-      const y = headerH + row * (frameH + gap);
+      const x = gap + col * (frameW + gap);
+      const y = headerH + gap + row * (frameH + gap);
 
       if (item.type === 'info') {
         ctx.fillStyle = '#000';
