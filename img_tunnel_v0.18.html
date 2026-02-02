@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMG TUNNEL v0.18</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #000;
+            color: #b0b0b0;
+            overflow: hidden;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: none;
+        }
+        
+        #upload-screen {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background: #000;
+        }
+        
+        #app-title {
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 6px;
+            color: #d0d0d0;
+            padding: 15px 30px;
+            border: 2px solid #404040;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: #000;
+            color: #b0b0b0;
+            padding: 10px 20px;
+            border: 2px solid #404040;
+            cursor: none;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            transition: all 0.15s;
+            text-transform: uppercase;
+            width: 160px;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            border-color: #707070;
+            background: #0a0a0a;
+            color: #d0d0d0;
+        }
+        
+        #upload-label {
+            display: block;
+        }
+        
+        #upload-input {
+            display: none;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 9px;
+            opacity: 0.7;
+            pointer-events: none;
+            display: none;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 8px 10px;
+            border: 1px solid #303030;
+            line-height: 1.8;
+            color: #909090;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: none;
+            gap: 6px;
+        }
+        
+        .control-btn {
+            background: #000;
+            border: 1px solid #303030;
+            color: #909090;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 9px;
+            transition: all 0.15s;
+            letter-spacing: 1px;
+        }
+        
+        .control-btn:hover {
+            border-color: #505050;
+            color: #b0b0b0;
+        }
+        
+        #version {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 8px;
+            opacity: 0.4;
+            display: none;
+            color: #707070;
+        }
+    
+/* v0.14: ensure cursor is visible on upload screen */
+#upload-screen, #upload-screen * { cursor: default !important; }
+#upload-screen .btn, #upload-screen label, #upload-screen button { cursor: pointer !important; }
+
+
+/* v0.15 upload screen layout */
+#upload-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+}
+
+#upload-screen .upload-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  width: min(720px, calc(100vw - 60px));
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  line-height: 1.6;
+  color: #ffffff;
+}
+
+#upload-screen .upload-hint .line { display: block; }
+
+</style>
+</head>
+<body>
+    <div id="upload-screen">
+        <div id="app-title">IMG TUNNEL</div>
+        <label for="upload-input" id="upload-label" class="btn">
+            LOAD IMAGES
+        </label>
+        <input type="file" id="upload-input" accept="image/*" multiple>
+    </div>
+    
+    <div id="canvas-container"></div>
+    
+    <div id="info">
+        ORBIT: MOUSE / TOUCH | ZOOM: SCROLL<br>
+        ────────────────────────────<br>
+        GRID: <span id="grid-info">2x2</span><br>
+        FOV: <span id="fov-info">75</span>° | PLANES: <span id="planes-info">600</span><br>
+        TUNNEL: <span id="tunnel-info">0</span> units
+    </div>
+    
+    <div id="controls"></div>
+    
+    <div id="version">IMG_TUNNEL v0.18</div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}
+    }
+    </script>
+
+    <script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+
+const config = {
+  // UI
+  showUI: false,                 // show on-screen info/controls (false = console only)
+
+  worldSeed: 1001,              // global seed for deterministic layout
+  maxUploadImages: 120,          // safety cap: max number of images to load
+  downscaleUploads: true,        // downscale uploads to reduce memory / improve stability
+  downscaleMaxSize: 1400,        // max width/height for uploaded images (px)
+
+  // PLANES
+  totalPlanes: 600,              // total number of planes
+  spacing: 20,                   // distance between Z layers (units)
+  zDistribution: 'even',         // 'even' spreads planes inside each layer
+
+  // GRID
+  gridCountX: 3,                 // columns
+  gridCountY: 2,                 // rows
+  gridSpacingX: 250,             // column spacing (units)
+  gridSpacingY: 20,              // row spacing (units)
+
+  // EFFECTOR: POSITION
+  positionRandomness: 160,       // random XY offset range (units)
+  positionCloserToCenter: 0.2,   // 0..1 pull grid toward center
+
+  // EFFECTOR: SCALE
+  planeScaleBase: 18,            // base size (units)
+  planeScaleRandomness: 0.6,     // random size spread (multiplier)
+
+  // EFFECTOR: SCALE ANIMATION
+  scaleAnimation: true,
+  scaleAnimSpeed: 0.1,
+  scaleAnimAmount: 0.9,
+
+  // EFFECTOR: ROTATION (base)
+  rotationRandomness: 0,         // 0..1 max random Z rotation (pi * value)
+
+  // CAMERA
+  cameraFOV: 75,                 // initial FOV
+  cameraOrbitRadius: 100,        // base orbit radius
+  cameraOrbitDamping: 2.5,       // smoothing (higher = faster)
+  cameraMaxRotationDeg: 45,      // mouse/touch rotation range
+  cameraTargetDepth: 0.5,        // 0..1 target point in tunnel length
+
+  // WHEEL: combined zoom + FOV
+  cameraZoomMin: 0.6,
+  cameraZoomMax: 2.2,
+  cameraZoomSpeed: 0.0015,       // wheel sensitivity for zoom multiplier
+  fovMin: 28,
+  fovMax: 110,
+  fovWheelSpeed: 0.04,           // wheel sensitivity for FOV degrees
+
+  // FADE
+  fadeStartDistance: 50,
+  fadeEndDistance: 20,
+  fadeFromCenter: true,
+
+  // BACKGROUND
+  bgColorCenter: 0x505050,
+  bgColorMid: 0x2a2a2a,
+  bgColorEdge: 0x000000,
+  bgSphereRadius: 5000,
+
+  // FOG
+  fogEnabled: true,
+  fogColor: 0x000000,
+  fogNear: 500,
+  fogFar: 600,
+
+  // TEST TEXTURE
+  textureLineColor: '#b2b2b2',
+  textureLineWidth: 6,
+  textureBorderColor: '#ffffff',
+  textureBorderWidth: 12,
+
+  // QUALITY
+  maxPixelRatio: 2,              // cap DPR for stable recording
+  textureAnisotropy: 8,
+  useMipmaps: true,
+
+  // MOTION BLUR
+  motionBlurEnabled: true,
+  motionBlurCount: 300,
+  motionBlurContainerWidth: 450,
+  motionBlurContainerHeight: 450,
+  motionBlurLengthBase: 30,
+  motionBlurLengthRandom: 0.7,
+  motionBlurOpacity: 0.9,
+  motionBlurSpeedMin: 1,
+  motionBlurSpeedMax: 3.0,
+
+  // ANIMATION
+  speed: 0.675,
+
+  speedMin: 0.05,               // min scroll speed
+  speedMax: 3.0,                // max scroll speed
+  speedStep: 0.05,              // hotkey step for speed
+
+  // CLUSTERS ("sausages" along Z)
+  clusterEnabled: false,        // create Z-trails for every Nth plane
+  clusterEveryN: 9,             // every Nth base plane becomes a cluster
+  clusterCountMin: 3,           // min copies in a cluster
+  clusterCountMax: 18,          // max copies in a cluster
+  clusterSpacing: 6,            // spacing between copies along -Z (units)
+  clusterJitterXY: 2.0,         // small XY jitter inside cluster (units)
+  clusterScaleDecay: 0.02,      // scale decay per copy (0..1)
+
+  // POSTPROCESS
+  postEnabled: false,           // EffectComposer pipeline
+  zoomBlurEnabled: false,     // cinematic zoom blur (stable)
+  zoomBlurStrength: 0.65,       // 0..2
+  zoomBlurSamples: 18,          // 8..32
+  blurCenterToTarget: true,     // center = projected target point
+
+  fadeSpace: 'camera',         // 'camera' uses camera-space depth for fade
+  wrapBehindCamera: 60,         // allow planes behind camera before wrap (units)
+  dofEnabled: false,            // depth of field (BokehPass)
+  dofFocus: 350.0,              // focus distance
+  dofAperture: 0.00008,         // aperture strength
+  dofMaxblur: 0.012,            // max blur
+
+  // CONTENT MIX
+  userImagesPerTest: 3,
+
+  // INTERACTION
+  interactionEnabled: true,      // camera orbit control toggle
+
+  // CURSOR / POINTER
+  cursorMode: 'crosshair3d',     // 'system' | 'hide' | 'crosshair3d'
+  
+  cursorOnUpload: 'system',   // cursor mode while upload screen is visible
+pointerDepthMode: 'targetZ',   // 'targetZ' | 'fixed'
+  pointerFixedDepth: -200,
+  pointerSize: 10,
+  pointerOpacity: 0.85,
+
+  // MOUSE FIELD EFFECTOR
+  mouseEffectorEnabled: false,    // toggled by M
+  mouseRadiusNDC: 0.22,           // radius in NDC units (0..~1)
+  mouseSoftness: 0.75,            // 0..1 (higher = smoother falloff)
+  mouseScaleBoost: 0.55,          // additional scale at center
+  mouseRotateBoost: 0.55,         // additional rotation at center (radians)
+};
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(config.bgColorEdge);
+
+if (config.fogEnabled) {
+  scene.fog = new THREE.Fog(config.fogColor, config.fogNear, config.fogFar);
+}
+
+const camera = new THREE.PerspectiveCamera(
+  config.cameraFOV,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  10000
+);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha: true,
+  powerPreference: 'high-performance',
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, config.maxPixelRatio));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+
+
+
+
+let composer = null;
+let zoomBlurPass = null;
+
+const ZoomBlurShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    strength: { value: 0.65 },
+    samples: { value: 18 },
+    center: { value: new THREE.Vector2(0.5, 0.5) },
+    resolution: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float strength;
+    uniform float samples;
+    uniform vec2 center;
+    uniform vec2 resolution;
+    varying vec2 vUv;
+
+    void main() {
+      vec2 dir = vUv - center;
+      dir.x *= resolution.x / max(1.0, resolution.y);
+
+      float s = max(1.0, samples);
+      vec4 acc = vec4(0.0);
+      float wsum = 0.0;
+
+      for (float i = 0.0; i < 64.0; i += 1.0) {
+        if (i >= s) break;
+        float t = i / (s - 1.0);
+        float w = 1.0 - t;
+        vec2 uv = vUv - dir * strength * t;
+        acc += texture2D(tDiffuse, uv) * w;
+        wsum += w;
+      }
+
+      gl_FragColor = acc / max(0.0001, wsum);
+    }
+  `,
+};
+
+function setupPostprocessing() {
+  if (!config.postEnabled) {
+    composer = null;
+    return;
+  }
+
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+
+  if (config.zoomBlurEnabled) {
+    zoomBlurPass = new ShaderPass(ZoomBlurShader);
+    zoomBlurPass.uniforms.strength.value = config.zoomBlurStrength;
+    zoomBlurPass.uniforms.samples.value = config.zoomBlurSamples;
+    zoomBlurPass.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
+    composer.addPass(zoomBlurPass);
+  } else {
+    zoomBlurPass = null;
+  }
+}
+
+setupPostprocessing();
+if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+  if (zoomBlurPass) zoomBlurPass.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
+// Ensure visible cursor on the upload screen by default
+document.body.style.cursor = 'default';
+const uploadInput = document.getElementById('upload-input');
+const uploadScreen = document.getElementById('upload-screen');
+const canvasContainer = document.getElementById('canvas-container');
+
+const infoEl = document.getElementById('info');
+const controlsEl = document.getElementById('controls');
+const versionEl = document.getElementById('version');
+
+function applyUIVisibility() {
+  if (!config.showUI) {
+    if (infoEl) infoEl.style.display = 'none';
+    if (controlsEl) controlsEl.style.display = 'none';
+    if (versionEl) versionEl.style.display = 'block';
+  }
+}
+
+const state = {
+  userImages: [],
+  testTexture: null,
+  planes: [],
+  motionBlurLines: [],
+  mouse: { x: 0, y: 0 },
+  targetRotation: { x: 0, y: 0 },
+  currentRotation: { x: 0, y: 0 },
+  isRunning: false,
+  tunnelLength: 0,
+  targetZ: 0,
+  zoom: 1.0,
+  fov: config.cameraFOV,
+  interactionEnabled: config.interactionEnabled,
+  rafId: null,
+  skyMesh: null,
+
+  pointer: {
+    enabled: config.cursorMode === 'crosshair3d',
+    mesh: null,
+    raycaster: new THREE.Raycaster(),
+    planeAtDepth: new THREE.Plane(new THREE.Vector3(0, 0, 1), 0),
+    tmpPoint: new THREE.Vector3(),
+  },
+};
+
+function disposeMaterial(mat) {
+  if (!mat) return;
+
+  for (const key in mat) {
+    const v = mat[key];
+    if (v && v.isTexture) v.dispose();
+  }
+
+  if (mat.uniforms) {
+    for (const k in mat.uniforms) {
+      const u = mat.uniforms[k]?.value;
+      if (u && u.isTexture) u.dispose();
+    }
+  }
+
+  mat.dispose?.();
+}
+
+function disposeObject(obj) {
+  if (!obj) return;
+  obj.traverse((child) => {
+    if (child.geometry) child.geometry.dispose();
+    if (child.material) {
+      if (Array.isArray(child.material)) child.material.forEach(disposeMaterial);
+      else disposeMaterial(child.material);
+    }
+  });
+}
+
+function resetView() {
+  state.zoom = 1.0;
+  state.fov = config.cameraFOV;
+  camera.fov = state.fov;
+  camera.updateProjectionMatrix();
+
+  state.currentRotation = { x: 0, y: 0 };
+  state.targetRotation = { x: 0, y: 0 };
+}
+
+function resetWorld({ keepUserImages = true } = {}) {
+  state.isRunning = false;
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  state.rafId = null;
+
+  state.planes.forEach((p) => scene.remove(p));
+  state.planes.forEach((p) => disposeObject(p));
+  state.planes = [];
+
+  state.motionBlurLines.forEach((l) => scene.remove(l));
+  state.motionBlurLines.forEach((l) => disposeObject(l));
+  state.motionBlurLines = [];
+
+  if (state.skyMesh) {
+    scene.remove(state.skyMesh);
+    disposeObject(state.skyMesh);
+    state.skyMesh = null;
+  }
+
+  if (state.testTexture) {
+    state.testTexture.dispose();
+    state.testTexture = null;
+  }
+
+  if (!keepUserImages) {
+    state.userImages.forEach((u) => u.texture?.dispose?.());
+    state.userImages = [];
+  }
+
+  resetView();
+}
+
+function createSkySphere() {
+  const sphereGeometry = new THREE.SphereGeometry(config.bgSphereRadius, 64, 64);
+  const skyMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      colorCenter: { value: new THREE.Color(config.bgColorCenter) },
+      colorMid: { value: new THREE.Color(config.bgColorMid) },
+      colorEdge: { value: new THREE.Color(config.bgColorEdge) },
+    },
+    vertexShader: `
+      varying vec3 vViewPosition;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vViewPosition = mvPosition.xyz;
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 colorCenter;
+      uniform vec3 colorMid;
+      uniform vec3 colorEdge;
+      varying vec3 vViewPosition;
+
+      void main() {
+        vec3 viewDir = normalize(vViewPosition);
+        float dist = length(viewDir.xy);
+
+        vec3 color;
+        if (dist < 0.5) {
+          float t = dist / 0.5;
+          color = mix(colorCenter, colorMid, smoothstep(0.0, 1.0, t));
+        } else {
+          float t = (dist - 0.5) / 0.5;
+          color = mix(colorMid, colorEdge, smoothstep(0.0, 1.0, t));
+        }
+
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `,
+    side: THREE.BackSide,
+    depthWrite: false,
+  });
+
+  const skyMesh = new THREE.Mesh(sphereGeometry, skyMaterial);
+  scene.add(skyMesh);
+  state.skyMesh = skyMesh;
+}
+
+function seededRandom(seed) {
+  const s = seed + (config.worldSeed || 0);
+  const x = Math.sin(s) * 10000;
+  return x - Math.floor(x);
+}
+
+const aspectRatios = [
+  { w: 1, h: 1 },
+  { w: 16, h: 9 },
+  { w: 4, h: 3 },
+  { w: 9, h: 16 },
+  { w: 3, h: 4 },
+];
+
+function applyTextureQuality(texture) {
+  if (!texture) return;
+
+  const maxA = renderer.capabilities.getMaxAnisotropy?.() || 1;
+  const desiredA = Math.max(1, Math.min(config.textureAnisotropy, maxA));
+  texture.anisotropy = desiredA;
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  if (config.useMipmaps) {
+    texture.generateMipmaps = true;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+  } else {
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+  }
+
+  texture.needsUpdate = true;
+}
+
+function generateTestTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+
+  ctx.imageSmoothingEnabled = true;
+
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = config.textureLineColor;
+  ctx.lineWidth = config.textureLineWidth;
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(canvas.width, 0);
+  ctx.lineTo(0, canvas.height);
+  ctx.stroke();
+
+  ctx.strokeStyle = config.textureBorderColor;
+  ctx.lineWidth = config.textureBorderWidth;
+  ctx.lineCap = 'square';
+
+  const offset = config.textureBorderWidth / 2;
+  ctx.strokeRect(
+    offset,
+    offset,
+    canvas.width - config.textureBorderWidth,
+    canvas.height - config.textureBorderWidth
+  );
+
+  const texture = new THREE.CanvasTexture(canvas);
+  applyTextureQuality(texture);
+  return texture;
+}
+
+function applyCursorMode(modeOverride = null) {
+  const mode = modeOverride ?? config.cursorMode;
+
+  if (mode === 'system') {
+    document.body.style.cursor = 'default';
+    renderer.domElement.style.cursor = 'default';
+    state.pointer.enabled = false;
+    setPointerVisible(false);
+    return;
+  }
+
+  document.body.style.cursor = 'none';
+  renderer.domElement.style.cursor = 'none';
+
+  state.pointer.enabled = (mode === 'crosshair3d');
+  ensurePointer();
+  setPointerVisible(state.pointer.enabled);
+}
+
+function ensurePointer() {
+  if (state.pointer.mesh) return;
+
+  const group = new THREE.Group();
+  const mat = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: config.pointerOpacity,
+    depthTest: true,
+  });
+
+  const s = config.pointerSize;
+  const geoX = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-s, 0, 0),
+    new THREE.Vector3(s, 0, 0),
+  ]);
+  const geoY = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, -s, 0),
+    new THREE.Vector3(0, s, 0),
+  ]);
+
+  group.add(new THREE.Line(geoX, mat));
+  group.add(new THREE.Line(geoY, mat));
+
+  state.pointer.mesh = group;
+  scene.add(group);
+}
+
+function setPointerVisible(v) {
+  if (state.pointer.mesh) state.pointer.mesh.visible = v;
+}
+
+function updatePointer() {
+  if (!state.pointer.enabled || !state.pointer.mesh) return;
+
+  const z = (config.pointerDepthMode === 'fixed') ? config.pointerFixedDepth : state.targetZ;
+  state.pointer.planeAtDepth.constant = -z;
+
+  state.pointer.raycaster.setFromCamera(state.mouse, camera);
+  const hit = state.pointer.raycaster.ray.intersectPlane(state.pointer.planeAtDepth, state.pointer.tmpPoint);
+  if (!hit) return;
+
+  state.pointer.mesh.position.copy(state.pointer.tmpPoint);
+  state.pointer.mesh.lookAt(0, 0, state.targetZ);
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const aspect = img.width / img.height;
+
+        // Optional downscale for stability (especially on mobile / large batches)
+        if (config.downscaleUploads) {
+          const maxSize = Math.max(64, config.downscaleMaxSize || 1400);
+          const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          const texture = new THREE.CanvasTexture(canvas);
+          applyTextureQuality(texture);
+          resolve({ texture, aspect });
+          return;
+        }
+
+        const texture = new THREE.Texture(img);
+        applyTextureQuality(texture);
+        resolve({ texture, aspect });
+      };
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('FileReader failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function createTunnel() {
+  const planesPerLevel = config.gridCountX * config.gridCountY;
+  const totalZLevels = Math.ceil(config.totalPlanes / planesPerLevel);
+  state.tunnelLength = totalZLevels * config.spacing;
+  state.targetZ = -state.tunnelLength * config.cameraTargetDepth;
+
+  let contentPool = [];
+  const userCount = state.userImages.length;
+
+  if (userCount > 0) {
+    let userIdx = 0;
+    while (contentPool.length < config.totalPlanes) {
+      for (let i = 0; i < config.userImagesPerTest; i++) {
+        contentPool.push({
+          type: 'user',
+          texture: state.userImages[userIdx].texture,
+          aspect: state.userImages[userIdx].aspect,
+        });
+        userIdx = (userIdx + 1) % userCount;
+      }
+      const ratio = aspectRatios[contentPool.length % aspectRatios.length];
+      contentPool.push({
+        type: 'test',
+        texture: state.testTexture,
+        aspect: ratio.w / ratio.h,
+      });
+    }
+  } else {
+    for (let i = 0; i < config.totalPlanes; i++) {
+      const ratio = aspectRatios[i % aspectRatios.length];
+      contentPool.push({
+        type: 'test',
+        texture: state.testTexture,
+        aspect: ratio.w / ratio.h,
+      });
+    }
+  }
+
+  const gridPositions = [];
+  const halfX = (config.gridCountX - 1) / 2;
+  const halfY = (config.gridCountY - 1) / 2;
+
+  for (let row = 0; row < config.gridCountY; row++) {
+    for (let col = 0; col < config.gridCountX; col++) {
+      gridPositions.push({
+        x: (col - halfX) * config.gridSpacingX,
+        y: (halfY - row) * config.gridSpacingY,
+      });
+    }
+  }
+
+  
+  function spawnPlane(baseIndex, content, gridPos, z, extraIndex) {
+    const material = config.fadeFromCenter
+      ? new THREE.ShaderMaterial({
+          uniforms: THREE.UniformsUtils.merge([
+            THREE.UniformsLib.fog,
+            {
+              map: { value: content.texture },
+              opacity: { value: 1.0 },
+              fadeProgress: { value: 0.0 },
+            },
+          ]),
+          vertexShader: `
+            varying vec2 vUv;
+            #include <fog_pars_vertex>
+            void main() {
+              vUv = uv;
+              vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+              gl_Position = projectionMatrix * mvPosition;
+              #include <fog_vertex>
+            }
+          `,
+          fragmentShader: `
+            uniform sampler2D map;
+            uniform float opacity;
+            uniform float fadeProgress;
+            varying vec2 vUv;
+
+            #include <fog_pars_fragment>
+
+            void main() {
+              vec4 texColor = texture2D(map, vUv);
+
+              vec2 center = vec2(0.5, 0.5);
+              float dist = length(vUv - center) * 2.0;
+              float centerFade = 1.0 - smoothstep(0.0, 1.0, dist * fadeProgress);
+
+              vec4 outColor = vec4(texColor.rgb, texColor.a * opacity * centerFade);
+              gl_FragColor = outColor;
+
+              #include <fog_fragment>
+            }
+          `,
+          transparent: true,
+          side: THREE.DoubleSide,
+          fog: true,
+        })
+      : new THREE.MeshBasicMaterial({
+          map: content.texture,
+          transparent: true,
+          opacity: 1,
+          side: THREE.DoubleSide,
+          fog: true,
+        });
+
+    const sizeRandom = seededRandom(baseIndex * 1234.5 + extraIndex * 17.1);
+    const sizeMultiplier = 1 + (sizeRandom - 0.5) * 2 * config.planeScaleRandomness;
+    const finalScale = config.planeScaleBase * sizeMultiplier;
+
+    const aspect = content.aspect;
+    const width = aspect >= 1 ? finalScale : finalScale * aspect;
+    const height = aspect >= 1 ? finalScale / aspect : finalScale;
+
+    const geometry = new THREE.PlaneGeometry(width, height);
+    const mesh = new THREE.Mesh(geometry, material);
+
+    const posRandomX = seededRandom(baseIndex * 5678.9);
+    const posRandomY = seededRandom(baseIndex * 9012.3);
+    const maxOffset = config.positionRandomness;
+
+    const offsetX = (posRandomX - 0.5) * 2 * maxOffset;
+    const offsetY = (posRandomY - 0.5) * 2 * maxOffset;
+
+    const jitterX = config.clusterEnabled ? (seededRandom(baseIndex * 222.1) - 0.5) * 2 * config.clusterJitterXY : 0;
+    const jitterY = config.clusterEnabled ? (seededRandom(baseIndex * 333.1) - 0.5) * 2 * config.clusterJitterXY : 0;
+
+    mesh.position.x = gridPos.x * config.positionCloserToCenter + offsetX + jitterX;
+    mesh.position.y = gridPos.y * config.positionCloserToCenter + offsetY + jitterY;
+    mesh.position.z = z;
+
+    const baseRotRandom = seededRandom(baseIndex * 7890.2);
+    if (config.rotationRandomness > 0) {
+      const maxRot = Math.PI * config.rotationRandomness;
+      mesh.rotation.z = (baseRotRandom - 0.5) * 2 * maxRot;
+    }
+    mesh.userData = { index: baseIndex, baseRotZ: mesh.rotation.z };
+
+    const decay = Math.max(0, Math.min(1, config.clusterScaleDecay));
+    const scaleMul = 1.0 - extraIndex * decay;
+    mesh.scale.setScalar(Math.max(0.05, scaleMul));
+
+    state.planes.push(mesh);
+    scene.add(mesh);
+  }
+
+  for (let i = 0; i < config.totalPlanes; i++) {
+    const content = contentPool[i % contentPool.length];
+
+    const zLevel = Math.floor(i / planesPerLevel);
+    const gridIndex = i % planesPerLevel;
+
+    let z = -zLevel * config.spacing;
+    if (config.zDistribution === 'even') {
+      const zStep = config.spacing / planesPerLevel;
+      z -= gridIndex * zStep;
+    }
+
+    const gridPos = gridPositions[gridIndex];
+
+    // base plane
+    spawnPlane(i, content, gridPos, z, 0);
+
+    // optional clusters ("sausages" along Z)
+    if (config.clusterEnabled && config.clusterEveryN > 0 && (i % config.clusterEveryN === 0)) {
+      const r = seededRandom(i * 9191.7);
+      const count = Math.round(config.clusterCountMin + r * (config.clusterCountMax - config.clusterCountMin));
+      const c = Math.max(0, Math.min(count, config.clusterCountMax));
+      for (let k = 1; k < c; k++) {
+        spawnPlane(i, content, gridPos, z - k * config.clusterSpacing, k);
+      }
+    }
+  }
+}
+
+
+function updatePlaneFadeCameraAware() {
+  const tmp = new THREE.Vector3();
+  for (let i = 0; i < state.planes.length; i++) {
+    const plane = state.planes[i];
+    tmp.copy(plane.position).applyMatrix4(camera.matrixWorldInverse);
+    const dist = Math.max(0, -tmp.z);
+
+    const start = Math.max(0.0001, config.fadeStartDistance);
+    const end = Math.max(0.0001, config.fadeEndDistance);
+
+    let fade = 1.0;
+    if (start > end) {
+      const t = (dist - end) / (start - end);
+      fade = Math.max(0, Math.min(1, t));
+    } else {
+      const t = (dist - start) / (end - start);
+      fade = Math.max(0, Math.min(1, t));
+    }
+
+    if (plane.material && plane.material.uniforms && plane.material.uniforms.opacity) {
+      plane.material.uniforms.opacity.value = fade;
+      if (plane.material.uniforms.fadeProgress) plane.material.uniforms.fadeProgress.value = fade;
+    } else if (plane.material && typeof plane.material.opacity === 'number') {
+      plane.material.opacity = fade;
+    }
+  }
+}
+
+function createMotionBlurLines() {
+  for (let i = 0; i < config.motionBlurCount; i++) {
+    const lengthRandom = seededRandom(i * 3456.7);
+    const randomVariation = (lengthRandom - 0.5) * 2 * config.motionBlurLengthRandom;
+    const lineLength = config.motionBlurLengthBase * (1 + randomVariation);
+
+    const speedRandom = seededRandom(i * 8901.2);
+    const speedMultiplier =
+      config.motionBlurSpeedMin + speedRandom * (config.motionBlurSpeedMax - config.motionBlurSpeedMin);
+    const lineSpeed = config.speed * speedMultiplier;
+
+    const posXRandom = seededRandom(i * 4567.8);
+    const posYRandom = seededRandom(i * 9012.3);
+    const posZRandom = seededRandom(i * 2345.6);
+
+    const posX = (posXRandom - 0.5) * config.motionBlurContainerWidth;
+    const posY = (posYRandom - 0.5) * config.motionBlurContainerHeight;
+    const posZ = -posZRandom * state.tunnelLength;
+
+    const points = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, lineLength)];
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: config.motionBlurOpacity,
+    });
+
+    const line = new THREE.Line(lineGeometry, lineMaterial);
+    line.position.set(posX, posY, posZ);
+    line.userData = { speed: lineSpeed };
+
+    state.motionBlurLines.push(line);
+    scene.add(line);
+  }
+}
+
+function toggleCameraInteraction() {
+  state.interactionEnabled = !state.interactionEnabled;
+  state.targetRotation.x = state.currentRotation.x;
+  state.targetRotation.y = state.currentRotation.y;
+  console.log(`[camera] interactionEnabled = ${state.interactionEnabled}`);
+}
+
+function toggleMouseEffector() {
+  config.mouseEffectorEnabled = !config.mouseEffectorEnabled;
+  console.log(`[mouse effector] enabled = ${config.mouseEffectorEnabled}`);
+}
+
+function updateTargetRotationFromMouse() {
+  const maxRotRad = (config.cameraMaxRotationDeg * Math.PI) / 180;
+  state.targetRotation.y = state.mouse.x * maxRotRad;
+  state.targetRotation.x = state.mouse.y * maxRotRad;
+}
+
+window.addEventListener('mousemove', (e) => {
+  state.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  state.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+  if (!state.interactionEnabled) return;
+  updateTargetRotationFromMouse();
+});
+
+let touchTapStart = 0;
+let touchTapCount = 0;
+
+window.addEventListener('touchstart', (e) => {
+  touchTapStart = performance.now();
+  touchTapCount = e.touches.length;
+
+  if (e.touches.length > 0) {
+    const t = e.touches[0];
+    state.mouse.x = (t.clientX / window.innerWidth) * 2 - 1;
+    state.mouse.y = -(t.clientY / window.innerHeight) * 2 + 1;
+  }
+
+  if (touchTapCount >= 2) e.preventDefault();
+
+  if (!state.interactionEnabled) return;
+  updateTargetRotationFromMouse();
+}, { passive: false });
+
+window.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 0) return;
+
+  const t = e.touches[0];
+  state.mouse.x = (t.clientX / window.innerWidth) * 2 - 1;
+  state.mouse.y = -(t.clientY / window.innerHeight) * 2 + 1;
+
+  e.preventDefault();
+
+  if (!state.interactionEnabled) return;
+  updateTargetRotationFromMouse();
+}, { passive: false });
+
+window.addEventListener('touchend', () => {
+  const dt = performance.now() - touchTapStart;
+
+  if (dt < 260) {
+    if (touchTapCount === 2) toggleCameraInteraction();
+    if (touchTapCount >= 3) resetView();
+  }
+
+  touchTapCount = 0;
+});
+
+window.addEventListener('wheel', (e) => {
+  state.zoom *= Math.exp(e.deltaY * config.cameraZoomSpeed);
+  state.zoom = Math.max(config.cameraZoomMin, Math.min(config.cameraZoomMax, state.zoom));
+
+  state.fov += e.deltaY * config.fovWheelSpeed;
+  state.fov = Math.max(config.fovMin, Math.min(config.fovMax, state.fov));
+  camera.fov = state.fov;
+  camera.updateProjectionMatrix();
+}, { passive: true });
+
+window.addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase();
+  if (k === 'c') toggleCameraInteraction();
+  if (k === 'h') resetView();
+  if (k === 'm') toggleMouseEffector();
+
+  if (k === '[') {
+    config.speed = Math.max(config.speedMin, config.speed - config.speedStep);
+    console.log(`[speed] ${config.speed.toFixed(3)}`);
+  }
+  if (k === ']') {
+    config.speed = Math.min(config.speedMax, config.speed + config.speedStep);
+    console.log(`[speed] ${config.speed.toFixed(3)}`);
+  }
+});
+
+function mouseFalloff(dist) {
+  const r = Math.max(1e-6, config.mouseRadiusNDC);
+  const t = dist / r;
+  const s = Math.max(0.0, Math.min(1.0, config.mouseSoftness));
+  const p = 2.0 + 6.0 * s;
+  return Math.exp(-Math.pow(t, p));
+}
+
+let time = 0;
+
+function animate() {
+  if (!state.isRunning) return;
+  state.rafId = requestAnimationFrame(animate);
+
+  time += 0.016;
+
+  state.currentRotation.x += (state.targetRotation.x - state.currentRotation.x) * config.cameraOrbitDamping * 0.01;
+  state.currentRotation.y += (state.targetRotation.y - state.currentRotation.y) * config.cameraOrbitDamping * 0.01;
+
+  const radius = config.cameraOrbitRadius * state.zoom;
+
+  camera.position.x = Math.sin(state.currentRotation.y) * radius;
+  camera.position.y = Math.sin(state.currentRotation.x) * radius;
+  camera.position.z = state.targetZ + Math.cos(state.currentRotation.y) * Math.cos(state.currentRotation.x) * radius;
+
+  camera.lookAt(0, 0, state.targetZ);
+
+  updatePointer();
+
+  for (const plane of state.planes) {
+    plane.position.z += config.speed;
+
+    if (plane.position.z > camera.position.z + 20) {
+      plane.position.z -= state.tunnelLength;
+    }
+
+    let baseScale = 1;
+    if (config.scaleAnimation) {
+      const timeOffset = plane.userData.index * 0.3;
+      const wave = Math.sin(time * config.scaleAnimSpeed + timeOffset);
+      baseScale = 1 + wave * config.scaleAnimAmount;
+    }
+
+    const distanceToCamera = Math.abs(plane.position.z - camera.position.z);
+    if (distanceToCamera < config.fadeStartDistance) {
+      const fadeRange = config.fadeStartDistance - config.fadeEndDistance;
+      const fadeProgress = (config.fadeStartDistance - distanceToCamera) / Math.max(1e-6, fadeRange);
+      const clamped = Math.max(0, Math.min(1, fadeProgress));
+      const opacity = 1 - Math.pow(clamped, 2);
+
+      if (config.fadeFromCenter) {
+        plane.material.uniforms.opacity.value = opacity;
+        plane.material.uniforms.fadeProgress.value = clamped;
+      } else {
+        plane.material.opacity = opacity;
+      }
+    } else {
+      if (config.fadeFromCenter) {
+        plane.material.uniforms.opacity.value = 1;
+        plane.material.uniforms.fadeProgress.value = 0;
+      } else {
+        plane.material.opacity = 1;
+      }
+    }
+
+    let effScale = 1;
+    let effRot = 0;
+
+    if (config.mouseEffectorEnabled) {
+      const ndc = plane.position.clone().project(camera);
+      const dx = ndc.x - state.mouse.x;
+      const dy = ndc.y - state.mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const w = mouseFalloff(dist);
+
+      effScale = 1 + w * config.mouseScaleBoost;
+      effRot = w * config.mouseRotateBoost;
+    }
+
+    plane.scale.set(baseScale * effScale, baseScale * effScale, baseScale * effScale);
+    plane.rotation.z = plane.userData.baseRotZ + effRot;
+  }
+
+  if (config.motionBlurEnabled) {
+    for (const line of state.motionBlurLines) {
+      line.position.z += line.userData.speed;
+      if (line.position.z > camera.position.z + 30) {
+        line.position.z -= state.tunnelLength;
+      }
+    }
+  }
+
+  if (zoomBlurPass) {
+    if (config.blurCenterToTarget) {
+      const tp = new THREE.Vector3(0, 0, -config.cameraTargetDepth);
+      tp.project(camera);
+      zoomBlurPass.uniforms.center.value.set(tp.x * 0.5 + 0.5, tp.y * 0.5 + 0.5);
+    } else {
+      zoomBlurPass.uniforms.center.value.set(0.5, 0.5);
+    }
+  }
+  if (composer) composer.render(); else renderer.render(scene, camera);
+}
+
+async function startApp() {
+  resetWorld({ keepUserImages: true });
+  applyUIVisibility();
+  applyCursorMode(config.cursorOnUpload);
+  document.body.style.cursor = 'default';
+  renderer.domElement.style.cursor = 'default';
+
+  state.testTexture = generateTestTexture();
+  createSkySphere();
+  createTunnel();
+  if (config.motionBlurEnabled) createMotionBlurLines();
+
+  uploadScreen.style.display = 'none';
+  canvasContainer.style.display = 'block';
+  applyCursorMode();
+  if (versionEl) versionEl.style.display = 'block';
+
+  if (!renderer.domElement.parentElement) {
+    canvasContainer.appendChild(renderer.domElement);
+  }
+
+  const userCount = state.userImages.length;
+  console.log(`[img_tunnel] start`);
+  console.log(`planes=${config.totalPlanes}, grid=${config.gridCountX}x${config.gridCountY}, tunnelLength=${Math.round(state.tunnelLength)}`);
+  console.log(`userImages=${userCount}, userImagesPerTest=${config.userImagesPerTest}`);
+  console.log(`hotkeys: C toggle camera, H reset view, M toggle mouse field, [ ] speed`);
+  console.log(`touch: 2-finger tap toggle camera, 3-finger tap reset view`);
+  console.log(`wheel: zoom+fov together (no alt)`);
+
+  state.isRunning = true;
+  animate();
+}
+
+uploadInput.addEventListener('change', async (e) => {
+  const filesAll = Array.from(e.target.files || []);
+  const cap = Math.max(1, config.maxUploadImages || 120);
+  const files = filesAll.slice(0, cap);
+  if (filesAll.length > cap) {
+    console.log(`[upload] capped to ${cap} images (got ${filesAll.length})`);
+  }
+
+  if (files.length > 0) {
+    resetWorld({ keepUserImages: false });
+    try {
+      state.userImages = await Promise.all(files.map((f) => loadImage(f)));
+    } catch (err) {
+      console.error(err);
+      state.userImages = [];
+    }
+  }
+  await startApp();
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, config.maxPixelRatio));
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!renderer.domElement.parentElement) {
+    canvasContainer.appendChild(renderer.domElement);
+    canvasContainer.style.display = 'none';
+  }
+
+  const hint = document.createElement('div');
+  hint.className = 'upload-hint';
+  hint.innerHTML = `
+    <span class="line">TOGGLE CAMERA: TWO-FINGER TAP OR C</span>
+    <span class="line">RESET VIEW: H OR 3-FINGER TAP</span>
+    <span class="line">MOUSE FIELD: M</span>
+    <span class="line">WHEEL: ZOOM + FOV TOGETHER</span>
+  `;
+  uploadScreen.appendChild(hint);
+
+  const startBtn = document.createElement('div');
+  startBtn.innerHTML = 'TEST PATTERNS';
+  startBtn.className = 'btn';
+  startBtn.style.marginTop = '8px';
+  startBtn.addEventListener('click', async () => {
+    await startApp();
+  });
+  uploadScreen.appendChild(startBtn);
+
+  applyUIVisibility();
+  applyCursorMode();
+});
+</script>
+</body>
+</html>
