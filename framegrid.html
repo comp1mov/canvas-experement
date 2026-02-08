@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.15 c15 (2026)      ║
-╚════════════════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════╗
+║      FRAMEGRID v0.15 c17 - кривая (2026)      ║
+╚════════════════════════════════════════════════════════════╝
 -->
 
 
@@ -588,14 +588,12 @@
       <!-- Quick Toolbar -->
       <div class="quick-toolbar" id="quickToolbar">
         <button class="quick-btn" id="qMode" title="View Mode (G/1)" style="font-size:10px;width:auto;padding:0 10px;">GRID</button>
+        <button class="quick-btn" id="qFit" title="Fit to Screen (F)">□</button>
         <button class="quick-btn" id="qReset" title="Reset to Start (Home)">|◀</button>
         <button class="quick-btn" id="qPrev" title="Previous Frame (←)">◀</button>
         <button class="quick-btn" id="qPlay" title="Play/Stop (Space)">▶</button>
         <button class="quick-btn" id="qNext" title="Next Frame (→)">▶|</button>
         <button class="quick-btn" id="qDraw" title="Draw Mode (D)">●</button>
-        <button class="quick-btn" id="qFit" title="Fit to Screen (F)">□</button>
-        <button class="quick-btn" id="qRegen" title="Regenerate">↻</button>
-        <button class="quick-btn" id="qExport" title="Export JPEG 2K">↓</button>
         <button class="quick-btn" id="qMenu" title="Menu (M)">≡</button>
       </div>
       
@@ -820,6 +818,13 @@
               <option value="vertical">Vertical</option>
             </select>
           </div>
+          <div class="menu-row">
+            <span class="menu-label">Long Stroke Fade</span>
+            <div class="menu-input-group">
+              <input type="number" class="menu-input menu-input-narrow" id="longStrokeFade" value="8" min="0" max="50" inputmode="decimal">
+              <span style="color:#888;font-size:10px;margin-left:4px;">frames</span>
+            </div>
+          </div>
           <button class="menu-btn primary" id="playBtn">▶ Play Animation</button>
           <button class="menu-btn" id="stopBtn" style="display:none;">■ Stop</button>
         </div>
@@ -993,8 +998,8 @@
   const cellSizeLabel = $('cellSizeLabel'), cellMinus = $('cellMinus'), cellPlus = $('cellPlus');
   
   // Quick toolbar
-  const qMode = $('qMode'), qReset = $('qReset'), qPrev = $('qPrev'), qPlay = $('qPlay'), qNext = $('qNext'), qDraw = $('qDraw'), qFit = $('qFit'), qRegen = $('qRegen');
-  const qExport = $('qExport'), qMenu = $('qMenu');
+  const qMode = $('qMode'), qReset = $('qReset'), qPrev = $('qPrev'), qPlay = $('qPlay'), qNext = $('qNext'), qDraw = $('qDraw'), qFit = $('qFit');
+  const qMenu = $('qMenu');
   
   // Timecode style controls
   const tcTextColorInput = $('tcTextColor'), tcBgColorInput = $('tcBgColor');
@@ -1003,20 +1008,38 @@
 
   // MENU
   function openMenu() {
+    if (typeof dbg === 'function') dbg('openMenu START');
     state.menuOpen = true;
     sideMenu.classList.add('open');
     menuToggleBtn.classList.add('active');
+    if (typeof dbg === 'function') dbg(`innerWidth=${window.innerWidth}, frames=${state.frames.length}`);
     if (window.innerWidth > 768) {
       canvasArea.classList.add('has-menu');
-      if (state.autoFit && state.frames.length) setTimeout(fitToScreen, 260);
+      if (typeof dbg === 'function') dbg('has-menu added, autoFit=' + state.autoFit);
+      if (state.autoFit && state.frames.length) {
+        if (typeof dbg === 'function') dbg('calling fitToScreen in 260ms');
+        setTimeout(() => {
+          if (typeof dbg === 'function') dbg('fitToScreen called');
+          fitToScreen();
+          if (typeof dbg === 'function') dbg(`after fitToScreen: scale=${state.scale}, pan=${state.panX},${state.panY}`);
+        }, 260);
+      }
     }
+    if (typeof dbg === 'function') dbg('openMenu END');
   }
   function closeMenu() {
+    if (typeof dbg === 'function') dbg('closeMenu START');
     state.menuOpen = false;
     sideMenu.classList.remove('open');
     menuToggleBtn.classList.remove('active');
     canvasArea.classList.remove('has-menu');
-    if (state.autoFit && state.frames.length) setTimeout(fitToScreen, 260);
+    if (state.autoFit && state.frames.length) {
+      setTimeout(() => {
+        if (typeof dbg === 'function') dbg('closeMenu fitToScreen');
+        fitToScreen();
+      }, 260);
+    }
+    if (typeof dbg === 'function') dbg('closeMenu END');
   }
   function toggleMenu() { state.menuOpen ? closeMenu() : openMenu(); }
 
@@ -1438,11 +1461,16 @@
   }
 
   function fitToScreen() {
-    if (!state.frames.length) return;
+    if (typeof dbg === 'function') dbg('fitToScreen START');
+    if (!state.frames.length) {
+      if (typeof dbg === 'function') dbg('fitToScreen: no frames');
+      return;
+    }
 
     // Wait for DOM to render
     requestAnimationFrame(() => {
       const rect = canvasArea.getBoundingClientRect();
+      if (typeof dbg === 'function') dbg(`canvasArea: ${rect.width}x${rect.height}`);
       const pad = 20;
 
       // Reset transform to measure true bounds
@@ -1454,6 +1482,7 @@
       // Measure grid bounds relative to canvasInner
       const innerRect = canvasInner.getBoundingClientRect();
       const gridRect = framesGrid.getBoundingClientRect();
+      if (typeof dbg === 'function') dbg(`grid: ${gridRect.width}x${gridRect.height}`);
       const gridOffsetX = gridRect.left - innerRect.left;
       const gridOffsetY = gridRect.top - innerRect.top;
 
@@ -1464,6 +1493,7 @@
       state.scale = Math.max(0.05, scale);
       state.panX = (rect.width - gridRect.width * state.scale) / 2 - gridOffsetX * state.scale;
       state.panY = (rect.height - gridRect.height * state.scale) / 2 - gridOffsetY * state.scale;
+      if (typeof dbg === 'function') dbg(`result: scale=${state.scale.toFixed(3)}, pan=${state.panX.toFixed(0)},${state.panY.toFixed(0)}`);
       updateTransform();
     });
   }
@@ -1689,8 +1719,7 @@
   qNext.onclick = () => stepFrame(1);
   qPlay.onclick = () => { state.isPlaying ? stopAnimation() : startAnimation(); };
   qFit.onclick = () => { state.viewMode === 'single' ? fitToSingleFrame() : fitToScreen(); };
-  qRegen.onclick = generateFrames;
-  qExport.onclick = () => exportImage('jpeg', 2048);
+  // qRegen and qExport removed from toolbar
   qMenu.onclick = toggleMenu;
   
   function updatePlayButton() {
@@ -1716,6 +1745,11 @@
   fpsPlus.onclick = () => { if (state.animFps < 30) { state.animFps++; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); } };
   animDirectionSelect.onchange = () => { state.animDirection = animDirectionSelect.value; if (state.isPlaying) restartAnimation(); };
   animPatternSelect.onchange = () => { state.animPattern = animPatternSelect.value; if (state.isPlaying) restartAnimation(); };
+  
+  const longStrokeFadeInput = $('longStrokeFade');
+  if (longStrokeFadeInput) {
+    longStrokeFadeInput.onchange = () => { state.longStrokeFade = Math.max(0, Math.min(50, parseInt(longStrokeFadeInput.value) || 8)); longStrokeFadeInput.value = state.longStrokeFade; };
+  }
   
   function restartAnimation() {
     if (state.animInterval) {
