@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.15 GPT24 FIXED - Исправленная версия (2026)      ║
+║      FRAMEGRID v0.15 gpt25 ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -18,7 +18,7 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #fff; user-select: none; -webkit-user-select: none;
     }
-    .app { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #101010); }
+    .app { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #282828); }
 
     /* METADATA BAR */
     .metadata-bar {
@@ -85,7 +85,7 @@
     .drop-zone {
       position: absolute; inset: 0; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 20px;
-      background: var(--bg-color, #010101); z-index: 5;
+      background: var(--bg-color, #282828); z-index: 5;
     }
     .drop-zone.hidden { opacity: 0; pointer-events: none; }
     .drop-zone-icon {
@@ -918,7 +918,7 @@
     tcShowIndex: true, // #1, #2, #3...
     tcShowTime: true, // 00:05
     tcShowFrame: true, // F123
-    autoFit: true, canvasAspect: 'auto', bgColor: '#020202',
+    autoFit: true, canvasAspect: 'auto', bgColor: '#282828',
     fontSize: 10, spacing: 2,
     tcTextColor: '#ffffff', tcBgColor: '#000000', tcOpacity: 0.7,
     tcAlign: 'center', tcPosition: 'center',
@@ -1443,21 +1443,34 @@
   canvasArea.ontouchend = () => { state.isPanning = false; lastDist = 0; lastTouchCenter = null; };
 
   function updateTransform() {
+    const MIN_VIEW_SCALE = 0.05;
+    const MAX_VIEW_SCALE = 8;
+
+    // Guard against transient layout glitches on mobile rotation
+    if (!Number.isFinite(state.scale)) state.scale = 1;
+    state.scale = Math.max(MIN_VIEW_SCALE, Math.min(MAX_VIEW_SCALE, state.scale));
+
+    if (!Number.isFinite(state.panX)) state.panX = 0;
+    if (!Number.isFinite(state.panY)) state.panY = 0;
+
     canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.scale})`;
   }
 
   function fitToScreen() {
-    if (typeof dbg === 'function') dbg('fitToScreen START');
-    if (!state.frames.length) {
-      if (typeof dbg === 'function') dbg('fitToScreen: no frames');
-      return;
-    }
+    if (typeof dbg === 'function') dbg('fitToScreen SAFE');
 
-    // Wait for DOM to render
-    requestAnimationFrame(() => {
-      const rect = canvasArea.getBoundingClientRect();
-      if (typeof dbg === 'function') dbg(`canvasArea: ${rect.width}x${rect.height}`);
-      const pad = 20;
+    if (!state.frames.length) return;
+
+    const MIN_VIEW_SCALE = 0.05;
+    const MAX_VIEW_SCALE = 8;
+    const MAX_TRIES = 10;
+
+    const prev = { scale: state.scale, panX: state.panX, panY: state.panY };
+
+    let tries = 0;
+
+    const attempt = () => {
+      tries++;
 
       // Reset transform to measure true bounds
       state.scale = 1;
@@ -1465,23 +1478,59 @@
       state.panY = 0;
       updateTransform();
 
-      // Measure grid bounds relative to canvasInner
-      const innerRect = canvasInner.getBoundingClientRect();
-      const gridRect = framesGrid.getBoundingClientRect();
-      if (typeof dbg === 'function') dbg(`grid: ${gridRect.width}x${gridRect.height}`);
-      const gridOffsetX = gridRect.left - innerRect.left;
-      const gridOffsetY = gridRect.top - innerRect.top;
+      // Wait for layout to settle (rotation can need >1 frame)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const rect = canvasArea.getBoundingClientRect();
+          const innerRect = canvasInner.getBoundingClientRect();
+          const gridRect = framesGrid.getBoundingClientRect();
 
-      const availW = rect.width - pad * 2;
-      const availH = rect.height - pad * 2;
-      const scale = Math.min(availW / Math.max(1, gridRect.width), availH / Math.max(1, gridRect.height));
+          const pad = 20;
+          const availW = rect.width - pad * 2;
+          const availH = rect.height - pad * 2;
 
-      state.scale = Math.max(0.05, scale);
-      state.panX = (rect.width - gridRect.width * state.scale) / 2 - gridOffsetX * state.scale;
-      state.panY = (rect.height - gridRect.height * state.scale) / 2 - gridOffsetY * state.scale;
-      if (typeof dbg === 'function') dbg(`result: scale=${state.scale.toFixed(3)}, pan=${state.panX.toFixed(0)},${state.panY.toFixed(0)}`);
-      updateTransform();
-    });
+          const dimsOk = rect.width > 200 && rect.height > 200 && gridRect.width > 40 && gridRect.height > 40;
+          const scaleCandidate = dimsOk
+            ? Math.min(availW / Math.max(1, gridRect.width), availH / Math.max(1, gridRect.height))
+            : NaN;
+
+          const isOk = Number.isFinite(scaleCandidate) && scaleCandidate >= MIN_VIEW_SCALE && scaleCandidate <= MAX_VIEW_SCALE;
+
+          if (!isOk) {
+            // Keep previous view if this attempt is clearly broken, retry a bit later
+            state.scale = prev.scale;
+            state.panX = prev.panX;
+            state.panY = prev.panY;
+            updateTransform();
+
+            if (typeof dbg === 'function') {
+              dbg(`fitToScreen retry ${tries}/${MAX_TRIES}: rect=${rect.width.toFixed(0)}x${rect.height.toFixed(0)}, grid=${gridRect.width.toFixed(1)}x${gridRect.height.toFixed(1)}, cand=${String(scaleCandidate)}`);
+            }
+
+            if (tries < MAX_TRIES) setTimeout(attempt, 140);
+            return;
+          }
+
+          const gridOffsetX = gridRect.left - innerRect.left;
+          const gridOffsetY = gridRect.top - innerRect.top;
+
+          state.scale = Math.max(MIN_VIEW_SCALE, Math.min(MAX_VIEW_SCALE, scaleCandidate));
+          state.panX = (rect.width - gridRect.width * state.scale) / 2 - gridOffsetX * state.scale;
+          state.panY = (rect.height - gridRect.height * state.scale) / 2 - gridOffsetY * state.scale;
+
+          if (typeof dbg === 'function') dbg(`fitToScreen OK: scale=${state.scale.toFixed(3)}, pan=${state.panX.toFixed(0)},${state.panY.toFixed(0)}`);
+
+          updateTransform();
+
+          if (state.drawMode) {
+            resizeDrawCanvas();
+            compositeAllLayers();
+          }
+        });
+      });
+    };
+
+    attempt();
   }
 
   function fitToSingleFrame() {
@@ -2343,17 +2392,17 @@ function resizeDrawCanvas() {
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
 
-    const innerRect = canvasInner.getBoundingClientRect();
-    if (!innerRect.width || !innerRect.height) return;
+    const drawRect = drawCanvas.getBoundingClientRect();
+    if (!drawRect.width || !drawRect.height) return;
 
-    const scaleX = drawCanvas.width / innerRect.width;
-    const scaleY = drawCanvas.height / innerRect.height;
+    const scaleX = drawCanvas.width / Math.max(1, drawRect.width);
+    const scaleY = drawCanvas.height / Math.max(1, drawRect.height);
 
     for (let i = offset; i < items.length; i++) {
       const item = items[i];
       const rect = item.getBoundingClientRect();
-      const x = (rect.left - innerRect.left) * scaleX;
-      const y = (rect.top - innerRect.top) * scaleY;
+      const x = (rect.left - drawRect.left) * scaleX;
+      const y = (rect.top - drawRect.top) * scaleY;
       const w = rect.width * scaleX;
       const h = rect.height * scaleY;
 
@@ -2368,9 +2417,11 @@ function resizeDrawCanvas() {
     if (!frameSheetCanvas.width || !frameSheetCanvas.height) return;
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
-    const innerRect = canvasInner.getBoundingClientRect();
-    const scaleX = drawCanvas.width / innerRect.width;
-    const scaleY = drawCanvas.height / innerRect.height;
+
+    const drawRect = drawCanvas.getBoundingClientRect();
+    if (!drawRect.width || !drawRect.height) return;
+    const scaleX = drawCanvas.width / Math.max(1, drawRect.width);
+    const scaleY = drawCanvas.height / Math.max(1, drawRect.height);
 
     const tw = state.frameSheetTileW || 1;
     const th = state.frameSheetTileH || 1;
@@ -2382,8 +2433,8 @@ function resizeDrawCanvas() {
       if (!Number.isFinite(frameIdx)) continue;
 
       const rect = item.getBoundingClientRect();
-      const x = (rect.left - innerRect.left) * scaleX;
-      const y = (rect.top - innerRect.top) * scaleY;
+      const x = (rect.left - drawRect.left) * scaleX;
+      const y = (rect.top - drawRect.top) * scaleY;
       const w = rect.width * scaleX;
       const h = rect.height * scaleY;
 
@@ -2431,25 +2482,23 @@ function resizeDrawCanvas() {
   function getFrameAtPoint(point) {
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
-    const innerRect = canvasInner.getBoundingClientRect();
     const drawRect = drawCanvas.getBoundingClientRect();
-    const scaleX = drawCanvas.width / innerRect.width;
-    const scaleY = drawCanvas.height / innerRect.height;
-    
+    const scaleX = drawCanvas.width / Math.max(1, drawRect.width);
+    const scaleY = drawCanvas.height / Math.max(1, drawRect.height);
+
     if (typeof dbg === 'function') {
       dbg(`getFrameAtPoint: point=${point.x.toFixed(0)},${point.y.toFixed(0)}`);
-      dbg(`innerRect: ${innerRect.left.toFixed(0)},${innerRect.top.toFixed(0)} ${innerRect.width.toFixed(0)}x${innerRect.height.toFixed(0)}`);
       dbg(`drawRect: ${drawRect.left.toFixed(0)},${drawRect.top.toFixed(0)} ${drawRect.width.toFixed(0)}x${drawRect.height.toFixed(0)}`);
       dbg(`scale: ${scaleX.toFixed(2)}, ${scaleY.toFixed(2)}, items: ${items.length}`);
     }
-    
+
     for (let i = offset; i < items.length; i++) {
       const rect = items[i].getBoundingClientRect();
-      const x = (rect.left - innerRect.left) * scaleX;
-      const y = (rect.top - innerRect.top) * scaleY;
+      const x = (rect.left - drawRect.left) * scaleX;
+      const y = (rect.top - drawRect.top) * scaleY;
       const w = rect.width * scaleX;
       const h = rect.height * scaleY;
-      
+
       if (point.x >= x && point.x <= x + w && point.y >= y && point.y <= y + h) {
         if (typeof dbg === 'function') dbg(`HIT frame ${i}, idx=${items[i].dataset.frameIdx}`);
         return {
@@ -3875,11 +3924,12 @@ drawCanvas.onmouseup = () => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && state.drawMode) { e.preventDefault(); drawUndo.onclick(); }
   };
 
-  // Window resize - recalculate auto-fit
-  let resizeTimeout;
-  window.onresize = () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
+  // Viewport changes (resize/orientation) - stabilize layout on iPad/Safari/Chrome
+  let viewportTimeout;
+  function onViewportChanged() {
+    clearTimeout(viewportTimeout);
+    viewportTimeout = setTimeout(() => {
+      // Rebuild grid if needed, then re-fit
       if (state.autoFit && state.frames.length) {
         if (state.canvasAspect === 'auto') {
           state.gridCols = calculateOptimalColumns(state.frames.length);
@@ -3889,8 +3939,22 @@ drawCanvas.onmouseup = () => {
         }
         fitToScreen();
       }
-    }, 150);
-  };
+
+      // Keep draw overlay in sync with new geometry
+      if (state.drawMode) {
+        resizeDrawCanvas();
+        compositeAllLayers();
+      }
+    }, 240);
+  }
+
+  window.addEventListener('resize', onViewportChanged, { passive: true });
+  window.addEventListener('orientationchange', onViewportChanged, { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onViewportChanged, { passive: true });
+    window.visualViewport.addEventListener('scroll', onViewportChanged, { passive: true });
+  }
+
 
   // Brush cursor
   const brushCursor = document.createElement('div');
@@ -3913,6 +3977,21 @@ drawCanvas.onmouseup = () => {
   }
   
   document.addEventListener('mousemove', updateBrushCursor);
+
+  // iPad: show cursor for Pencil / pointer events (mouse is not always emitted)
+  document.addEventListener('pointermove', e => {
+    if (!state.drawMode) return;
+    // Show for pen and mouse, avoid noisy finger cursor
+    if (e.pointerType === 'pen' || e.pointerType === 'mouse') updateBrushCursor(e);
+  }, { passive: true });
+
+  // Touch fallback: update cursor position while drawing
+  drawCanvas.addEventListener('touchmove', e => {
+    if (!state.drawMode || !e.touches || !e.touches.length) return;
+    const t = e.touches[0];
+    updateBrushCursor({ clientX: t.clientX, clientY: t.clientY });
+  }, { passive: true });
+
   
   const origToggleDrawMode = toggleDrawMode;
   toggleDrawMode = function() {
