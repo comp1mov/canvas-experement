@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-╔════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.15 c17 - кривая (2026)      ║
-╚════════════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════════╗
+║      FRAMEGRID v0.15 GPT24 FIXED - Исправленная версия (2026)      ║
+╚════════════════════════════════════════════════════════════════╝
 -->
 
 
@@ -18,7 +18,7 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #fff; user-select: none; -webkit-user-select: none;
     }
-    .app { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #282828); }
+    .app { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #101010); }
 
     /* METADATA BAR */
     .metadata-bar {
@@ -85,7 +85,7 @@
     .drop-zone {
       position: absolute; inset: 0; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 20px;
-      background: var(--bg-color, #282828); z-index: 5;
+      background: var(--bg-color, #010101); z-index: 5;
     }
     .drop-zone.hidden { opacity: 0; pointer-events: none; }
     .drop-zone-icon {
@@ -378,6 +378,12 @@
       transform: translate(-50%, -50%);
     }
     .brush-cursor.visible { display: block; }
+
+    .brush-cursor.eraser {
+      border-color: rgba(255, 90, 90, 0.95);
+      border-style: dashed;
+      background: rgba(255, 90, 90, 0.08);
+    }
     .draw-style-btn {
       padding: 4px 8px;
       font-size: 9px;
@@ -912,7 +918,7 @@
     tcShowIndex: true, // #1, #2, #3...
     tcShowTime: true, // 00:05
     tcShowFrame: true, // F123
-    autoFit: true, canvasAspect: 'auto', bgColor: '#282828',
+    autoFit: true, canvasAspect: 'auto', bgColor: '#020202',
     fontSize: 10, spacing: 2,
     tcTextColor: '#ffffff', tcBgColor: '#000000', tcOpacity: 0.7,
     tcAlign: 'center', tcPosition: 'center',
@@ -1008,38 +1014,18 @@
 
   // MENU
   function openMenu() {
-    if (typeof dbg === 'function') dbg('openMenu START');
+    if (typeof dbg === 'function') dbg('openMenu');
     state.menuOpen = true;
     sideMenu.classList.add('open');
     menuToggleBtn.classList.add('active');
-    if (typeof dbg === 'function') dbg(`innerWidth=${window.innerWidth}, frames=${state.frames.length}`);
-    if (window.innerWidth > 768) {
-      canvasArea.classList.add('has-menu');
-      if (typeof dbg === 'function') dbg('has-menu added, autoFit=' + state.autoFit);
-      if (state.autoFit && state.frames.length) {
-        if (typeof dbg === 'function') dbg('calling fitToScreen in 260ms');
-        setTimeout(() => {
-          if (typeof dbg === 'function') dbg('fitToScreen called');
-          fitToScreen();
-          if (typeof dbg === 'function') dbg(`after fitToScreen: scale=${state.scale}, pan=${state.panX},${state.panY}`);
-        }, 260);
-      }
-    }
-    if (typeof dbg === 'function') dbg('openMenu END');
+    // Меню просто выезжает сверху, ничего не пересчитываем
   }
   function closeMenu() {
-    if (typeof dbg === 'function') dbg('closeMenu START');
+    if (typeof dbg === 'function') dbg('closeMenu');
     state.menuOpen = false;
     sideMenu.classList.remove('open');
     menuToggleBtn.classList.remove('active');
     canvasArea.classList.remove('has-menu');
-    if (state.autoFit && state.frames.length) {
-      setTimeout(() => {
-        if (typeof dbg === 'function') dbg('closeMenu fitToScreen');
-        fitToScreen();
-      }, 260);
-    }
-    if (typeof dbg === 'function') dbg('closeMenu END');
   }
   function toggleMenu() { state.menuOpen ? closeMenu() : openMenu(); }
 
@@ -2068,6 +2054,7 @@ let isDrawing = false;
     if (state.drawMode) {
       resizeDrawCanvas();
       compositeAllLayers();
+    brushCursor.classList.toggle('eraser', state.drawEraser);
     } else {
       showTemplateFrame(false);
     }
@@ -2445,8 +2432,16 @@ function resizeDrawCanvas() {
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
     const innerRect = canvasInner.getBoundingClientRect();
+    const drawRect = drawCanvas.getBoundingClientRect();
     const scaleX = drawCanvas.width / innerRect.width;
     const scaleY = drawCanvas.height / innerRect.height;
+    
+    if (typeof dbg === 'function') {
+      dbg(`getFrameAtPoint: point=${point.x.toFixed(0)},${point.y.toFixed(0)}`);
+      dbg(`innerRect: ${innerRect.left.toFixed(0)},${innerRect.top.toFixed(0)} ${innerRect.width.toFixed(0)}x${innerRect.height.toFixed(0)}`);
+      dbg(`drawRect: ${drawRect.left.toFixed(0)},${drawRect.top.toFixed(0)} ${drawRect.width.toFixed(0)}x${drawRect.height.toFixed(0)}`);
+      dbg(`scale: ${scaleX.toFixed(2)}, ${scaleY.toFixed(2)}, items: ${items.length}`);
+    }
     
     for (let i = offset; i < items.length; i++) {
       const rect = items[i].getBoundingClientRect();
@@ -2456,6 +2451,7 @@ function resizeDrawCanvas() {
       const h = rect.height * scaleY;
       
       if (point.x >= x && point.x <= x + w && point.y >= y && point.y <= y + h) {
+        if (typeof dbg === 'function') dbg(`HIT frame ${i}, idx=${items[i].dataset.frameIdx}`);
         return {
           frameIdx: (Number.isFinite(parseInt(items[i].dataset.frameIdx)) ? parseInt(items[i].dataset.frameIdx) : (i - offset) * state.cellSize),
           cellEl: items[i],
@@ -2466,10 +2462,37 @@ function resizeDrawCanvas() {
         };
       }
     }
+    if (typeof dbg === 'function') dbg('NO HIT');
     return null;
   }
   
-  // Smooth line drawing
+    // Brush sizing helpers
+  function getEffectiveDpr() {
+    return Math.min(2, window.devicePixelRatio || 1);
+  }
+
+  function getBrushSizeBgTpl() {
+    // drawSize is expressed in CSS px at scale=1.
+    // bg/tpl canvases are sized in dpr-scaled pixels.
+    return state.drawSize * getEffectiveDpr();
+  }
+
+  function getBrushSizeFrame(hit) {
+    // Frame drawings live on a stable frame-sheet tile (tw x th).
+    // Convert drawSize (CSS px at scale=1) into sheet pixels so that on-screen width matches the brush cursor.
+    ensureFrameSheet();
+    const tw = state.frameSheetTileW || getFrameTileDims().tw;
+    const dpr = getEffectiveDpr();
+
+    const w = (hit && hit.width)
+      ? hit.width
+      : (longStrokeBaseHit && longStrokeBaseHit.width ? longStrokeBaseHit.width : tw * dpr);
+
+    const cellBaseW = Math.max(1, w / dpr);
+    return state.drawSize * (tw / cellBaseW);
+  }
+
+// Smooth line drawing
   function drawSmoothLine(ctx, from, to, color, size, eraser) {
     ctx.save();
     ctx.lineCap = 'round';
@@ -2549,7 +2572,7 @@ function resizeDrawCanvas() {
         longStrokeBaseHit = hit;
       }
 
-      drawDot(frameSheetCtx, sp, state.drawColor, state.drawSize, state.drawEraser);
+      drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
       compositeAllLayers();
       return;
     }
@@ -2557,7 +2580,7 @@ function resizeDrawCanvas() {
 // Background / Template targets
     const target = getTargetCanvas();
     if (!target) return;
-    drawDot(target.ctx, lastPoint, state.drawColor, state.drawSize, state.drawEraser);
+    drawDot(target.ctx, lastPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
     compositeAllLayers();
   };
   
@@ -2600,13 +2623,13 @@ function resizeDrawCanvas() {
         // Normal mode: Cut stroke at frame boundary
         activeFrameStroke.frameIdx = hit.frameIdx;
         activeFrameStroke.lastSheet = sp;
-        drawDot(frameSheetCtx, sp, state.drawColor, state.drawSize, state.drawEraser);
+        drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
         lastPoint = currentPoint;
         compositeAllLayers();
         return;
       }
 
-      drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, state.drawSize, state.drawEraser);
+      drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
       activeFrameStroke.lastSheet = sp;
       lastPoint = currentPoint;
       compositeAllLayers();
@@ -2615,7 +2638,7 @@ function resizeDrawCanvas() {
 
     const target = getTargetCanvas();
     if (!target) return;
-    drawSmoothLine(target.ctx, lastPoint, currentPoint, state.drawColor, state.drawSize, state.drawEraser);
+    drawSmoothLine(target.ctx, lastPoint, currentPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
     lastPoint = currentPoint;
     compositeAllLayers();
   };
@@ -2624,32 +2647,34 @@ function resizeDrawCanvas() {
   function drawLongStrokeOnFrame(frameIdx) {
     if (longStrokePath.length < 1) return;
     ensureFrameSheet();
-    
+
     const fadeFrames = state.longStrokeFade || 0;
     const pathLen = longStrokePath.length;
-    
+
     // Calculate start index based on fade
     // If fadeFrames > 0, we only draw the last N points worth of path
     let startIdx = 0;
     if (fadeFrames > 0 && pathLen > fadeFrames * 10) { // Rough estimate: ~10 points per frame
       startIdx = Math.max(0, pathLen - fadeFrames * 10);
     }
-    
+
+    const bs = getBrushSizeFrame(longStrokeBaseHit);
+
     for (let i = startIdx; i < longStrokePath.length; i++) {
       const pt = longStrokePath[i];
       const sp = sheetPoint(frameIdx, pt.u, pt.v);
-      
+
       if (i === startIdx) {
-        drawDot(frameSheetCtx, sp, state.drawColor, state.drawSize, state.drawEraser);
+        drawDot(frameSheetCtx, sp, state.drawColor, bs, state.drawEraser);
       } else {
         const prevPt = longStrokePath[i - 1];
         const prevSp = sheetPoint(frameIdx, prevPt.u, prevPt.v);
-        drawSmoothLine(frameSheetCtx, prevSp, sp, state.drawColor, state.drawSize, state.drawEraser);
+        drawSmoothLine(frameSheetCtx, prevSp, sp, state.drawColor, bs, state.drawEraser);
       }
     }
   }
-  
-  drawCanvas.onmouseup = () => {
+
+drawCanvas.onmouseup = () => {
     if (isDrawing) {
       isDrawing = false;
       lastPoint = null;
@@ -2721,7 +2746,7 @@ function resizeDrawCanvas() {
         longStrokeLastFrame = hit.frameIdx;
       }
       
-      drawDot(frameSheetCtx, sp, state.drawColor, state.drawSize, state.drawEraser);
+      drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
       compositeAllLayers();
       if (typeof dbg === 'function') dbg(`Touch frame: idx=${hit.frameIdx}`);
       return;
@@ -2729,7 +2754,7 @@ function resizeDrawCanvas() {
 
     const target = getTargetCanvas();
     if (!target) return;
-    drawDot(target.ctx, lastPoint, state.drawColor, state.drawSize, state.drawEraser);
+    drawDot(target.ctx, lastPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
     compositeAllLayers();
   };
   
@@ -2771,13 +2796,13 @@ function resizeDrawCanvas() {
       if (hit.frameIdx !== activeFrameStroke.frameIdx) {
         activeFrameStroke.frameIdx = hit.frameIdx;
         activeFrameStroke.lastSheet = sp;
-        drawDot(frameSheetCtx, sp, state.drawColor, state.drawSize, state.drawEraser);
+        drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
         lastPoint = currentPoint;
         compositeAllLayers();
         return;
       }
       
-      drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, state.drawSize, state.drawEraser);
+      drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
       activeFrameStroke.lastSheet = sp;
       lastPoint = currentPoint;
       compositeAllLayers();
@@ -2786,7 +2811,7 @@ function resizeDrawCanvas() {
 
     const target = getTargetCanvas();
     if (!target) return;
-    drawSmoothLine(target.ctx, lastPoint, currentPoint, state.drawColor, state.drawSize, state.drawEraser);
+    drawSmoothLine(target.ctx, lastPoint, currentPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
     lastPoint = currentPoint;
     compositeAllLayers();
   };
@@ -2845,21 +2870,28 @@ function resizeDrawCanvas() {
     state.drawEraser = !state.drawEraser;
     drawEraserBtn.classList.toggle('active', state.drawEraser);
     drawCanvas.style.cursor = state.drawEraser ? 'cell' : 'crosshair';
+    brushCursor.classList.toggle('eraser', state.drawEraser);
   };
   
   drawClear.onclick = () => {
-    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-    tplCtx.clearRect(0, 0, tplCanvas.width, tplCanvas.height);
+    // Clear only current target
+    if (state.drawTarget === 'background') {
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      state.bgDrawing = null;
+      if (typeof dbg === 'function') dbg('Cleared BG');
+    } else if (state.drawTarget === 'template') {
+      tplCtx.clearRect(0, 0, tplCanvas.width, tplCanvas.height);
+      state.templateDrawing = null;
+      renderTemplateFramePreview();
+      if (typeof dbg === 'function') dbg('Cleared TPL');
+    } else if (state.drawTarget === 'frame') {
+      frameSheetCtx.clearRect(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
+      state.frameDrawings = {};
+      state.frameSheetDrawing = null;
+      if (typeof dbg === 'function') dbg('Cleared FRM');
+    }
     drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-    // Clear frame sheet too
-    frameSheetCtx.clearRect(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
-    state.bgDrawing = null;
-    state.templateDrawing = null;
-    state.frameDrawings = {};
-    state.frameSheetDrawing = null;
-    drawUndoStack = [];
     compositeAllLayers();
-    renderTemplateFramePreview();
   };
   
   drawUndo.onclick = () => {
@@ -2987,7 +3019,7 @@ function resizeDrawCanvas() {
       drawTargetBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === 'template'));
       tDrawing = true;
       tLast = mapPoint(ev);
-      drawDot(tplCtx, tLast, state.drawColor, state.drawSize, state.drawEraser);
+      drawDot(tplCtx, tLast, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
       saveCurrentLayer();
       compositeAllLayers();
       ev.preventDefault();
@@ -2995,7 +3027,7 @@ function resizeDrawCanvas() {
     templateFrameCanvas.onmousemove = ev => {
       if (!tDrawing || !tLast) return;
       const p = mapPoint(ev);
-      drawSmoothLine(tplCtx, tLast, p, state.drawColor, state.drawSize, state.drawEraser);
+      drawSmoothLine(tplCtx, tLast, p, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
       tLast = p;
       saveCurrentLayer();
       compositeAllLayers();
@@ -3009,7 +3041,7 @@ function resizeDrawCanvas() {
       drawTargetBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === 'template'));
       tDrawing = true;
       tLast = mapPoint(ev);
-      drawDot(tplCtx, tLast, state.drawColor, state.drawSize, state.drawEraser);
+      drawDot(tplCtx, tLast, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
       saveCurrentLayer();
       compositeAllLayers();
       ev.preventDefault();
@@ -3017,7 +3049,7 @@ function resizeDrawCanvas() {
     templateFrameCanvas.ontouchmove = ev => {
       if (!tDrawing || !tLast) return;
       const p = mapPoint(ev);
-      drawSmoothLine(tplCtx, tLast, p, state.drawColor, state.drawSize, state.drawEraser);
+      drawSmoothLine(tplCtx, tLast, p, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
       tLast = p;
       saveCurrentLayer();
       compositeAllLayers();
@@ -3828,7 +3860,12 @@ function resizeDrawCanvas() {
     if (e.key === 'Home') { e.preventDefault(); resetToStart(); }
     if (e.key === 'End') { e.preventDefault(); state.currentTick = state.frames.length - 1; updateAllCells(); }
     if (e.key === 'd' || e.key === 'D') toggleDrawMode();
-    if ((e.key === 'e' || e.key === 'E') && state.drawMode) { state.drawEraser = !state.drawEraser; drawEraserBtn.classList.toggle('active', state.drawEraser); drawCanvas.style.cursor = state.drawEraser ? 'cell' : 'crosshair'; }
+    if ((e.key === 'e' || e.key === 'E') && state.drawMode) {
+      state.drawEraser = !state.drawEraser;
+      drawEraserBtn.classList.toggle('active', state.drawEraser);
+      drawCanvas.style.cursor = state.drawEraser ? 'cell' : 'crosshair';
+      brushCursor.classList.toggle('eraser', state.drawEraser);
+    }
     if ((e.key === 'o' || e.key === 'O') && state.drawMode) toggleOnionSkin();
     if ((e.key === 'l' || e.key === 'L') && state.drawMode) { state.drawLongStroke = !state.drawLongStroke; drawLongStrokeBtn.classList.toggle('active', state.drawLongStroke); }
     if ((e.key === 'b' || e.key === 'B') && state.drawMode) setDrawTarget('background');
@@ -3866,6 +3903,7 @@ function resizeDrawCanvas() {
       return;
     }
     brushCursor.classList.add('visible');
+    brushCursor.classList.toggle('eraser', state.drawEraser);
     brushCursor.style.left = e.clientX + 'px';
     brushCursor.style.top = e.clientY + 'px';
     // drawSize is in canvas coords, multiply by scale to get screen size
