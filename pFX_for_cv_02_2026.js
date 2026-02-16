@@ -74,7 +74,7 @@
       // ── mouse: WIDE SLOW ORBIT ──
       mouseRadius:    isPhone ? 0 : 500,
       attractForce:   0.003,     // very gentle pull (was 0.02)
-      swirlForce:     0.15,      // moderate swirl (was 0.3)
+      swirlForce:     0.25,      // swirl (was 0.15)
       swirlFalloff:   1.8,       // softer falloff = wider influence
       mouseDeadzone:  60,        // px from cursor where attract stops
                                  // prevents clumping at center
@@ -95,11 +95,23 @@
 
       // ── limits ──
       maxParticles: 420,
+      
+      // ── fade ──
+      fadeInSec:   2.0,     // seconds for new particles to fade in
+      fadeOutSec:  2.5,     // seconds to fade out before death
+      lifeMin:     25,      // min lifetime in seconds
+      lifeMax:     50,      // max lifetime in seconds
 
       // ── render ──
       blendMode: 'difference',
       dprClamp:  isPhone ? 1.5 : 2.0,
     };
+
+    // phone: smaller particles
+    if (isPhone) {
+      C.sizeMin = 0.15;
+      C.sizeMax = 1.6;
+    }
 
     // ────────────── CANVAS ──────────────
     canvas = document.createElement('canvas');
@@ -162,6 +174,8 @@
         driftMul: 0.3 + depth * 1.0,
         burst:    false,
         burstAge: 1,
+        bornAt:   performance.now() / 1000 - rand() * 1.5,
+        life:     mix(C.lifeMin, C.lifeMax, rand()),
       };
     }
 
@@ -184,6 +198,8 @@
         driftMul: 0.3 + depth * 1.0,
         burst:    true,
         burstAge: 0,
+        bornAt:   performance.now() / 1000,
+        life:     mix(C.lifeMin, C.lifeMax, rand()),
       };
     }
 
@@ -391,6 +407,17 @@
 
           if (a.burst && a.burstAge < 1) alpha *= a.burstAge;
           if (b.burst && b.burstAge < 1) alpha *= b.burstAge;
+
+          // life-based fade for lines
+          const ageA = ts / 1000 - a.bornAt;
+          const ageB = ts / 1000 - b.bornAt;
+          if (ageA < C.fadeInSec) alpha *= ageA / C.fadeInSec;
+          if (ageB < C.fadeInSec) alpha *= ageB / C.fadeInSec;
+          const leftA = a.life - ageA;
+          const leftB = b.life - ageB;
+          if (leftA < C.fadeOutSec) alpha *= leftA / C.fadeOutSec;
+          if (leftB < C.fadeOutSec) alpha *= leftB / C.fadeOutSec;
+
           if (alpha < 0.002) continue;
 
           const mx = (ax + bx) * 0.5;
@@ -412,9 +439,20 @@
 
       // ── dots ──
       ctx.globalCompositeOperation = C.blendMode;
+      const now = ts / 1000;
 
-      for (let i = 0; i < particles.length; i++) {
+      for (let i = particles.length - 1; i >= 0; i--) {
         const p  = particles[i];
+        const age = now - p.bornAt;
+
+        // respawn dead particles (fully faded out)
+        if (age >= p.life) {
+          const fresh = makeParticle();
+          fresh.bornAt = now;  // fresh fade-in starts now
+          particles[i] = fresh;
+          continue;
+        }
+
         const px = p.x;
         const py = p.y + p.springOff;
 
@@ -422,7 +460,21 @@
             py < -p.size || py > H + p.size) continue;
 
         let alpha = p.opacity;
+
+        // fade-in at birth
+        if (age < C.fadeInSec) {
+          alpha *= age / C.fadeInSec;
+        }
+
+        // fade-out before death
+        const timeLeft = p.life - age;
+        if (timeLeft < C.fadeOutSec) {
+          alpha *= timeLeft / C.fadeOutSec;
+        }
+
+        // burst fade-in
         if (p.burst && p.burstAge < 0.1) alpha *= p.burstAge / 0.1;
+
         if (alpha < 0.002) continue;
 
         ctx.beginPath();
