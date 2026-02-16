@@ -1,7 +1,6 @@
 (() => {
   'use strict';
 
-  // === ALLOWED PAGES ===
   const ALLOWED = [
     'grisha-tsvetkov.com/cv',
     'grisha-tsvetkov.com/contacts',
@@ -12,13 +11,11 @@
     return ALLOWED.some(p => location.href.includes(p));
   }
 
-  // === DEVICE DETECTION ===
   function isMobile() {
     return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
       || matchMedia('(pointer: coarse)').matches;
   }
 
-  // === GLOBALS ===
   let canvas, ctx, W, H, dpr;
   let particles = [];
   let mouse = { x: -9999, y: -9999, active: false };
@@ -31,9 +28,6 @@
   const mix   = (a, b, t) => a + (b - a) * t;
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-  // ================================================================
-  //  INIT
-  // ================================================================
   function init() {
     if (running) return;
     if (!isAllowed()) return;
@@ -49,22 +43,27 @@
         vw * innerHeight * (isPhone ? 0.00008 : 0.00011)
       )),
 
+      // ── hero particles for extreme depth ──
+      heroNearCount:  isPhone ? 1 : 3,
+      heroFarCount:   isPhone ? 3 : 5,
+
       // ── parallax ──
-      // base scroll-speed variation by depth
-      parallaxStrength: isPhone ? 0.35 : 0.6,
+      parallaxStrength: isPhone ? 0.5 : 0.9,
 
       // ── spring dynamics ──
-      // creates overshoot / bounce when scroll starts and stops
-      springStiffness:  isPhone ? 0.02 : 0.03,
-      springDamping:    isPhone ? 0.82 : 0.78,
-      springGain:       isPhone ? 1.8  : 2.5,
+      springStiffness:  isPhone ? 0.02 : 0.025,
+      springDamping:    isPhone ? 0.82 : 0.76,
+      springGain:       isPhone ? 2.0  : 3.2,
       springMaxVel:     3000,
 
-      // ── particle appearance (depth 0→1) ──
-      sizeMin:    0.3,
-      sizeMax:    2.5,
-      opacityMin: 0.05,
-      opacityMax: 0.5,
+      // ── depth → appearance ──
+      // normal particles: depth 0.1 → 0.9
+      // hero far:  depth 0.0 → 0.08
+      // hero near: depth 0.92 → 1.0
+      sizeMin:    0.2,    // depth=0  (furthest hero)
+      sizeMax:    3.5,    // depth=1  (nearest hero)
+      opacityMin: 0.03,
+      opacityMax: 0.55,
       color: [255, 255, 255],
 
       // ── gentle drift ──
@@ -72,26 +71,30 @@
       driftFreq: 0.2,
       friction:  0.965,
 
-      // ── mouse: attract + swirl ──
-      mouseRadius:   isPhone ? 0 : 380,
-      attractForce:  0.02,
-      swirlForce:    0.3,
-      swirlFalloff:  2.5,
+      // ── mouse: WIDE SLOW ORBIT ──
+      mouseRadius:    isPhone ? 0 : 500,
+      attractForce:   0.003,     // very gentle pull (was 0.02)
+      swirlForce:     0.15,      // moderate swirl (was 0.3)
+      swirlFalloff:   1.8,       // softer falloff = wider influence
+      mouseDeadzone:  60,        // px from cursor where attract stops
+                                 // prevents clumping at center
 
-      // ── tap burst (integrates into grid) ──
-      burstCount:     isPhone ? 8 : 14,
-      burstSpeed:     3.0,
+      // ── tap burst ──
+      burstCountMin:  isPhone ? 5  : 8,
+      burstCountMax:  isPhone ? 12 : 20,
+      burstSpeedMin:  1.5,
+      burstSpeedMax:  5.0,
       burstSettleSec: 2.5,
 
-      // ── lines between particles ──
-      lineRadius:     isPhone ? 65 : 100,
+      // ── lines ──
+      lineRadius:     isPhone ? 70 : 110,
       lineMaxPerNode: 3,
-      lineOpacity:    0.18,
-      lineWidth:      0.5,
-      lineBend:       0.1,
+      lineOpacity:    0.25,     // was 0.18
+      lineWidth:      0.7,      // was 0.5
+      lineBend:       0.12,
 
-      // ── max total particles ──
-      maxParticles: 400,
+      // ── limits ──
+      maxParticles: 420,
 
       // ── render ──
       blendMode: 'difference',
@@ -104,15 +107,15 @@
     document.body.appendChild(canvas);
 
     Object.assign(canvas.style, {
-      position:     'fixed',
-      inset:        '0',
-      width:        '100%',
-      height:       '100%',
-      zIndex:       '9999',
-      pointerEvents:'none',
-      mixBlendMode: C.blendMode,
-      opacity:      '0',
-      transition:   'opacity 1.5s ease',
+      position:      'fixed',
+      inset:         '0',
+      width:         '100%',
+      height:        '100%',
+      zIndex:        '9999',
+      pointerEvents: 'none',
+      mixBlendMode:  C.blendMode,
+      opacity:       '0',
+      transition:    'opacity 1.5s ease',
     });
 
     function resize() {
@@ -126,55 +129,81 @@
     _onResize = resize;
     addEventListener('resize', _onResize, { passive: true });
 
-    // ────────────── SCROLL & SPRING STATE ──────────────
+    // ────────────── SCROLL STATE ──────────────
     let prevScrollY = window.scrollY || 0;
 
-    // ────────────── PARTICLES ──────────────
-    function makeParticle() {
-      const depth = rand();
+    // ────────────── PARTICLE FACTORY ──────────────
+    function sizeForDepth(d) {
+      // cubic curve: small dots stay small longer, big dots ramp up fast
+      const t = d * d;
+      return mix(C.sizeMin, C.sizeMax, t) * dpr;
+    }
+
+    function opacityForDepth(d) {
+      return mix(C.opacityMin, C.opacityMax, d);
+    }
+
+    function makeParticle(depthOverride) {
+      const depth = (depthOverride !== undefined)
+        ? depthOverride
+        : 0.1 + rand() * 0.8;  // normal range: 0.1–0.9
+
       return {
         x: rand() * W,
         y: rand() * H,
         vx: 0, vy: 0,
         depth,
-        size:    mix(C.sizeMin, C.sizeMax, depth) * dpr,
-        opacity: mix(C.opacityMin, C.opacityMax, depth),
-        // per-particle spring offset for parallax bounce
+        size:    sizeForDepth(depth),
+        opacity: opacityForDepth(depth),
         springOff: 0,
         springVel: 0,
-        // drift noise
         phX: rand() * 1000,
         phY: rand() * 1000,
-        driftMul: 0.5 + depth * 0.8,
-        // burst state (false = normal particle)
+        driftMul: 0.3 + depth * 1.0,
         burst:    false,
-        burstAge: 1,  // 1 = fully settled
+        burstAge: 1,
       };
     }
 
     function makeBurstParticle(bx, by) {
       const depth = 0.15 + rand() * 0.7;
       const angle = rand() * TAU;
-      const speed = C.burstSpeed * (0.3 + rand()) * dpr;
+      // varied burst power
+      const speed = mix(C.burstSpeedMin, C.burstSpeedMax, rand()) * dpr;
       return {
         x: bx, y: by,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         depth,
-        size:    mix(C.sizeMin, C.sizeMax, depth) * dpr,
-        opacity: mix(C.opacityMin, C.opacityMax, depth),
+        size:    sizeForDepth(depth),
+        opacity: opacityForDepth(depth),
         springOff: 0,
         springVel: 0,
         phX: rand() * 1000,
         phY: rand() * 1000,
-        driftMul: 0.5 + depth * 0.8,
+        driftMul: 0.3 + depth * 1.0,
         burst:    true,
-        burstAge: 0,   // starts at 0, settles to 1
+        burstAge: 0,
       };
     }
 
+    // ── populate ──
     particles = [];
-    for (let i = 0; i < C.count; i++) particles.push(makeParticle());
+
+    // hero far (tiny, very deep background)
+    for (let i = 0; i < C.heroFarCount; i++) {
+      particles.push(makeParticle(0.01 + rand() * 0.07));
+    }
+
+    // normal particles
+    for (let i = 0; i < C.count; i++) {
+      particles.push(makeParticle());
+    }
+
+    // hero near (big, very foreground)
+    for (let i = 0; i < C.heroNearCount; i++) {
+      particles.push(makeParticle(0.93 + rand() * 0.07));
+    }
 
     // ────────────── INPUT ──────────────
     _onMove = (e) => {
@@ -188,8 +217,13 @@
       const bx = e.clientX * dpr;
       const by = e.clientY * dpr;
 
+      // random burst count per tap
+      const count = Math.floor(
+        mix(C.burstCountMin, C.burstCountMax, rand())
+      );
+
       // cap total particles
-      let over = (particles.length + C.burstCount) - C.maxParticles;
+      let over = (particles.length + count) - C.maxParticles;
       if (over > 0) {
         let removed = 0;
         for (let i = 0; i < particles.length && removed < over; i++) {
@@ -201,7 +235,7 @@
         }
       }
 
-      for (let i = 0; i < C.burstCount; i++) {
+      for (let i = 0; i < count; i++) {
         particles.push(makeBurstParticle(bx, by));
       }
     };
@@ -212,78 +246,66 @@
     addEventListener('pointerdown', _onDown, { passive: true });
     document.addEventListener('mouseleave', _onLeave, { passive: true });
 
-    // fade in
     requestAnimationFrame(() => { canvas.style.opacity = '1'; });
 
-    // ────────────── RGBA HELPER ──────────────
+    // ────────────── RGBA ──────────────
     const cr = C.color[0], cg = C.color[1], cb = C.color[2];
     function rgba(a) {
       return `rgba(${cr},${cg},${cb},${a < 0.001 ? 0 : a.toFixed(4)})`;
     }
 
-    // ────────────── RENDER LOOP ──────────────
+    // ────────────── FRAME LOOP ──────────────
     let lastT = 0;
     const frameDur = 1000 / 60;
 
     function frame(ts) {
       if (!running) return;
       frameId = requestAnimationFrame(frame);
-
       if (ts - lastT < frameDur * 0.85) return;
       const elapsed = ts - lastT;
       lastT = ts;
+      const dt = Math.min(elapsed / 1000, 0.05);
 
-      const dt  = Math.min(elapsed / 1000, 0.05);
-
-      // ── scroll delta ──
+      // ── scroll ──
       const sy     = window.scrollY || 0;
       const sDelta = sy - prevScrollY;
       prevScrollY  = sy;
 
-      // scroll velocity (px/s), clamped
       const scrollVel = clamp(
         sDelta / (dt || 0.016),
         -C.springMaxVel,
          C.springMaxVel
       );
 
-      // ── update particles ──
-      const margin = 100 * dpr;
-      const mR  = C.mouseRadius * dpr;
-      const mR2 = mR * mR;
+      // ── update ──
+      const margin = 120 * dpr;
+      const mR   = C.mouseRadius * dpr;
+      const mR2  = mR * mR;
+      const dead = C.mouseDeadzone * dpr;
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // ── depth-based parallax factor ──
-        // depthOffset: far(0)→ -0.3, mid(0.5)→ 0, near(1)→ +0.3  (at strength 0.6)
+        // ── parallax scroll ──
         const depthOffset = (p.depth - 0.5) * C.parallaxStrength;
-
-        // base scroll tracking: all follow scroll, depth varies speed
         p.y -= sDelta * dpr * (1.0 + depthOffset);
 
-        // ── SPRING: inject scroll impulse, scaled by depth ──
-        // Far particles get negative impulse → spring lag
-        // Near particles get positive impulse → spring overshoot
+        // ── spring bounce ──
         p.springVel += scrollVel * depthOffset * C.springGain * dt;
-
-        // spring physics: pull back to rest (0) + damping
         p.springVel += -p.springOff * C.springStiffness;
         p.springVel *= C.springDamping;
         p.springOff += p.springVel * dt;
-        p.springOff  = clamp(p.springOff, -H * 0.3, H * 0.3);
+        p.springOff  = clamp(p.springOff, -H * 0.35, H * 0.35);
 
         // ── burst settling ──
         if (p.burst && p.burstAge < 1) {
           p.burstAge = Math.min(1, p.burstAge + dt / C.burstSettleSec);
-          // friction increases as particle settles
           const settleK = p.burstAge * p.burstAge;
-          const burstFriction = mix(0.93, C.friction, settleK);
-          p.vx *= burstFriction;
-          p.vy *= burstFriction;
+          p.vx *= mix(0.93, C.friction, settleK);
+          p.vy *= mix(0.93, C.friction, settleK);
         }
 
-        // ── gentle drift (once burst has mostly settled) ──
+        // ── drift ──
         if (!p.burst || p.burstAge > 0.3) {
           const spd = C.driftFreq * p.driftMul;
           p.phX += spd * dt;
@@ -292,7 +314,7 @@
           p.vy  += Math.cos(p.phY) * C.driftAmp * p.driftMul * dt;
         }
 
-        // ── mouse attract + swirl ──
+        // ── mouse: wide orbit, no clumping ──
         if (mouse.active && mR > 0) {
           const drawY = p.y + p.springOff;
           const dx = mouse.x - p.x;
@@ -305,8 +327,17 @@
             const nx = dx / dist;
             const ny = dy / dist;
 
-            p.vx += nx * C.attractForce * fall;
-            p.vy += ny * C.attractForce * fall;
+            // attract — but STOP when inside deadzone
+            if (dist > dead) {
+              p.vx += nx * C.attractForce * fall;
+              p.vy += ny * C.attractForce * fall;
+            } else {
+              // inside deadzone: gentle repel to prevent clumping
+              p.vx -= nx * C.attractForce * 0.5;
+              p.vy -= ny * C.attractForce * 0.5;
+            }
+
+            // swirl — always active, creates orbiting
             p.vx += (-ny) * C.swirlForce * fall * dt;
             p.vy += ( nx) * C.swirlForce * fall * dt;
           }
@@ -318,7 +349,7 @@
         p.x  += p.vx;
         p.y  += p.vy;
 
-        // ── wrap edges ──
+        // ── wrap ──
         if      (p.y < -margin)    p.y += H + 2 * margin;
         else if (p.y > H + margin) p.y -= H + 2 * margin;
         if      (p.x < -margin)    p.x += W + 2 * margin;
@@ -331,9 +362,8 @@
       // ── lines ──
       const lr  = C.lineRadius * dpr;
       const lr2 = lr * lr;
-      const lw  = C.lineWidth * dpr;
       ctx.globalCompositeOperation = 'screen';
-      ctx.lineWidth = lw;
+      ctx.lineWidth = C.lineWidth * dpr;
 
       for (let i = 0; i < particles.length; i++) {
         const a  = particles[i];
@@ -341,8 +371,6 @@
         const ay = a.y + a.springOff;
 
         if (ax < -lr || ax > W + lr || ay < -lr || ay > H + lr) continue;
-
-        // burst particles don't connect lines until 15% settled
         if (a.burst && a.burstAge < 0.15) continue;
 
         let edges = 0;
@@ -357,14 +385,12 @@
           const d2 = dx * dx + dy * dy;
           if (d2 > lr2 || d2 < 1) continue;
 
-          const dist  = Math.sqrt(d2);
-          const t     = 1 - dist / lr;
-          let alpha = t * t * C.lineOpacity;
+          const dist = Math.sqrt(d2);
+          const t    = 1 - dist / lr;
+          let alpha  = t * t * C.lineOpacity;
 
-          // fade lines in as burst particles settle
           if (a.burst && a.burstAge < 1) alpha *= a.burstAge;
           if (b.burst && b.burstAge < 1) alpha *= b.burstAge;
-
           if (alpha < 0.002) continue;
 
           const mx = (ax + bx) * 0.5;
@@ -380,7 +406,6 @@
           ctx.quadraticCurveTo(cpx, cpy, bx, by);
           ctx.strokeStyle = rgba(alpha);
           ctx.stroke();
-
           edges++;
         }
       }
@@ -397,12 +422,7 @@
             py < -p.size || py > H + p.size) continue;
 
         let alpha = p.opacity;
-
-        // burst particles: quick fade-in at birth
-        if (p.burst && p.burstAge < 0.1) {
-          alpha *= p.burstAge / 0.1;
-        }
-
+        if (p.burst && p.burstAge < 0.1) alpha *= p.burstAge / 0.1;
         if (alpha < 0.002) continue;
 
         ctx.beginPath();
@@ -413,12 +433,12 @@
     }
 
     frameId = requestAnimationFrame(frame);
-    console.log('✦ particles v2.1 started ·', location.pathname);
+    console.log('✦ particles v2.2 ·', location.pathname);
   }
 
-  // ================================================================
-  //  CLEANUP
-  // ================================================================
+  // ════════════════════════════════════
+  //  CLEANUP & NAV
+  // ════════════════════════════════════
   function cleanup() {
     if (!running) return;
     running = false;
@@ -432,12 +452,8 @@
       setTimeout(() => canvas?.remove(), 1600);
     }
     particles = [];
-    console.log('✦ particles v2.1 stopped');
   }
 
-  // ================================================================
-  //  SPA NAVIGATION DETECTION
-  // ================================================================
   init();
 
   let lastUrl = location.href;
@@ -447,7 +463,6 @@
     if (!isAllowed()) cleanup();
     else if (!running) init();
   }
-
   document.addEventListener('click', () => setTimeout(checkNav, 300), { capture: true });
   addEventListener('popstate', () => setTimeout(checkNav, 300));
   setInterval(checkNav, 500);
