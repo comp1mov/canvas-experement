@@ -44,14 +44,14 @@
         vw * innerHeight * (isPhone ? 0.00008 : 0.00011)
       )),
 
-      heroNearCount:  isPhone ? 2 : 12,
-      heroFarCount:   isPhone ? 5 : 20,
+      heroNearCount:  isPhone ? 2 : 5,
+      heroFarCount:   isPhone ? 4 : 10,
 
-      parallaxStrength: isPhone ? 0.2 : 0.9,
+      parallaxStrength: isPhone ? 0.16 : 0.25,
 
-      springStiffness:  isPhone ? 0.02 : 0.025,
-      springDamping:    isPhone ? 0.82 : 0.76,
-      springGain:       isPhone ? 2.0  : 3.2,
+      springStiffness:  isPhone ? 0.03 : 0.04,
+      springDamping:    isPhone ? 0.88 : 0.85,
+      springGain:       isPhone ? 1.2  : 1.8,
       springMaxVel:     3000,
 
       sizeMin:    isPhone ? 0.15 : 0.2,
@@ -60,7 +60,7 @@
       opacityMax: 0.85,
       color: [255, 255, 255],
 
-      driftAmp:  0.06,
+      driftAmp:  0.05,
       driftFreq: 0.2,
       friction:  0.965,
 
@@ -76,7 +76,7 @@
       burstSpeedMax:  5.0,
       burstSettleSec: 2.5,
 
-      lineRadius:     isPhone ? 70 : 150,
+      lineRadius:     isPhone ? 70 : 110,
       lineMaxPerNode: 3,
       lineOpacity:    0.25,
       lineWidth:      0.7,
@@ -89,9 +89,10 @@
       lifeMax:    55,     // maximum lifetime in seconds
       fadeOutSec: 3.0,    // seconds of smooth fade before death
       forcedFadeSec: 1.5, // fade when killed by overcrowding
+      fadeInSec: 2.0,     // fade-in for new/respawned particles (not burst)
 
       blendMode: 'difference',
-      dprClamp:  isPhone ? 2 : 2.0,
+      dprClamp:  isPhone ? 1.5 : 2.0,
     };
 
     // ────────────── CANVAS ──────────────
@@ -195,8 +196,10 @@
     particles = [];
 
     for (let i = 0; i < C.heroFarCount; i++) {
-      const p = makeParticle(0.01 + rand() * 0.07);
-      p.bornAt -= rand() * p.life * 0.8;  // stagger so they don't all die at once
+      const p = makeParticle(0.05 + rand() * 0.1);  // depth 0.05–0.15
+      p.size    = (isPhone ? 0.3 : 0.5) * dpr;      // small but visible
+      p.opacity = 0.06 + rand() * 0.04;              // very subtle
+      p.bornAt -= rand() * p.life * 0.8;
       particles.push(p);
     }
 
@@ -207,7 +210,9 @@
     }
 
     for (let i = 0; i < C.heroNearCount; i++) {
-      const p = makeParticle(0.93 + rand() * 0.07);
+      const p = makeParticle(0.88 + rand() * 0.12);  // depth 0.88–1.0
+      p.size    = mix(isPhone ? 2.5 : 4.0, isPhone ? 4.0 : 6.5, rand()) * dpr;
+      p.opacity = 0.08 + rand() * 0.07;              // visible but not harsh
       p.bornAt -= rand() * p.life * 0.8;
       particles.push(p);
     }
@@ -328,7 +333,7 @@
         p.springVel += -p.springOff * C.springStiffness;
         p.springVel *= C.springDamping;
         p.springOff += p.springVel * dt;
-        p.springOff  = clamp(p.springOff, -H * 0.35, H * 0.35);
+        p.springOff  = clamp(p.springOff, -H * 0.15, H * 0.15);
 
         // ── burst settling ──
         if (p.burst && p.burstAge < 1) {
@@ -408,6 +413,7 @@
         const leftA   = a.life - ageA;
         const fadeA   = leftA < C.fadeOutSec ? leftA / C.fadeOutSec : 1;
         const dyFadeA = a.dying ? clamp(1 - (now - a.dyingAt) / C.forcedFadeSec, 0, 1) : 1;
+        const inA = (!a.burst && ageA < C.fadeInSec) ? ageA / C.fadeInSec : 1;
 
         let edges = 0;
         for (let j = i + 1; j < particles.length && edges < C.lineMaxPerNode; j++) {
@@ -429,11 +435,12 @@
           if (b.burst && b.burstAge < 1) alpha *= b.burstAge;
 
           // fade lines with dying particles
-          alpha *= fadeA * dyFadeA;
+          alpha *= fadeA * dyFadeA * inA;
           const ageB  = now - b.bornAt;
           const leftB = b.life - ageB;
           if (leftB < C.fadeOutSec) alpha *= leftB / C.fadeOutSec;
           if (b.dying) alpha *= clamp(1 - (now - b.dyingAt) / C.forcedFadeSec, 0, 1);
+          if (!b.burst && ageB < C.fadeInSec) alpha *= ageB / C.fadeInSec;
 
           if (alpha < 0.002) continue;
 
@@ -469,6 +476,12 @@
 
         // burst fade-in (only for burst particles, instant appearance)
         if (p.burst && p.burstAge < 0.1) alpha *= p.burstAge / 0.1;
+
+        // fade-in for normal (non-burst) particles
+        if (!p.burst) {
+          const age = now - p.bornAt;
+          if (age < C.fadeInSec) alpha *= age / C.fadeInSec;
+        }
 
         // smooth fade-out before death
         const timeLeft = p.life - (now - p.bornAt);
