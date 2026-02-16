@@ -38,80 +38,61 @@
     const isPhone = mobile && vw <= 768;
 
     // ────────────── CONFIG ──────────────
+    // values written as: isPhone ? PHONE : DESKTOP
     const C = {
       count: Math.max(50, Math.floor(
         vw * innerHeight * (isPhone ? 0.00008 : 0.00011)
       )),
 
-      // ── hero particles for extreme depth ──
-      heroNearCount:  isPhone ? 1 : 3,
-      heroFarCount:   isPhone ? 3 : 5,
+      heroNearCount:  isPhone ? 2 : 12,
+      heroFarCount:   isPhone ? 5 : 20,
 
-      // ── parallax ──
-      parallaxStrength: isPhone ? 0.5 : 0.9,
+      parallaxStrength: isPhone ? 0.2 : 0.9,
 
-      // ── spring dynamics ──
       springStiffness:  isPhone ? 0.02 : 0.025,
       springDamping:    isPhone ? 0.82 : 0.76,
       springGain:       isPhone ? 2.0  : 3.2,
       springMaxVel:     3000,
 
-      // ── depth → appearance ──
-      // normal particles: depth 0.1 → 0.9
-      // hero far:  depth 0.0 → 0.08
-      // hero near: depth 0.92 → 1.0
-      sizeMin:    0.2,    // depth=0  (furthest hero)
-      sizeMax:    3.5,    // depth=1  (nearest hero)
+      sizeMin:    isPhone ? 0.15 : 0.2,
+      sizeMax:    isPhone ? 1.6  : 3.5,
       opacityMin: 0.03,
-      opacityMax: 0.55,
+      opacityMax: 0.85,
       color: [255, 255, 255],
 
-      // ── gentle drift ──
-      driftAmp:  0.05,
+      driftAmp:  0.06,
       driftFreq: 0.2,
       friction:  0.965,
 
-      // ── mouse: WIDE SLOW ORBIT ──
       mouseRadius:    isPhone ? 0 : 500,
-      attractForce:   0.003,     // very gentle pull (was 0.02)
-      swirlForce:     0.25,      // swirl (was 0.15)
-      swirlFalloff:   1.8,       // softer falloff = wider influence
-      mouseDeadzone:  60,        // px from cursor where attract stops
-                                 // prevents clumping at center
+      attractForce:   0.003,
+      swirlForce:     0.25,
+      swirlFalloff:   2.8,
+      mouseDeadzone:  80,
 
-      // ── tap burst ──
       burstCountMin:  isPhone ? 5  : 8,
       burstCountMax:  isPhone ? 12 : 20,
       burstSpeedMin:  1.5,
       burstSpeedMax:  5.0,
       burstSettleSec: 2.5,
 
-      // ── lines ──
-      lineRadius:     isPhone ? 70 : 110,
+      lineRadius:     isPhone ? 70 : 150,
       lineMaxPerNode: 3,
-      lineOpacity:    0.25,     // was 0.18
-      lineWidth:      0.7,      // was 0.5
+      lineOpacity:    0.25,
+      lineWidth:      0.7,
       lineBend:       0.12,
 
-      // ── limits ──
       maxParticles: 420,
-      
-      // ── fade ──
-      fadeInSec:   2.0,     // seconds for new particles to fade in
-      fadeOutSec:  2.5,     // seconds to fade out before death
-      lifeMin:     25,      // min lifetime in seconds
-      lifeMax:     50,      // max lifetime in seconds
 
-      // ── render ──
+      // ── lifetime & fade-out ──
+      lifeMin:    30,     // minimum lifetime in seconds
+      lifeMax:    55,     // maximum lifetime in seconds
+      fadeOutSec: 3.0,    // seconds of smooth fade before death
+      forcedFadeSec: 1.5, // fade when killed by overcrowding
+
       blendMode: 'difference',
-      dprClamp:  isPhone ? 1.5 : 2.0,
+      dprClamp:  isPhone ? 2 : 2.0,
     };
-
-    // phone: smaller particles
-    if (isPhone) {
-      C.sizeMin = 0.15;
-      C.sizeMax = 1.6;
-    }
 
     // ────────────── CANVAS ──────────────
     canvas = document.createElement('canvas');
@@ -141,12 +122,10 @@
     _onResize = resize;
     addEventListener('resize', _onResize, { passive: true });
 
-    // ────────────── SCROLL STATE ──────────────
     let prevScrollY = window.scrollY || 0;
 
     // ────────────── PARTICLE FACTORY ──────────────
     function sizeForDepth(d) {
-      // cubic curve: small dots stay small longer, big dots ramp up fast
       const t = d * d;
       return mix(C.sizeMin, C.sizeMax, t) * dpr;
     }
@@ -158,7 +137,7 @@
     function makeParticle(depthOverride) {
       const depth = (depthOverride !== undefined)
         ? depthOverride
-        : 0.1 + rand() * 0.8;  // normal range: 0.1–0.9
+        : 0.1 + rand() * 0.8;
 
       return {
         x: rand() * W,
@@ -174,15 +153,19 @@
         driftMul: 0.3 + depth * 1.0,
         burst:    false,
         burstAge: 1,
-        bornAt:   performance.now() / 1000 - rand() * 1.5,
-        life:     mix(C.lifeMin, C.lifeMax, rand()),
+        bornAt: performance.now() / 1000,
+        life:   mix(C.lifeMin, C.lifeMax, rand()),
+        dying:  false,   // set true to trigger forced fade-out
+        dyingAt: 0,      // timestamp when dying started
+        hueOff: (rand() - 0.5) * 30,
+        satOff: (rand() - 0.5) * 30,
+        litOff: (rand() - 0.5) * 30,
       };
     }
 
     function makeBurstParticle(bx, by) {
       const depth = 0.15 + rand() * 0.7;
       const angle = rand() * TAU;
-      // varied burst power
       const speed = mix(C.burstSpeedMin, C.burstSpeedMax, rand()) * dpr;
       return {
         x: bx, y: by,
@@ -198,27 +181,35 @@
         driftMul: 0.3 + depth * 1.0,
         burst:    true,
         burstAge: 0,
-        bornAt:   performance.now() / 1000,
-        life:     mix(C.lifeMin, C.lifeMax, rand()),
+        bornAt: performance.now() / 1000,
+        life:   mix(C.lifeMin, C.lifeMax, rand()),
+        dying:  false,
+        dyingAt: 0,
+        hueOff: (rand() - 0.5) * 30,
+        satOff: (rand() - 0.5) * 30,
+        litOff: (rand() - 0.5) * 30,
       };
     }
 
     // ── populate ──
     particles = [];
 
-    // hero far (tiny, very deep background)
     for (let i = 0; i < C.heroFarCount; i++) {
-      particles.push(makeParticle(0.01 + rand() * 0.07));
+      const p = makeParticle(0.01 + rand() * 0.07);
+      p.bornAt -= rand() * p.life * 0.8;  // stagger so they don't all die at once
+      particles.push(p);
     }
 
-    // normal particles
     for (let i = 0; i < C.count; i++) {
-      particles.push(makeParticle());
+      const p = makeParticle();
+      p.bornAt -= rand() * p.life * 0.8;
+      particles.push(p);
     }
 
-    // hero near (big, very foreground)
     for (let i = 0; i < C.heroNearCount; i++) {
-      particles.push(makeParticle(0.93 + rand() * 0.07));
+      const p = makeParticle(0.93 + rand() * 0.07);
+      p.bornAt -= rand() * p.life * 0.8;
+      particles.push(p);
     }
 
     // ────────────── INPUT ──────────────
@@ -233,20 +224,19 @@
       const bx = e.clientX * dpr;
       const by = e.clientY * dpr;
 
-      // random burst count per tap
       const count = Math.floor(
         mix(C.burstCountMin, C.burstCountMax, rand())
       );
 
-      // cap total particles
+      // cap total particles — mark oldest as dying instead of instant delete
       let over = (particles.length + count) - C.maxParticles;
       if (over > 0) {
-        let removed = 0;
-        for (let i = 0; i < particles.length && removed < over; i++) {
-          if (particles[i].burstAge >= 1) {
-            particles.splice(i, 1);
-            removed++;
-            i--;
+        let marked = 0;
+        for (let i = 0; i < particles.length && marked < over; i++) {
+          if (!particles[i].dying && particles[i].burstAge >= 1) {
+            particles[i].dying = true;
+            particles[i].dyingAt = performance.now() / 1000;
+            marked++;
           }
         }
       }
@@ -264,10 +254,18 @@
 
     requestAnimationFrame(() => { canvas.style.opacity = '1'; });
 
-    // ────────────── RGBA ──────────────
-    const cr = C.color[0], cg = C.color[1], cb = C.color[2];
+    // ────────────── COLOR HELPERS ──────────────
+    // base white in HSL = (0, 0%, 100%)
+    // per-particle offsets add subtle color variation
+    function hsla(p, a) {
+      const h = ((0 + p.hueOff) % 360 + 360) % 360;
+      const s = clamp(0 + p.satOff, 0, 100);
+      const l = clamp(100 + p.litOff, 0, 100);
+      return `hsla(${h.toFixed(0)},${s.toFixed(0)}%,${l.toFixed(0)}%,${a < 0.001 ? 0 : a.toFixed(4)})`;
+    }
+    // plain white for lines (no per-particle tint)
     function rgba(a) {
-      return `rgba(${cr},${cg},${cb},${a < 0.001 ? 0 : a.toFixed(4)})`;
+      return `rgba(255,255,255,${a < 0.001 ? 0 : a.toFixed(4)})`;
     }
 
     // ────────────── FRAME LOOP ──────────────
@@ -280,7 +278,8 @@
       if (ts - lastT < frameDur * 0.85) return;
       const elapsed = ts - lastT;
       lastT = ts;
-      const dt = Math.min(elapsed / 1000, 0.05);
+      const dt  = Math.min(elapsed / 1000, 0.05);
+      const now = ts / 1000;
 
       // ── scroll ──
       const sy     = window.scrollY || 0;
@@ -299,8 +298,26 @@
       const mR2  = mR * mR;
       const dead = C.mouseDeadzone * dpr;
 
-      for (let i = 0; i < particles.length; i++) {
+      for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
+
+        // ── check death ──
+        const age = now - p.bornAt;
+
+        // forced dying (overcrowding): remove after fade completes
+        if (p.dying) {
+          const dyingAge = now - p.dyingAt;
+          if (dyingAge >= C.forcedFadeSec) {
+            particles.splice(i, 1);
+            continue;
+          }
+        }
+
+        // natural death: respawn
+        if (age >= p.life) {
+          particles[i] = makeParticle();
+          continue;
+        }
 
         // ── parallax scroll ──
         const depthOffset = (p.depth - 0.5) * C.parallaxStrength;
@@ -343,17 +360,14 @@
             const nx = dx / dist;
             const ny = dy / dist;
 
-            // attract — but STOP when inside deadzone
             if (dist > dead) {
               p.vx += nx * C.attractForce * fall;
               p.vy += ny * C.attractForce * fall;
             } else {
-              // inside deadzone: gentle repel to prevent clumping
               p.vx -= nx * C.attractForce * 0.5;
               p.vy -= ny * C.attractForce * 0.5;
             }
 
-            // swirl — always active, creates orbiting
             p.vx += (-ny) * C.swirlForce * fall * dt;
             p.vy += ( nx) * C.swirlForce * fall * dt;
           }
@@ -389,6 +403,12 @@
         if (ax < -lr || ax > W + lr || ay < -lr || ay > H + lr) continue;
         if (a.burst && a.burstAge < 0.15) continue;
 
+        // fade multiplier for dying particle
+        const ageA    = now - a.bornAt;
+        const leftA   = a.life - ageA;
+        const fadeA   = leftA < C.fadeOutSec ? leftA / C.fadeOutSec : 1;
+        const dyFadeA = a.dying ? clamp(1 - (now - a.dyingAt) / C.forcedFadeSec, 0, 1) : 1;
+
         let edges = 0;
         for (let j = i + 1; j < particles.length && edges < C.lineMaxPerNode; j++) {
           const b = particles[j];
@@ -408,15 +428,12 @@
           if (a.burst && a.burstAge < 1) alpha *= a.burstAge;
           if (b.burst && b.burstAge < 1) alpha *= b.burstAge;
 
-          // life-based fade for lines
-          const ageA = ts / 1000 - a.bornAt;
-          const ageB = ts / 1000 - b.bornAt;
-          if (ageA < C.fadeInSec) alpha *= ageA / C.fadeInSec;
-          if (ageB < C.fadeInSec) alpha *= ageB / C.fadeInSec;
-          const leftA = a.life - ageA;
+          // fade lines with dying particles
+          alpha *= fadeA * dyFadeA;
+          const ageB  = now - b.bornAt;
           const leftB = b.life - ageB;
-          if (leftA < C.fadeOutSec) alpha *= leftA / C.fadeOutSec;
           if (leftB < C.fadeOutSec) alpha *= leftB / C.fadeOutSec;
+          if (b.dying) alpha *= clamp(1 - (now - b.dyingAt) / C.forcedFadeSec, 0, 1);
 
           if (alpha < 0.002) continue;
 
@@ -439,20 +456,9 @@
 
       // ── dots ──
       ctx.globalCompositeOperation = C.blendMode;
-      const now = ts / 1000;
 
-      for (let i = particles.length - 1; i >= 0; i--) {
+      for (let i = 0; i < particles.length; i++) {
         const p  = particles[i];
-        const age = now - p.bornAt;
-
-        // respawn dead particles (fully faded out)
-        if (age >= p.life) {
-          const fresh = makeParticle();
-          fresh.bornAt = now;  // fresh fade-in starts now
-          particles[i] = fresh;
-          continue;
-        }
-
         const px = p.x;
         const py = p.y + p.springOff;
 
@@ -461,25 +467,26 @@
 
         let alpha = p.opacity;
 
-        // fade-in at birth
-        if (age < C.fadeInSec) {
-          alpha *= age / C.fadeInSec;
-        }
-
-        // fade-out before death
-        const timeLeft = p.life - age;
-        if (timeLeft < C.fadeOutSec) {
-          alpha *= timeLeft / C.fadeOutSec;
-        }
-
-        // burst fade-in
+        // burst fade-in (only for burst particles, instant appearance)
         if (p.burst && p.burstAge < 0.1) alpha *= p.burstAge / 0.1;
+
+        // smooth fade-out before death
+        const timeLeft = p.life - (now - p.bornAt);
+        if (timeLeft < C.fadeOutSec) {
+          alpha *= clamp(timeLeft / C.fadeOutSec, 0, 1);
+        }
+
+        // forced fade-out (overcrowding)
+        if (p.dying) {
+          const dyingAge = now - p.dyingAt;
+          alpha *= clamp(1 - dyingAge / C.forcedFadeSec, 0, 1);
+        }
 
         if (alpha < 0.002) continue;
 
         ctx.beginPath();
         ctx.arc(px, py, p.size, 0, TAU);
-        ctx.fillStyle = rgba(alpha);
+        ctx.fillStyle = hsla(p, alpha);
         ctx.fill();
       }
     }
@@ -488,9 +495,6 @@
     console.log('✦ particles v2.2 ·', location.pathname);
   }
 
-  // ════════════════════════════════════
-  //  CLEANUP & NAV
-  // ════════════════════════════════════
   function cleanup() {
     if (!running) return;
     running = false;
