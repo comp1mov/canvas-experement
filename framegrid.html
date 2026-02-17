@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.15 gpt25 ║
+║      FRAMEGRID v0.19d                                          ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.15</title>
+  <title>FRAMEGRID v0.19d</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -28,6 +28,9 @@
       font-size: 11px; letter-spacing: 0.04em; z-index: 10;
     }
     .metadata-bar.hidden { display: none; }
+    @media (pointer: fine) {
+      .metadata-bar.hidden { display: flex; }
+    }
     .metadata-logo { font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
     .metadata-logo::before { content: ''; width: 6px; height: 6px; background: #35f2a3; border-radius: 1px; }
     .metadata-item { color: rgba(255,255,255,0.6); }
@@ -56,20 +59,37 @@
     .frame-image-wrap {
       position: relative; width: 100%;
       aspect-ratio: var(--video-aspect, 16/9);
-      background: #111; overflow: hidden;
+      background: var(--frame-bg, #111); overflow: hidden;
     }
-    .frame-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .frame-image-wrap img.frame-main-img {
+      position: relative; z-index: 1;
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      transform: translate(var(--img-off-x, 0%), var(--img-off-y, 0%)) scale(var(--img-scale, 1));
+      transform-origin: center;
+    }
     
     .frame-timecode {
-      position: absolute; left: 0; right: 0;
+      position: absolute; z-index: 2;
       background: var(--tc-bg-color, rgba(0,0,0,0.7));
-      padding: 4px 6px; font-size: var(--meta-font-size, 10px);
+      padding: var(--tc-padding, 0);
+      font-size: var(--meta-font-size, 10px);
       color: var(--tc-text-color, #fff); font-variant-numeric: tabular-nums;
-      text-align: var(--tc-align, left);
+      width: fit-content; max-width: 90%;
+      white-space: nowrap;
+      line-height: 1.0;
     }
-    .frame-timecode.pos-top { top: 0; }
+    /* Vertical */
+    .frame-timecode.pos-top { top: var(--tc-margin, 0px); }
     .frame-timecode.pos-center { top: 50%; transform: translateY(-50%); }
-    .frame-timecode.pos-bottom { bottom: 0; }
+    .frame-timecode.pos-bottom { bottom: var(--tc-margin, 0px); }
+    /* Horizontal */
+    .frame-timecode.align-left { left: var(--tc-margin, 0px); }
+    .frame-timecode.align-center { left: 50%; }
+    .frame-timecode.align-center.pos-center { transform: translate(-50%, -50%); }
+    .frame-timecode.align-center.pos-top,
+    .frame-timecode.align-center.pos-bottom { transform: translateX(-50%); }
+    .frame-timecode.align-right { right: var(--tc-margin, 0px); }
     .frame-timecode.hidden { display: none; }
 
     /* INFO CARD */
@@ -156,7 +176,7 @@
 
     /* Quick Toolbar */
     .quick-toolbar {
-      position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 15;
+      position: absolute; top: 8px; left: 8px; display: flex; gap: 4px; z-index: 15;
     }
     .quick-btn {
       width: 36px; height: 36px; background: rgba(0,0,0,0.8);
@@ -174,6 +194,11 @@
       padding: 6px 8px; background: #111;
       border: 1px solid rgba(255,255,255,0.2); border-radius: 2px;
       color: #fff; font-size: 11px; cursor: pointer;
+    }
+.menu-color {
+      width: 44px; height: 28px; padding: 0;
+      border: 1px solid rgba(255,255,255,0.2); background: transparent;
+      border-radius: 2px; cursor: pointer;
     }
     .menu-toggle-switch {
       position: relative; width: 36px; height: 20px;
@@ -313,7 +338,14 @@
       gap: 4px;
       align-items: center;
     }
-    .draw-btn {
+    
+    .draw-tools-row { gap: 6px; flex-wrap: wrap; }
+    .draw-row-sep { width: 8px; height: 1px; opacity: 0.35; }
+    .draw-slider-block { display: flex; flex-direction: column; gap: 2px; }
+    .draw-slider-row { width: 100%; gap: 6px; }
+    .draw-slider-row .draw-size-slider { flex: 1; width: 120px; }
+    .draw-slider-caption { font-size: 9px; color: #888; text-align: center; line-height: 1; margin-top: -2px; user-select: none; }
+.draw-btn {
       width: 32px;
       height: 32px;
       border: none;
@@ -366,6 +398,17 @@
       border-radius: 50%;
       background: #fff;
     }
+    /* Touch friendly draw controls */
+    @media (pointer: coarse) {
+      .draw-palette { padding: 12px; border-radius: 16px; }
+      .draw-btn { width: 44px; height: 44px; font-size: 18px; border-radius: 10px; }
+      .draw-size-slider { width: 180px; height: 8px; }
+      .draw-slider-row .draw-size-slider { width: 180px; }
+      .draw-size-slider::-webkit-slider-thumb { width: 22px; height: 22px; }
+      .draw-size-preview { width: 36px; height: 36px; }
+      .draw-target-btn { min-height: 40px; padding: 8px 10px; font-size: 11px; }
+    }
+
     
     /* Brush cursor preview */
     .brush-cursor {
@@ -531,7 +574,7 @@
   
   <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-      <div class="metadata-logo">FRAMEGRID v0.15</div>
+      <div class="metadata-logo">FRAMEGRID v0.19d</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -549,32 +592,62 @@
       
       <!-- Floating Draw Palette -->
       <div class="draw-palette" id="drawPalette">
-        <div class="draw-palette-row">
+        <!-- BLOCK 1: Tools + Brush -->
+        <div class="draw-palette-row draw-tools-row">
           <button class="draw-btn" id="drawToggle" title="Draw Mode (D)">✏</button>
           <button class="draw-btn" id="drawEraser" title="Eraser (E)">◯</button>
-          <button class="draw-btn" id="drawClear" title="Clear All">✕</button>
+          <button class="draw-btn" id="drawClear" title="Clear All (C)">✕</button>
           <button class="draw-btn" id="drawUndo" title="Undo (Ctrl+Z)">↶</button>
+          <div class="draw-row-sep"></div>
+          <input type="color" id="drawColorInput" value="#ffffff" class="draw-color-input" style="width:30px;height:30px;border:2px solid rgba(255,255,255,0.3);padding:0;cursor:pointer;border-radius:2px;background:none;">
+          <button class="draw-btn" id="drawEyedropper" title="Eyedropper (I)" style="font-size:12px;">⊙</button>
         </div>
-        <div class="draw-palette-row">
-          <div class="draw-color active" data-color="#ffffff" style="background:#ffffff;"></div>
-          <div class="draw-color" data-color="#35f2a3" style="background:#35f2a3;"></div>
-          <div class="draw-color" data-color="#ff5555" style="background:#ff5555;"></div>
-          <div class="draw-color" data-color="#ffaa00" style="background:#ffaa00;"></div>
-          <div class="draw-color" data-color="#5599ff" style="background:#5599ff;"></div>
-          <input type="color" id="drawColorInput" value="#ffffff" style="width:24px;height:24px;border:none;padding:0;cursor:pointer;border-radius:4px;">
+
+        <div class="draw-palette-row" style="gap:2px;flex-wrap:wrap;">
+          <div id="recentColorsRow" style="display:flex;gap:2px;flex-wrap:wrap;"></div>
         </div>
-        <div class="draw-palette-row">
-          <div class="draw-size-preview"><div class="draw-size-dot" id="drawSizeDot"></div></div>
-          <input type="range" class="draw-size-slider" id="drawSizeSlider" min="1" max="100" value="4">
+
+        <div class="draw-palette-row" id="videoPaletteRow" style="min-height:0;gap:2px;flex-wrap:wrap;display:none;"></div>
+
+        <div class="draw-palette-row" style="gap:3px;">
+          <button class="draw-btn draw-brush-btn active" data-brush="round" title="Round brush (1)">●</button>
+          <button class="draw-btn draw-brush-btn" data-brush="pencil" title="Pencil (2)">✎</button>
+          <button class="draw-btn draw-brush-btn" data-brush="spray" title="Spray (3)">✦</button>
+          <button class="draw-btn draw-brush-btn" data-brush="calligraphy" title="Calligraphy (4)">⟋</button>
         </div>
+
+        <div class="draw-slider-block">
+          <div class="draw-palette-row draw-slider-row">
+            <button class="draw-btn" id="drawSizeMinus" title="Smaller ([)">−</button>
+            <div class="draw-size-preview" id="drawSizePreview"><div class="draw-size-dot" id="drawSizeDot"></div></div>
+            <input type="range" class="draw-size-slider" id="drawSizeSlider" min="1" max="120" value="4">
+            <button class="draw-btn" id="drawSizePlus" title="Bigger (])">+</button>
+          </div>
+          <div class="draw-slider-caption">size</div>
+        </div>
+
+        <div class="draw-slider-block">
+          <div class="draw-palette-row draw-slider-row">
+            <button class="draw-btn" id="drawOpacityMinus" title="Less opaque">−</button>
+            <div class="draw-size-preview"><span style="font-size:10px;color:#888;">α</span></div>
+            <input type="range" class="draw-size-slider" id="drawOpacitySlider" min="5" max="100" value="100">
+            <button class="draw-btn" id="drawOpacityPlus" title="More opaque">+</button>
+          </div>
+          <div class="draw-slider-caption">opacity</div>
+        </div>
+
+        <!-- BLOCK 2: Target + Modes -->
         <div class="draw-target-row">
-          <button class="draw-target-btn active" data-target="background" title="Draw on background">BG</button>
-          <button class="draw-target-btn" data-target="template" title="Draw on template (all frames)">TPL</button>
-          <button class="draw-target-btn" data-target="frame" title="Draw on current frame">FRM</button>
+          <button class="draw-target-btn active" data-target="background" title="Draw on background (B)">BG</button>
+          <button class="draw-target-btn" data-target="template" title="Draw on template (T)">TPL</button>
+          <button class="draw-target-btn" data-target="frame" title="Draw on current frame (R)">FRM</button>
         </div>
-        <div class="draw-palette-row">
+        <div class="draw-palette-row" style="gap:3px;">
           <button class="draw-btn" id="drawOnion" title="Onion Skin (O)">◐</button>
-          <button class="draw-btn" id="drawLongStroke" title="Long Stroke - keep stroke across animation (L)">⟿</button>
+          <button class="draw-btn" id="drawLongStroke" title="Long Stroke trail (L)">⟿</button>
+          <span style="font-size:9px;color:#888;">trail:</span>
+          <input type="number" class="menu-input" id="longStrokeFade" value="8" min="0" max="50" style="width:36px;height:20px;font-size:10px;padding:1px 3px;">
+          <button class="draw-btn" id="genVideoPalette" title="Regenerate palette from video" style="font-size:9px;padding:2px 5px;">↻ pal</button>
         </div>
       </div>
 
@@ -606,8 +679,9 @@
       <div class="drop-zone" id="dropZone">
         <div class="drop-zone-icon">▶</div>
         <div class="drop-zone-text">
-          Drop video file here<br>
-          <span style="font-size:11px;opacity:0.6;">or click to browse</span>
+          Turn any video into a grid of frames<br>
+          <span style="font-size:11px;opacity:0.6;">Drop a video here, or click to browse</span><br>
+          <span style="font-size:11px;opacity:0.45;">Draw on background, template, or per-frame layer</span>
         </div>
         <button class="drop-zone-btn" id="browseBtn">SELECT VIDEO</button>
         <div class="drop-zone-formats">Supported: MP4, MOV, WebM, AVI, MKV, OGV, M4V</div>
@@ -616,6 +690,9 @@
           <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">F</kbd> Fit</div>
           <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">M</kbd> Menu</div>
           <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">Esc</kbd> Close</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">D</kbd> Draw</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">[ ]</kbd> Brush</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">B/T/R</kbd> Target</div>
         </div>
       </div>
     </div>
@@ -673,7 +750,40 @@
               <option value="0.25">Quarter</option>
             </select>
           </div>
+
           <button class="menu-btn primary" id="generateBtn">Regenerate Grid</button>
+        </div>
+      </div>
+
+      <!-- FRAME TRANSFORM — separate collapsible section -->
+      <div class="menu-section collapsed">
+        <div class="menu-section-title">Frame Transform</div>
+        <div class="menu-section-content">
+          <div class="menu-row">
+            <span class="menu-label">Scale</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="frameImgScale" min="0.5" max="2.5" step="0.01" value="1">
+              <span class="menu-slider-value" id="frameImgScaleValue">1.00</span>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Offset X</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="frameImgOffX" min="-50" max="50" step="1" value="0">
+              <span class="menu-slider-value" id="frameImgOffXValue">0%</span>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Offset Y</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="frameImgOffY" min="-50" max="50" step="1" value="0">
+              <span class="menu-slider-value" id="frameImgOffYValue">0%</span>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Outside BG</span>
+            <input class="menu-color" type="color" id="frameBgColor" value="#111111">
+          </div>
         </div>
       </div>
 
@@ -708,6 +818,14 @@
             </div>
           </div>
           <div class="menu-row">
+            <span class="menu-label">Loop Phases</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="loopMinus">-</button>
+              <span id="loopPhasesLabel" style="min-width:44px;text-align:center;font-size:11px;color:#fff;">1</span>
+              <button class="menu-input-btn" id="loopPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row">
             <span class="menu-label">Auto-fit</span>
             <div class="menu-toggle-switch active" id="toggleAutoFit"></div>
           </div>
@@ -726,23 +844,15 @@
         <div class="menu-section-title">Display & Style</div>
         <div class="menu-section-content">
           <div class="menu-row">
-            <span class="menu-label">Metadata Bar</span>
-            <div class="menu-toggle-switch active" id="toggleMetadata"></div>
-          </div>
-          <div class="menu-row">
-            <span class="menu-label">Timecode</span>
-            <div class="menu-toggle-switch" id="toggleTimecode"></div>
-          </div>
-          <div class="menu-row">
             <span class="menu-label">TC: Index #</span>
-            <div class="menu-toggle-switch active" id="toggleTcIndex"></div>
+            <div class="menu-toggle-switch" id="toggleTcIndex"></div>
           </div>
           <div class="menu-row">
-            <span class="menu-label">TC: Time</span>
-            <div class="menu-toggle-switch active" id="toggleTcTime"></div>
+            <span class="menu-label">TC: Sec</span>
+            <div class="menu-toggle-switch" id="toggleTcTime"></div>
           </div>
           <div class="menu-row">
-            <span class="menu-label">TC: Frame F</span>
+            <span class="menu-label">TC: Fr</span>
             <div class="menu-toggle-switch active" id="toggleTcFrame"></div>
           </div>
           <div class="menu-row">
@@ -776,6 +886,20 @@
             </div>
           </div>
           <div class="menu-row">
+            <span class="menu-label">TC Box Pad</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="tcPaddingSlider" min="0" max="30" value="0">
+              <span class="menu-slider-value" id="tcPaddingValue">0px</span>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">TC Margin</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="tcMarginSlider" min="0" max="30" value="0">
+              <span class="menu-slider-value" id="tcMarginValue">0px</span>
+            </div>
+          </div>
+          <div class="menu-row">
             <span class="menu-label">TC Align</span>
             <select class="menu-select" id="tcAlign">
               <option value="left" selected>Left</option>
@@ -786,8 +910,8 @@
           <div class="menu-row">
             <span class="menu-label">TC Position</span>
             <select class="menu-select" id="tcPosition">
-              <option value="top">Top</option>
-              <option value="center" selected>Center</option>
+              <option value="top" selected>Top</option>
+              <option value="center">Center</option>
               <option value="bottom">Bottom</option>
             </select>
           </div>
@@ -801,7 +925,7 @@
             <span class="menu-label">FPS</span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="fpsMinus">−</button>
-              <input type="number" class="menu-input menu-input-narrow" id="animFps" value="14" min="1" max="30" inputmode="decimal">
+              <input type="number" class="menu-input menu-input-narrow" id="animFps" value="14" min="1" max="60" inputmode="decimal">
               <button class="menu-input-btn" id="fpsPlus">+</button>
             </div>
           </div>
@@ -824,13 +948,6 @@
               <option value="vertical">Vertical</option>
             </select>
           </div>
-          <div class="menu-row">
-            <span class="menu-label">Long Stroke Fade</span>
-            <div class="menu-input-group">
-              <input type="number" class="menu-input menu-input-narrow" id="longStrokeFade" value="8" min="0" max="50" inputmode="decimal">
-              <span style="color:#888;font-size:10px;margin-left:4px;">frames</span>
-            </div>
-          </div>
           <button class="menu-btn primary" id="playBtn">▶ Play Animation</button>
           <button class="menu-btn" id="stopBtn" style="display:none;">■ Stop</button>
         </div>
@@ -843,7 +960,8 @@
             <span class="menu-label">Quality</span>
             <select class="menu-select" id="exportQuality">
               <option value="low">Low (540p)</option>
-              <option value="medium" selected>Medium (720p)</option>
+              <option value="medium">Medium (720p)</option>
+              <option value="hd" selected>HD (1080p)</option>
               <option value="high">High (2160p)</option>
               <option value="max">Max (original)</option>
             </select>
@@ -860,11 +978,29 @@
             <span class="menu-label">Include Drawings</span>
             <div class="menu-toggle-switch active" id="toggleExportDraw"></div>
           </div>
+          <div class="menu-row">
+            <span class="menu-label">Metadata in Export</span>
+            <div class="menu-toggle-switch" id="toggleExportMetadata"></div>
+          </div>
           <button class="menu-btn" id="exportSmallBtn">Export JPEG 2K</button>
           <button class="menu-btn" id="exportFullBtn">Export PNG Full</button>
           <button class="menu-btn" id="exportMp4GridBtn">Export MP4 Grid</button>
           <button class="menu-btn" id="exportMp4SingleBtn">Export MP4 Single</button>
+          <button class="menu-btn" id="exportPngSeqDrawBtn">Export PNG Seq Drawings</button>
           <button class="menu-btn" id="newVideoBtn">Load New Video</button>
+        </div>
+      </div>
+
+      <div class="menu-section collapsed">
+        <div class="menu-section-title">Info</div>
+        <div class="menu-section-content">
+          <div id="infoPanel" style="font-size:10px;color:#aaa;line-height:1.6;font-family:monospace;">
+            <div>Video: <span id="infoVideoRes">—</span></div>
+            <div>Grid cells: <span id="infoGridCells">—</span></div>
+            <div>Draw canvas: <span id="infoDrawRes">—</span></div>
+            <div>Frame tile: <span id="infoFrameTile">—</span></div>
+            <div>Draw scale: <span id="infoDrawScale">—</span></div>
+          </div>
         </div>
       </div>
 
@@ -874,7 +1010,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version 0.14</div>
+          <div class="about-version">Version 0.15 (gpt30)</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
           <div class="about-hotkeys">
@@ -882,6 +1018,9 @@
             <div class="hotkey-row"><span class="hotkey">Space</span> Play / Stop</div>
             <div class="hotkey-row"><span class="hotkey">F</span> Fit to Screen</div>
             <div class="hotkey-row"><span class="hotkey">M</span> Toggle Menu</div>
+            <div class="hotkey-row"><span class="hotkey">D</span> Draw Mode</div>
+            <div class="hotkey-row"><span class="hotkey">[ ]</span> Brush Size</div>
+            <div class="hotkey-row"><span class="hotkey">B/T/R</span> Draw Target</div>
             <div class="hotkey-row"><span class="hotkey">Esc</span> Close / Stop</div>
           </div>
           
@@ -913,15 +1052,22 @@
     frames: [], frameCount: 24, gridCols: 6,
     selectionMode: 'count', intervalValue: 3, quality: 0.5,
     startFrame: 0, endFrame: 0, // Frame range
-    showMetadata: true, showTimecode: false, showInfoCard: false,
+    showMetadata: true, showInfoCard: false,
     // Timecode format options
-    tcShowIndex: true, // #1, #2, #3...
-    tcShowTime: true, // 00:05
+    tcShowIndex: false,
+    tcShowTime: false,
     tcShowFrame: true, // F123
-    autoFit: true, canvasAspect: 'auto', bgColor: '#282828',
+    autoFit: true, canvasAspect: 'auto', bgColor: '#020202',
     fontSize: 10, spacing: 2,
     tcTextColor: '#ffffff', tcBgColor: '#000000', tcOpacity: 0.7,
-    tcAlign: 'center', tcPosition: 'center',
+    tcAlign: 'left', tcPosition: 'top', tcPadding: 0, tcMargin: 0,
+    // Frame image transform inside each cell (preview + export)
+    frameImgScale: 1,
+    frameImgOffX: 0, // percent of cell width
+    frameImgOffY: 0, // percent of cell height
+    frameImgFill: 'empty', // 'empty' or 'edge'
+
+    frameBgColor: '#111111', // background behind scaled-down frame image
     scale: 1, panX: 0, panY: 0, isPanning: false,
     startPanX: 0, startPanY: 0, startMouseX: 0, startMouseY: 0,
     menuOpen: false,
@@ -931,7 +1077,8 @@
     currentTick: 0, // global animation position
     viewMode: 'grid', // 'grid' or 'single'
     cellSize: 1, // frames per cell (1, 2, 4, 8...)
-    exportQuality: 'medium', // low, medium, high, max
+        gridLoops: 1, // 1-5: how many distinct phase offsets are used across grid cells
+exportQuality: 'hd', // low, medium, high, max
     exportLoops: 1, // 1-10 loops for MP4
     currentFrame: 0, // current frame index for manual scrubbing
     // Drawing state - Layer architecture:
@@ -944,11 +1091,16 @@
     drawSize: 4,
     drawEraser: false,
     drawOnion: false,
-    drawLongStroke: false, // Keep stroke across animation frames
-    longStrokeFade: 8, // Number of frames before stroke starts fading (0 = no fade)
+    drawLongStroke: false,
+    longStrokeFade: 8,
+    brushType: 'round',
+    drawOpacity: 1.0,
+    recentColors: [],
+    videoPalette: [],
     drawTemplate: false,
     drawTarget: 'background', // 'background', 'template', 'frame'
     exportDrawings: true,
+    exportShowMetadata: false, // metadata header in exports (independent from UI bar)
     bgDrawing: null, // ImageData for background layer
     templateDrawing: null, // ImageData for template (live overlay on all frames)
     frameDrawings: {}, // { frameIndex: ImageData } per-frame drawings
@@ -957,6 +1109,7 @@
     frameSheetTileW: 0,
     frameSheetTileH: 0,
     frameSheetDrawing: null // ImageData for the whole sheet (optional snapshot for undo)
+
   };
 
   // DOM
@@ -975,8 +1128,19 @@
   const countMinus = $('countMinus'), countPlus = $('countPlus');
   const intervalValueInput = $('intervalValue'), qualitySelect = $('qualitySelect');
   const startFrameInput = $('startFrame'), endFrameInput = $('endFrame');
+  // Frame image transform (preview + export)
+  const frameImgScaleSlider = $('frameImgScale');
+  const frameImgScaleValue = $('frameImgScaleValue');
+  const frameImgOffXSlider = $('frameImgOffX');
+  const frameImgOffXValue = $('frameImgOffXValue');
+  const frameImgOffYSlider = $('frameImgOffY');
+  const frameImgOffYValue = $('frameImgOffYValue');
+  const frameImgFillSelect = $('frameImgFill');
+  const frameBgColorInput = $('frameBgColor');
+  const applyFrameImgTransformBtn = $('applyFrameImgTransformBtn');
   const countRow = $('countRow'), intervalRow = $('intervalRow'), intervalLabel = $('intervalLabel');
-  const toggleMetadata = $('toggleMetadata'), toggleTimecode = $('toggleTimecode');
+  // Display toggles (timecode is driven by per-field toggles below)
+  
   const toggleInfoCard = $('toggleInfoCard'), toggleAutoFit = $('toggleAutoFit');
   const fontSizeSlider = $('fontSizeSlider'), fontSizeValue = $('fontSizeValue');
   const spacingSlider = $('spacingSlider'), spacingValue = $('spacingValue');
@@ -985,6 +1149,8 @@
   const exportFullBtn = $('exportFullBtn');
   const exportGifGridBtn = $('exportGifGridBtn'), exportGifSingleBtn = $('exportGifSingleBtn');
   const exportMp4GridBtn = $('exportMp4GridBtn'), exportMp4SingleBtn = $('exportMp4SingleBtn');
+  const exportPngSeqDrawBtn = $('exportPngSeqDrawBtn');
+  const toggleExportMetadata = $('toggleExportMetadata');
   const exportQualitySelect = $('exportQuality');
   const loopsInput = $('loopsInput'), loopsMinus = $('loopsMinus'), loopsPlus = $('loopsPlus');
   const newVideoBtn = $('newVideoBtn'), browseBtn = $('browseBtn');
@@ -1002,6 +1168,7 @@
   // Column +/- buttons
   const colsMinus = $('colsMinus'), colsPlus = $('colsPlus');
   const cellSizeLabel = $('cellSizeLabel'), cellMinus = $('cellMinus'), cellPlus = $('cellPlus');
+  const loopPhasesLabel = $('loopPhasesLabel'), loopMinus = $('loopMinus'), loopPlus = $('loopPlus');
   
   // Quick toolbar
   const qMode = $('qMode'), qReset = $('qReset'), qPrev = $('qPrev'), qPlay = $('qPlay'), qNext = $('qNext'), qDraw = $('qDraw'), qFit = $('qFit');
@@ -1060,6 +1227,7 @@
     state.videoDuration = videoElement.duration;
     state.videoWidth = videoElement.videoWidth;
     state.videoHeight = videoElement.videoHeight;
+    state._frameTileDims = null; // recalculate for new video
     // Set frame range
     state.startFrame = 0;
     state.endFrame = Math.floor(state.videoDuration * state.videoFps);
@@ -1126,6 +1294,7 @@
     renderGrid();
     updateGridHint();
     if (state.autoFit) fitToScreen();
+    setTimeout(generateVideoPalette, 100); // auto-generate palette from video
   }
 
   function calculateFrameTimes() {
@@ -1255,6 +1424,25 @@
     if (uniqueCounts.length) html += `<br>Ideal frames: ${uniqueCounts.slice(0, 4).join(', ')}`;
     
     gridHint.innerHTML = html;
+    updateInfoPanel();
+  }
+
+  function updateInfoPanel() {
+    const iv = document.getElementById('infoVideoRes');
+    const ig = document.getElementById('infoGridCells');
+    const id = document.getElementById('infoDrawRes');
+    const it = document.getElementById('infoFrameTile');
+    const is = document.getElementById('infoDrawScale');
+    if (!iv) return;
+    iv.textContent = state.videoWidth ? `${state.videoWidth}×${state.videoHeight}` : '—';
+    const cellCount = state.frames.length ? Math.ceil(state.frames.length / state.cellSize) : 0;
+    ig.textContent = cellCount ? `${cellCount} (${state.gridCols} cols)` : '—';
+    id.textContent = drawCanvas.width ? `${drawCanvas.width}×${drawCanvas.height}` : '—';
+    const dims = getFrameTileDims();
+    it.textContent = dims.tw ? `${dims.tw}×${dims.th}` : '—';
+    const rect = drawCanvas.getBoundingClientRect();
+    const scale = rect.width > 0 ? (drawCanvas.width / rect.width).toFixed(2) : '—';
+    is.textContent = `${scale}x`;
   }
 
   function captureFrame(time) {
@@ -1267,13 +1455,27 @@
     });
   }
 
+
+
+  function computeShowTimecode() {
+    return !!(state.tcShowIndex || state.tcShowTime || state.tcShowFrame);
+  }
+
+  function updateTimecodeVisibility() {
+    const show = computeShowTimecode();
+    document.querySelectorAll('.frame-timecode').forEach(el => el.classList.toggle('hidden', !show));
+  }
+
   function updateTimecodeStyles() {
     const r = parseInt(state.tcBgColor.slice(1,3), 16);
     const g = parseInt(state.tcBgColor.slice(3,5), 16);
     const b = parseInt(state.tcBgColor.slice(5,7), 16);
     framesGrid.style.setProperty('--tc-bg-color', `rgba(${r},${g},${b},${state.tcOpacity})`);
     framesGrid.style.setProperty('--tc-text-color', state.tcTextColor);
-    framesGrid.style.setProperty('--tc-align', state.tcAlign);
+    const p = state.tcPadding || 0;
+    const m = state.tcMargin || 0;
+    framesGrid.style.setProperty('--tc-padding', `${p}px ${Math.round(p * 1.5)}px`);
+    framesGrid.style.setProperty('--tc-margin', `${m}px`);
   }
 
   function renderGrid() {
@@ -1281,6 +1483,7 @@
     framesGrid.style.gridTemplateColumns = `repeat(${state.gridCols}, 1fr)`;
     framesGrid.style.setProperty('--grid-gap', `${state.spacing}px`);
     framesGrid.style.setProperty('--meta-font-size', `${state.fontSize}px`);
+    applyFrameImgTransform();
     updateTimecodeStyles();
 
     if (state.showInfoCard && state.videoFile) {
@@ -1296,11 +1499,12 @@
       framesGrid.appendChild(item);
     }
 
-    // With cellSize, show every Nth frame as static image, but animate ALL frames
+    // With gridLoops, show the full sequence N times across the grid
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
     
     for (let c = 0; c < cellCount; c++) {
-      const displayFrameIdx = c * state.cellSize; // Which frame to show initially
+      // Loop phases: distribute so sequence repeats gridLoops times
+      const displayFrameIdx = Math.floor(c * state.frames.length * state.gridLoops / cellCount) % state.frames.length;
       const frame = state.frames[displayFrameIdx];
       if (!frame) continue;
       
@@ -1313,10 +1517,12 @@
       const wrap = document.createElement('div');
       wrap.className = 'frame-image-wrap';
       const img = document.createElement('img');
+      img.className = 'frame-main-img';
       img.src = frame.dataUrl;
       wrap.appendChild(img);
       const tc = document.createElement('div');
-      tc.className = `frame-timecode pos-${state.tcPosition}` + (state.showTimecode ? '' : ' hidden');
+      const showTC = computeShowTimecode();
+      tc.className = `frame-timecode pos-${state.tcPosition} align-${state.tcAlign}` + (showTC ? '' : ' hidden');
       tc.textContent = formatTimecode(frame, c, cellCount);
       wrap.appendChild(tc);
       item.appendChild(wrap);
@@ -1325,7 +1531,9 @@
   
 
 
-    // Sync drawing geometry after grid build
+    updateTimecodeVisibility();
+
+        // Sync drawing geometry after grid build
     ensureFrameSheet();
     const dims = getFrameTileDims();
     if (tplCanvas.width !== dims.tw || tplCanvas.height !== dims.th) {
@@ -1344,6 +1552,10 @@
       renderTemplateFramePreview();
     }
 
+    // FIX v0.16: integrated from monkey-patch — resize draw canvas after grid rebuild
+    if (state.drawMode) {
+      setTimeout(() => { resizeDrawCanvas(); compositeAllLayers(); }, 50);
+    }
   }
 
   // PAN & ZOOM
@@ -1353,7 +1565,7 @@
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     const rect = canvasArea.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    const newScale = Math.max(0.1, Math.min(10, state.scale * delta));
+    const newScale = Math.max(0.15, Math.min(5, state.scale * delta));
     const sc = newScale / state.scale;
     state.panX = mx - (mx - state.panX) * sc;
     state.panY = my - (my - state.panY) * sc;
@@ -1443,15 +1655,22 @@
   canvasArea.ontouchend = () => { state.isPanning = false; lastDist = 0; lastTouchCenter = null; };
 
   function updateTransform() {
-    const MIN_VIEW_SCALE = 0.05;
-    const MAX_VIEW_SCALE = 8;
+    const MIN_VIEW_SCALE = 0.15;
+    const MAX_VIEW_SCALE = 5;
 
-    // Guard against transient layout glitches on mobile rotation
     if (!Number.isFinite(state.scale)) state.scale = 1;
     state.scale = Math.max(MIN_VIEW_SCALE, Math.min(MAX_VIEW_SCALE, state.scale));
 
     if (!Number.isFinite(state.panX)) state.panX = 0;
     if (!Number.isFinite(state.panY)) state.panY = 0;
+    
+    // Clamp pan so content can't fly off screen
+    const areaRect = canvasArea.getBoundingClientRect();
+    if (areaRect.width > 0 && areaRect.height > 0) {
+      const maxPan = Math.max(areaRect.width, areaRect.height) * state.scale * 2;
+      state.panX = Math.max(-maxPan, Math.min(maxPan, state.panX));
+      state.panY = Math.max(-maxPan, Math.min(maxPan, state.panY));
+    }
 
     canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.scale})`;
   }
@@ -1461,8 +1680,8 @@
 
     if (!state.frames.length) return;
 
-    const MIN_VIEW_SCALE = 0.05;
-    const MAX_VIEW_SCALE = 8;
+    const MIN_VIEW_SCALE = 0.15;
+    const MAX_VIEW_SCALE = 5;
     const MAX_TRIES = 10;
 
     const prev = { scale: state.scale, panX: state.panX, panY: state.panY };
@@ -1583,7 +1802,12 @@
     const offset = state.showInfoCard ? 1 : 0;
     items.forEach((item, i) => {
       if (i < offset) return;
-      item.classList.toggle('dimmed', mode === 'single' && i > offset);
+      if (mode === 'single') {
+        item.style.display = (i === offset) ? '' : 'none';
+      } else {
+        item.style.display = '';
+      }
+      item.classList.remove('dimmed');
     });
     if (mode === 'single') fitToSingleFrame();
     else fitToScreen();
@@ -1647,9 +1871,7 @@
     else { countRow.style.display = 'none'; intervalRow.style.display = 'flex'; intervalLabel.textContent = state.selectionMode === 'seconds' ? 'Seconds' : 'Frames'; }
   }
 
-  toggleMetadata.onclick = () => { state.showMetadata = !state.showMetadata; toggleMetadata.classList.toggle('active', state.showMetadata); metadataBar.classList.toggle('hidden', !state.showMetadata); };
-  toggleTimecode.onclick = () => { state.showTimecode = !state.showTimecode; toggleTimecode.classList.toggle('active', state.showTimecode); document.querySelectorAll('.frame-timecode').forEach(el => el.classList.toggle('hidden', !state.showTimecode)); };
-  
+  // Metadata bar is always visible in the UI; export metadata is controlled separately.
   // Timecode format toggles
   const toggleTcIndex = $('toggleTcIndex');
   const toggleTcTime = $('toggleTcTime');
@@ -1669,11 +1891,12 @@
         tc.textContent = formatTimecode(frame, cellIdx, cellCount);
       }
     });
+    updateTimecodeVisibility();
   }
   
-  if (toggleTcIndex) toggleTcIndex.onclick = () => { state.tcShowIndex = !state.tcShowIndex; toggleTcIndex.classList.toggle('active', state.tcShowIndex); updateAllTimecodes(); };
-  if (toggleTcTime) toggleTcTime.onclick = () => { state.tcShowTime = !state.tcShowTime; toggleTcTime.classList.toggle('active', state.tcShowTime); updateAllTimecodes(); };
-  if (toggleTcFrame) toggleTcFrame.onclick = () => { state.tcShowFrame = !state.tcShowFrame; toggleTcFrame.classList.toggle('active', state.tcShowFrame); updateAllTimecodes(); };
+  if (toggleTcIndex) toggleTcIndex.onclick = () => { state.tcShowIndex = !state.tcShowIndex; toggleTcIndex.classList.toggle('active', state.tcShowIndex); updateAllTimecodes(); updateTimecodeVisibility(); };
+  if (toggleTcTime) toggleTcTime.onclick = () => { state.tcShowTime = !state.tcShowTime; toggleTcTime.classList.toggle('active', state.tcShowTime); updateAllTimecodes(); updateTimecodeVisibility(); };
+  if (toggleTcFrame) toggleTcFrame.onclick = () => { state.tcShowFrame = !state.tcShowFrame; toggleTcFrame.classList.toggle('active', state.tcShowFrame); updateAllTimecodes(); updateTimecodeVisibility(); };
   
   toggleInfoCard.onclick = () => { state.showInfoCard = !state.showInfoCard; toggleInfoCard.classList.toggle('active', state.showInfoCard); if (state.frames.length) { renderGrid(); updateGridHint(); if (state.autoFit) fitToScreen(); } };
   toggleAutoFit.onclick = () => {
@@ -1696,8 +1919,59 @@
   tcTextColorInput.oninput = () => { state.tcTextColor = tcTextColorInput.value; updateTimecodeStyles(); };
   tcBgColorInput.oninput = () => { state.tcBgColor = tcBgColorInput.value; updateTimecodeStyles(); };
   tcOpacitySlider.oninput = () => { state.tcOpacity = parseInt(tcOpacitySlider.value) / 100; tcOpacityValue.textContent = `${tcOpacitySlider.value}%`; updateTimecodeStyles(); };
-  tcAlignSelect.onchange = () => { state.tcAlign = tcAlignSelect.value; updateTimecodeStyles(); };
+  tcAlignSelect.onchange = () => { state.tcAlign = tcAlignSelect.value; renderGrid(); if (state.autoFit) fitToScreen(); };
   tcPositionSelect.onchange = () => { state.tcPosition = tcPositionSelect.value; renderGrid(); if (state.autoFit) fitToScreen(); };
+  const tcPaddingSlider = $('tcPaddingSlider'), tcPaddingValue = $('tcPaddingValue');
+  if (tcPaddingSlider) tcPaddingSlider.oninput = () => { state.tcPadding = parseInt(tcPaddingSlider.value); tcPaddingValue.textContent = `${state.tcPadding}px`; updateTimecodeStyles(); };
+  const tcMarginSlider = $('tcMarginSlider'), tcMarginValue = $('tcMarginValue');
+  if (tcMarginSlider) tcMarginSlider.oninput = () => { state.tcMargin = parseInt(tcMarginSlider.value); tcMarginValue.textContent = `${state.tcMargin}px`; updateTimecodeStyles(); };
+
+  // Frame image transform UI
+  function applyFrameImgTransform() {
+    if (!framesGrid) return;
+    framesGrid.style.setProperty('--img-scale', String(state.frameImgScale));
+    framesGrid.style.setProperty('--img-off-x', `${state.frameImgOffX}%`);
+    framesGrid.style.setProperty('--img-off-y', `${state.frameImgOffY}%`);
+    framesGrid.style.setProperty('--frame-bg', String(state.frameBgColor || '#111111'));
+    // Live preview only: no cache rebuild needed.
+  }
+
+
+  if (frameImgScaleSlider) {
+    frameImgScaleSlider.oninput = () => {
+      state.frameImgScale = Math.max(0.1, Math.min(5, parseFloat(frameImgScaleSlider.value) || 1));
+      frameImgScaleValue.textContent = state.frameImgScale.toFixed(2);
+      applyFrameImgTransform();
+    };
+  }
+  if (frameImgOffXSlider) {
+    frameImgOffXSlider.oninput = () => {
+      state.frameImgOffX = parseInt(frameImgOffXSlider.value) || 0;
+      frameImgOffXValue.textContent = `${state.frameImgOffX}%`;
+      applyFrameImgTransform();
+    };
+  }
+  if (frameImgOffYSlider) {
+    frameImgOffYSlider.oninput = () => {
+      state.frameImgOffY = parseInt(frameImgOffYSlider.value) || 0;
+      frameImgOffYValue.textContent = `${state.frameImgOffY}%`;
+      applyFrameImgTransform();
+    };
+  }
+  if (frameBgColorInput) {
+    frameBgColorInput.oninput = () => {
+      state.frameBgColor = frameBgColorInput.value || '#111111';
+      applyFrameImgTransform();
+    };
+  }
+  if (applyFrameImgTransformBtn) {
+    applyFrameImgTransformBtn.onclick = () => {
+      applyFrameImgTransform();
+      // Redraw timecodes and template preview after transform change (safe no-op if not needed)
+      updateAllTimecodes();
+      renderTemplateFramePreview();
+    };
+  }
 
   generateBtn.onclick = generateFrames;
 
@@ -1747,7 +2021,28 @@
     }
   };
   
-  // Quick toolbar
+  
+
+  // Loop Phases (grid duplication / phase reduction)
+  function updateLoopPhasesUI() {
+    loopPhasesLabel.textContent = state.gridLoops;
+  }
+  loopMinus.onclick = () => {
+    if (state.gridLoops > 1) {
+      state.gridLoops -= 1;
+      updateLoopPhasesUI();
+      updateAllCells();
+    }
+  };
+  loopPlus.onclick = () => {
+    if (state.gridLoops < 5) {
+      state.gridLoops += 1;
+      updateLoopPhasesUI();
+      updateAllCells();
+    }
+  };
+  updateLoopPhasesUI();
+// Quick toolbar
   qMode.onclick = () => setViewMode(state.viewMode === 'grid' ? 'single' : 'grid');
   qReset.onclick = () => resetToStart();
   qPrev.onclick = () => stepFrame(-1);
@@ -1767,6 +2062,7 @@
   // exportGifSingleBtn.onclick = exportGifSingle; // GIF export disabled (CORS issues)
   exportMp4GridBtn.onclick = () => exportMp4('grid');
   exportMp4SingleBtn.onclick = () => exportMp4('single');
+  if (exportPngSeqDrawBtn) exportPngSeqDrawBtn.onclick = exportPngSeqDrawings;
   
   // Export quality and loops
   exportQualitySelect.onchange = () => { state.exportQuality = exportQualitySelect.value; };
@@ -1775,9 +2071,9 @@
   loopsInput.onchange = () => { state.exportLoops = Math.max(1, Math.min(10, parseInt(loopsInput.value) || 1)); loopsInput.value = state.exportLoops; };
 
   // Animation controls
-  animFpsInput.onchange = () => { state.animFps = Math.max(1, Math.min(30, parseInt(animFpsInput.value) || 8)); animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); };
+  animFpsInput.onchange = () => { state.animFps = Math.max(1, Math.min(60, parseInt(animFpsInput.value) || 8)); animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); };
   fpsMinus.onclick = () => { if (state.animFps > 1) { state.animFps--; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); } };
-  fpsPlus.onclick = () => { if (state.animFps < 30) { state.animFps++; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); } };
+  fpsPlus.onclick = () => { if (state.animFps < 60) { state.animFps++; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); } };
   animDirectionSelect.onchange = () => { state.animDirection = animDirectionSelect.value; if (state.isPlaying) restartAnimation(); };
   animPatternSelect.onchange = () => { state.animPattern = animPatternSelect.value; if (state.isPlaying) restartAnimation(); };
   
@@ -1786,56 +2082,100 @@
     longStrokeFadeInput.onchange = () => { state.longStrokeFade = Math.max(0, Math.min(50, parseInt(longStrokeFadeInput.value) || 8)); longStrokeFadeInput.value = state.longStrokeFade; };
   }
   
-  function restartAnimation() {
-    if (state.animInterval) {
-      clearInterval(state.animInterval);
-      state.animInterval = null;
-    }
-    state.animFrame = 0;
+  // FIX v0.16: updateAllCells uses state.currentTick, updates BOTH img elements
+  function updateAllCells() {
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
     const totalCells = items.length - offset;
     const frameCount = state.frames.length;
+    if (!frameCount) return;
     const cellOrder = generateCellOrder(totalCells, state.gridCols);
-    const interval = 1000 / state.animFps;
-    let tick = 0;
-    
     const pingPongCycle = frameCount > 1 ? (frameCount - 1) * 2 : 1;
-    
-    state.animInterval = setInterval(() => {
-      tick++;
-      items.forEach((item, i) => {
-        if (i < offset) return;
-        const cellIdx = i - offset;
-        const cellOrderIdx = cellOrder.indexOf(cellIdx);
-        
-        let frameIdx;
-        if (state.animDirection === 'pingpong') {
-          const pos = (tick + cellOrderIdx) % pingPongCycle;
-          frameIdx = pos < frameCount ? pos : pingPongCycle - pos;
-        } else if (state.animDirection === 'backward') {
-          frameIdx = (frameCount - 1) - ((tick + cellOrderIdx) % frameCount);
-        } else if (state.animDirection === 'sync') {
-          frameIdx = tick % frameCount;
-        } else if (state.animDirection === 'random') {
-          frameIdx = Math.floor(Math.random() * frameCount);
-        } else {
-          frameIdx = (tick + cellOrderIdx) % frameCount;
-        }
-        
-        const img = item.querySelector('img');
-        const tc = item.querySelector('.frame-timecode');
-        if (img && state.frames[frameIdx]) {
-          img.src = state.frames[frameIdx].dataUrl;
-          item.dataset.frameIdx = frameIdx;
-          item.dataset.frameIdx = frameIdx;
-          if (tc && state.showTimecode) {
-            tc.textContent = `${formatTime(state.frames[frameIdx].time)} / F${state.frames[frameIdx].frameNumber}`;
+
+    items.forEach((item, i) => {
+      if (i < offset) return;
+      const cellIdx = i - offset;
+      const cellOrderIdx = cellOrder.indexOf(cellIdx);
+      const rawOffset = cellOrderIdx >= 0 ? cellOrderIdx : 0;
+      // Loop phases: scale offset so pattern repeats gridLoops times across grid
+      const phaseCount = Math.max(1, state.gridLoops || 1);
+      const cellOffset = Math.floor(rawOffset * frameCount * phaseCount / Math.max(1, totalCells)) % frameCount;
+
+      let frameIdx;
+      if (state.animDirection === 'pingpong') {
+        const pos = (state.currentTick + cellOffset) % pingPongCycle;
+        frameIdx = pos < frameCount ? pos : pingPongCycle - pos;
+      } else if (state.animDirection === 'backward') {
+        frameIdx = (frameCount - 1 - ((state.currentTick + cellOffset) % frameCount) + frameCount) % frameCount;
+      } else if (state.animDirection === 'sync') {
+        frameIdx = state.currentTick % frameCount;
+      } else if (state.animDirection === 'random') {
+        frameIdx = Math.floor(Math.random() * frameCount);
+      } else {
+        frameIdx = (state.currentTick + cellOffset) % frameCount;
+      }
+
+      const frame = state.frames[frameIdx];
+      if (!frame) return;
+
+      const mainImg = item.querySelector('.frame-main-img');
+      if (mainImg) mainImg.src = frame.dataUrl;
+
+      const tc = item.querySelector('.frame-timecode');
+      if (tc && computeShowTimecode()) {
+        tc.textContent = formatTimecode(frame, cellIdx, Math.ceil(frameCount / state.cellSize));
+      }
+      item.dataset.frameIdx = frameIdx;
+    });
+    if (state.drawMode) requestComposite();
+    // Long stroke: stamp on new frame during animation even without mouse movement
+    if (state.drawLongStroke && longStrokePath.length > 0) {
+      const _lsTrailFrames = getLongStrokeTrailFrames();
+
+      if (isDrawing && lastPointerPos) {
+        const hit = getFrameAtPoint(lastPointerPos);
+        if (hit && hit.frameIdx !== longStrokeLastFrame) {
+          // Add a break-point for this new frame so we don't draw a stretched segment
+          const u = Math.min(1, Math.max(0, hit.localX / Math.max(1, hit.width)));
+          const v = Math.min(1, Math.max(0, hit.localY / Math.max(1, hit.height)));
+          const _lsTick = state.isPlaying ? getLongStrokeTick() : advanceLongStrokeTick();
+
+          longStrokePath.push({ u, v, brk: true, t: _lsTick });
+          if (longStrokePath.length > 5000) longStrokePath = longStrokePath.slice(-5000);
+
+          if (_lsTrailFrames > 0) {
+            if (!longStrokeSheetSnapshot) startLongStrokeTrailSnapshot();
+            longStrokeEndTick = null;
+            longStrokeLastFrame = hit.frameIdx;
+            longStrokeBaseHit = longStrokeBaseHit || hit;
+            longStrokeFrameTicks.set(hit.frameIdx, _lsTick);
+            longStrokeTouchedFrames.add(hit.frameIdx);
+            longStrokeActiveFrames.add(hit.frameIdx);
+            renderLongStrokeFrame(hit.frameIdx);
+          } else {
+            drawLongStrokeOnFrame(hit.frameIdx);
+            longStrokeLastFrame = hit.frameIdx;
           }
+
+          if (activeFrameStroke) {
+            activeFrameStroke.frameIdx = hit.frameIdx;
+            activeFrameStroke.lastSheet = sheetPoint(hit.frameIdx, u, v);
+          }
+          requestComposite();
         }
-      });
-      if (state.drawMode) compositeAllLayers();
-    }, interval);
+      }
+
+      // Trail mode: enforce "last N frames" window and decay after mouse-up
+      if (_lsTrailFrames > 0 && longStrokeSheetSnapshot && (isDrawing || longStrokeEndTick != null)) {
+        updateLongStrokeTrail();
+      }
+    }
+  }
+
+  function restartAnimation() {
+    if (state.animInterval) { clearInterval(state.animInterval); state.animInterval = null; }
+    if (!state.isPlaying) return;
+    state.animInterval = setInterval(() => { state.currentTick++; updateAllCells(); }, 1000 / state.animFps);
   }
 
   playBtn.onclick = startAnimation;
@@ -1909,56 +2249,29 @@
     const cellCount = Math.ceil(frameCount / state.cellSize);
     const cellOrder = generateCellOrder(cellCount, state.gridCols);
     const cellOrderIdx = cellOrder.indexOf(cellIdx);
-    const offset = cellOrderIdx >= 0 ? cellOrderIdx : 0;
-    
-    // baseFrame only matters when cellSize > 1 (each cell starts at different frame)
-    // When cellSize = 1, all cells animate through all frames with just offset
-    const baseFrame = state.cellSize > 1 ? (cellIdx * state.cellSize) : 0;
+    const rawOffset = cellOrderIdx >= 0 ? cellOrderIdx : 0;
+    const phaseCount = Math.max(1, state.gridLoops || 1);
+    const offset = Math.floor(rawOffset * frameCount * phaseCount / Math.max(1, cellCount)) % frameCount;
     
     let frameIdx;
     if (state.animDirection === 'pingpong') {
       const cycle = frameCount > 1 ? (frameCount - 1) * 2 : 1;
       const pos = (tick + offset) % cycle;
-      const localIdx = pos < frameCount ? pos : cycle - pos;
-      frameIdx = (baseFrame + localIdx) % frameCount;
+      frameIdx = pos < frameCount ? pos : cycle - pos;
     } else if (state.animDirection === 'backward') {
-      const localIdx = (frameCount - 1 - ((tick + offset) % frameCount) + frameCount) % frameCount;
-      frameIdx = (baseFrame + localIdx) % frameCount;
+      frameIdx = (frameCount - 1 - ((tick + offset) % frameCount) + frameCount) % frameCount;
     } else if (state.animDirection === 'sync') {
-      frameIdx = (baseFrame + tick) % frameCount;
+      frameIdx = tick % frameCount;
     } else if (state.animDirection === 'random') {
       frameIdx = Math.floor(Math.random() * frameCount);
     } else {
-      // forward (default)
-      frameIdx = (baseFrame + tick + offset) % frameCount;
+      frameIdx = (tick + offset) % frameCount;
     }
     return frameIdx;
   }
 
   // Update all cells to show frames at current tick
-  function updateAllCells() {
-    const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
-    
-    items.forEach((item, i) => {
-      if (i < offset) return;
-      const cellIdx = i - offset;
-      const frameIdx = getFrameForCell(cellIdx, state.currentTick);
-      const frame = state.frames[frameIdx];
-      
-      const img = item.querySelector('img');
-      const tc = item.querySelector('.frame-timecode');
-      if (img && frame) {
-        img.src = frame.dataUrl;
-        if (tc && state.showTimecode) {
-          tc.textContent = formatTimecode(frame, cellIdx, Math.ceil(state.frames.length / state.cellSize));
-        }
-      }
-      item.dataset.frameIdx = frameIdx;
-    });
-    
-    if (state.drawMode) compositeAllLayers();
-  }
+  // updateAllCells is defined above in the animation section
 
   function stopAnimation() {
     state.isPlaying = false;
@@ -1999,7 +2312,7 @@
   // 4. frameDrawings[i] - per-frame individual drawings
   
   const drawCanvas = $('drawCanvas');
-  const drawCtx = drawCanvas.getContext('2d');
+  const drawCtx = drawCanvas.getContext('2d', { willReadFrequently: true });
   const drawPalette = $('drawPalette');
   const drawToggle = $('drawToggle');
   const drawEraserBtn = $('drawEraser');
@@ -2009,6 +2322,58 @@
   const drawLongStrokeBtn = $('drawLongStroke');
   const drawColorInput = $('drawColorInput');
   const drawSizeSlider = $('drawSizeSlider');
+  const drawSizeMinus = $('drawSizeMinus');
+  const drawSizePlus = $('drawSizePlus');
+  const drawSizePreview = $('drawSizePreview');
+  let _sizeDrag = null;
+
+  // FIX v0.16: implement missing updateDrawSizeUI
+  function updateDrawSizeUI() {
+    if (drawSizeDot) {
+      const dotSize = Math.min(state.drawSize, 16);
+      drawSizeDot.style.width = dotSize + 'px';
+      drawSizeDot.style.height = dotSize + 'px';
+    }
+    if (drawSizeSlider) drawSizeSlider.value = state.drawSize;
+  }
+
+  function setDrawSize(v) {
+    const nv = Math.max(1, Math.min(120, Math.round(v)));
+    state.drawSize = nv;
+    if (drawSizeSlider) drawSizeSlider.value = nv;
+    updateDrawSizeUI();
+    // Update brush cursor size (no event needed for size-only update)
+    if (brushCursor) {
+      const screenSize = state.drawSize * state.scale;
+      brushCursor.style.width = screenSize + 'px';
+      brushCursor.style.height = screenSize + 'px';
+    }
+  }
+
+  if (drawSizeMinus) drawSizeMinus.onclick = () => setDrawSize((state.drawSize || 4) - 1);
+  if (drawSizePlus) drawSizePlus.onclick = () => setDrawSize((state.drawSize || 4) + 1);
+
+  if (drawSizePreview) {
+    const start = (clientY) => { _sizeDrag = { y: clientY, size: state.drawSize || 4 }; };
+    const move = (clientY) => {
+      if (!_sizeDrag) return;
+      const dy = (_sizeDrag.y - clientY);
+      const step = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 3.0 : 6.0;
+      setDrawSize(_sizeDrag.size + dy / step);
+    };
+    const end = () => { _sizeDrag = null; };
+
+    drawSizePreview.addEventListener('touchstart', (e) => { e.preventDefault(); start(e.touches[0].clientY); }, { passive: false });
+    drawSizePreview.addEventListener('touchmove', (e) => { e.preventDefault(); move(e.touches[0].clientY); }, { passive: false });
+    drawSizePreview.addEventListener('touchend', end);
+    drawSizePreview.addEventListener('touchcancel', end);
+
+    drawSizePreview.addEventListener('mousedown', (e) => { start(e.clientY); });
+    window.addEventListener('mousemove', (e) => { move(e.clientY); });
+    window.addEventListener('mouseup', end);
+  }
+
+
   const drawSizeDot = $('drawSizeDot');
   const drawColors = document.querySelectorAll('.draw-color');
   const drawTargetBtns = document.querySelectorAll('.draw-target-btn');
@@ -2023,23 +2388,42 @@
 
   // Create separate canvases for each layer
   const bgCanvas = document.createElement('canvas');
-  const bgCtx = bgCanvas.getContext('2d');
+  const bgCtx = bgCanvas.getContext('2d', { willReadFrequently: true });
   const tplCanvas = document.createElement('canvas'); // template layer
-  const tplCtx = tplCanvas.getContext('2d');
+  const tplCtx = tplCanvas.getContext('2d', { willReadFrequently: true });
   
   
   const frameSheetCanvas = document.createElement('canvas'); // per-frame sheet layer
-  const frameSheetCtx = frameSheetCanvas.getContext('2d');
+  const frameSheetCtx = frameSheetCanvas.getContext('2d', { willReadFrequently: true });
 let isDrawing = false;
+  let skipNextSegment = false; // used when pointer leaves drawable area or misses frame hit
+
   let lastPoint = null;
   let activeFrameStroke = null; // { frameIdx, canvas, ctx, lastLocal }
-  let longStrokePath = []; // Array of {x, y, u, v} normalized points for long stroke
-  let longStrokeLastFrame = -1; // Last frame we drew long stroke on
-  let longStrokeBaseHit = null; // Reference hit for coordinate mapping
+  let longStrokePath = []; // Array of {u, v} normalized points for long stroke trail
+  let longStrokeLastFrame = -1;
+  let longStrokeBaseHit = null;
+  let lastPointerPos = null;
+  let longStrokeSheetSnapshot = null; // frame sheet snapshot before long stroke for clean redraw
+  let longStrokeFrameTicks = new Map(); // frameIdx -> tick when frame was last stamped
+  let longStrokeActiveFrames = new Set(); // frames currently showing the trail
+  let longStrokeTouchedFrames = new Set(); // frames touched since stroke start
+  let longStrokeEndTick = null; // tick when mouse was released (for decay)
+  let longStrokeVirtualTick = 0; // virtual tick used when animation is stopped (counts frame-changes / decay steps)
+  let longStrokeDecayInterval = null; // interval id for decay when not playing
+
   let paletteX = 20, paletteY = 100;
   let paletteDragging = false;
   let paletteDragOffset = { x: 0, y: 0 };
   let drawUndoStack = [];
+  const _isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  function canSnapshotCanvas(cnv) {
+    if (!cnv || !cnv.width || !cnv.height) return false;
+    const px = cnv.width * cnv.height;
+    const limit = _isCoarsePointer ? 12_000_000 : 40_000_000;
+    return px <= limit;
+  }
+
   
   // Initialize positions
   drawPalette.style.left = paletteX + 'px';
@@ -2103,10 +2487,12 @@ let isDrawing = false;
     if (state.drawMode) {
       resizeDrawCanvas();
       compositeAllLayers();
-    brushCursor.classList.toggle('eraser', state.drawEraser);
+      brushCursor.classList.toggle('eraser', state.drawEraser);
     } else {
       showTemplateFrame(false);
+      brushCursor.classList.remove('visible');
     }
+    dbg(`DrawMode: ${state.drawMode}, canvas: ${drawCanvas.width}x${drawCanvas.height}`);
   }
   
   
@@ -2144,27 +2530,47 @@ let isDrawing = false;
   }
 function resizeDrawCanvas() {
     const inner = canvasInner;
-    const dpr = Math.min(2, window.devicePixelRatio || 1); // Higher resolution for drawing
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
     const newW = Math.round(inner.scrollWidth * dpr);
     const newH = Math.round(inner.scrollHeight * dpr);
 
-    // Overlay canvases cover the full workspace at higher resolution
-    if (drawCanvas.width !== newW || drawCanvas.height !== newH) {
-      drawCanvas.width = newW;
-      drawCanvas.height = newH;
-      bgCanvas.width = newW;
-      bgCanvas.height = newH;
+    // If size unchanged, only keep template sized correctly
+    if (drawCanvas.width === newW && drawCanvas.height === newH) {
+      ensureTplCanvasSized();
+      return;
     }
 
-    // Restore background layer (full size)
-    if (state.bgDrawing) {
-      try { bgCtx.putImageData(state.bgDrawing, 0, 0); } catch (e) {}
+    // Snapshot BG layer before resize, because resizing clears canvas buffers
+    const oldBg = document.createElement('canvas');
+    oldBg.width = bgCanvas.width || 1;
+    oldBg.height = bgCanvas.height || 1;
+    oldBg.getContext('2d').drawImage(bgCanvas, 0, 0);
+
+    // Resize overlay canvases (clears content)
+    drawCanvas.width = newW;
+    drawCanvas.height = newH;
+    bgCanvas.width = newW;
+    bgCanvas.height = newH;
+
+    // Restore BG by scaling snapshot into the new size
+    try {
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      if (oldBg.width > 1 && oldBg.height > 1) {
+        bgCtx.drawImage(oldBg, 0, 0, newW, newH);
+      }
+    } catch (e) {}
+
+    // Refresh cached BG snapshot only if safe (helps Undo)
+    try {
+      state.bgDrawing = canSnapshotCanvas(bgCanvas) ? bgCtx.getImageData(0, 0, bgCanvas.width, bgCanvas.height) : null;
+    } catch (e) {
+      state.bgDrawing = null;
     }
 
     // Template is per-frame overlay, keep it sized to one frame cell
     ensureTplCanvasSized();
 
-    // Restore template layer (per-frame size)
+    // Restore template snapshot (if any), scaling if size changed
     if (state.templateDrawing && tplCanvas.width && tplCanvas.height) {
       try {
         if (state.templateDrawing.width === tplCanvas.width && state.templateDrawing.height === tplCanvas.height) {
@@ -2176,7 +2582,7 @@ function resizeDrawCanvas() {
           tmp.getContext('2d').putImageData(state.templateDrawing, 0, 0);
           tplCtx.clearRect(0, 0, tplCanvas.width, tplCanvas.height);
           tplCtx.drawImage(tmp, 0, 0, tplCanvas.width, tplCanvas.height);
-          state.templateDrawing = tplCtx.getImageData(0, 0, tplCanvas.width, tplCanvas.height);
+          state.templateDrawing = canSnapshotCanvas(tplCanvas) ? tplCtx.getImageData(0, 0, tplCanvas.width, tplCanvas.height) : null;
         }
       } catch (e) {}
     }
@@ -2219,11 +2625,12 @@ function resizeDrawCanvas() {
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
     const first = items[offset];
-    const innerRect = canvasInner.getBoundingClientRect();
-    if (!first || innerRect.width === 0 || innerRect.height === 0) return null;
+    const drawRect = drawCanvas.getBoundingClientRect();
+    if (!first || drawRect.width === 0 || drawRect.height === 0) return null;
+
     const rect = first.getBoundingClientRect();
-    const scaleX = drawCanvas.width / innerRect.width;
-    const scaleY = drawCanvas.height / innerRect.height;
+    const scaleX = drawCanvas.width / Math.max(1, drawRect.width);
+    const scaleY = drawCanvas.height / Math.max(1, drawRect.height);
     const w = Math.max(2, Math.round(rect.width * scaleX));
     const h = Math.max(2, Math.round(rect.height * scaleY));
     return { w, h };
@@ -2292,12 +2699,27 @@ function resizeDrawCanvas() {
     templateFrameCtx.drawImage(tplCanvas, 0, 0, templateFrameCanvas.width, templateFrameCanvas.height);
   }
   // --- Frame-sheet helpers (per-frame drawings that follow animation) ---
+  
   function getFrameTileDims() {
-    // Use a stable drawing resolution independent of screen scaling
     const vw = Math.max(1, state.videoWidth || 1);
     const vh = Math.max(1, state.videoHeight || 1);
     const aspect = vw / vh;
-    const base = 512; // stable tile size
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const maxTexW = isIOS ? 4096 : 16384;
+    const cols = Math.max(1, state.gridCols || 1);
+
+    // Reuse locked dims if still safe
+    if (state._frameTileDims && !(isIOS && (cols * state._frameTileDims.tw > maxTexW))) {
+      return state._frameTileDims;
+    }
+
+    let base = 512;
+    if (isIOS) {
+      base = Math.min(base, Math.floor(maxTexW / cols));
+      base = Math.max(160, Math.min(512, Math.floor(base / 32) * 32));
+    }
+
     let tw, th;
     if (aspect >= 1) {
       tw = base;
@@ -2306,11 +2728,14 @@ function resizeDrawCanvas() {
       th = base;
       tw = Math.max(64, Math.round(base * aspect));
     }
-    // Ensure even dims for cleaner scaling
+
     tw = tw % 2 === 0 ? tw : tw + 1;
     th = th % 2 === 0 ? th : th + 1;
-    return { tw, th };
+
+    state._frameTileDims = { tw, th };
+    return state._frameTileDims;
   }
+
 
   function ensureFrameSheet() {
     if (!state.frames.length) return;
@@ -2370,7 +2795,19 @@ function resizeDrawCanvas() {
 
 
   // Composite all layers onto the visible draw canvas
-  function compositeAllLayers() {
+  
+  // Composite throttling, avoids heavy redraw on every touch event (important on iPad)
+  let _compositeQueued = false;
+  function requestComposite() {
+    if (_compositeQueued) return;
+    _compositeQueued = true;
+    requestAnimationFrame(() => {
+      _compositeQueued = false;
+      compositeAllLayers();
+    });
+  }
+
+function compositeAllLayers() {
     drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
 
     // Layer 1: Background (full space including around frames)
@@ -2486,12 +2923,12 @@ function resizeDrawCanvas() {
     const scaleX = drawCanvas.width / Math.max(1, drawRect.width);
     const scaleY = drawCanvas.height / Math.max(1, drawRect.height);
 
+    // Optional debug
     if (typeof dbg === 'function') {
       dbg(`getFrameAtPoint: point=${point.x.toFixed(0)},${point.y.toFixed(0)}`);
-      dbg(`drawRect: ${drawRect.left.toFixed(0)},${drawRect.top.toFixed(0)} ${drawRect.width.toFixed(0)}x${drawRect.height.toFixed(0)}`);
-      dbg(`scale: ${scaleX.toFixed(2)}, ${scaleY.toFixed(2)}, items: ${items.length}`);
     }
 
+    const rects = [];
     for (let i = offset; i < items.length; i++) {
       const rect = items[i].getBoundingClientRect();
       const x = (rect.left - drawRect.left) * scaleX;
@@ -2499,19 +2936,58 @@ function resizeDrawCanvas() {
       const w = rect.width * scaleX;
       const h = rect.height * scaleY;
 
+      const frameIdx = (Number.isFinite(parseInt(items[i].dataset.frameIdx))
+        ? parseInt(items[i].dataset.frameIdx)
+        : (i - offset) * state.cellSize);
+
+      rects.push({ i, x, y, w, h, frameIdx, cellEl: items[i] });
+
       if (point.x >= x && point.x <= x + w && point.y >= y && point.y <= y + h) {
-        if (typeof dbg === 'function') dbg(`HIT frame ${i}, idx=${items[i].dataset.frameIdx}`);
         return {
-          frameIdx: (Number.isFinite(parseInt(items[i].dataset.frameIdx)) ? parseInt(items[i].dataset.frameIdx) : (i - offset) * state.cellSize),
+          frameIdx,
           cellEl: items[i],
           localX: point.x - x,
           localY: point.y - y,
           width: w,
-          height: h
+          height: h,
+          snapped: false
         };
       }
     }
-    if (typeof dbg === 'function') dbg('NO HIT');
+
+    // SNAP: allow drawing slightly inside gaps between frames (important for fast strokes on iPad)
+    const snapCss = _isCoarsePointer ? 22 : 12; // px in screen space
+    const tol = snapCss * Math.max(scaleX, scaleY);
+
+    let best = null;
+    let bestD2 = Infinity;
+    for (const r of rects) {
+      const rx2 = r.x + r.w;
+      const ry2 = r.y + r.h;
+      const dx = (point.x < r.x) ? (r.x - point.x) : (point.x > rx2 ? (point.x - rx2) : 0);
+      const dy = (point.y < r.y) ? (r.y - point.y) : (point.y > ry2 ? (point.y - ry2) : 0);
+      const d2 = dx * dx + dy * dy;
+
+      if (d2 < bestD2 && dx <= tol && dy <= tol) {
+        best = r;
+        bestD2 = d2;
+      }
+    }
+
+    if (best) {
+      const lx = Math.min(best.w, Math.max(0, point.x - best.x));
+      const ly = Math.min(best.h, Math.max(0, point.y - best.y));
+      return {
+        frameIdx: best.frameIdx,
+        cellEl: best.cellEl,
+        localX: lx,
+        localY: ly,
+        width: best.w,
+        height: best.h,
+        snapped: true
+      };
+    }
+
     return null;
   }
   
@@ -2542,6 +3018,17 @@ function resizeDrawCanvas() {
   }
 
 // Smooth line drawing
+  // Brush type selection
+  const brushBtns = document.querySelectorAll('.draw-brush-btn');
+  brushBtns.forEach(btn => {
+    btn.onclick = () => {
+      state.brushType = btn.dataset.brush;
+      brushBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+  });
+
+
   function drawSmoothLine(ctx, from, to, color, size, eraser) {
     ctx.save();
     ctx.lineCap = 'round';
@@ -2553,6 +3040,7 @@ function resizeDrawCanvas() {
       ctx.strokeStyle = 'rgba(0,0,0,1)';
     } else {
       ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = state.drawOpacity || 1;
       ctx.strokeStyle = color;
     }
     
@@ -2566,7 +3054,6 @@ function resizeDrawCanvas() {
     ctx.restore();
   }
   
-  // Draw a dot
   function drawDot(ctx, point, color, size, eraser) {
     ctx.save();
     if (eraser) {
@@ -2574,6 +3061,7 @@ function resizeDrawCanvas() {
       ctx.fillStyle = 'rgba(0,0,0,1)';
     } else {
       ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = state.drawOpacity || 1;
       ctx.fillStyle = color;
     }
     ctx.beginPath();
@@ -2586,12 +3074,38 @@ function resizeDrawCanvas() {
   drawCanvas.onmousedown = e => {
     if (!state.drawMode || e.button !== 0) return;
     e.preventDefault();
+    
+    // Eyedropper: pick color from video frame under cursor
+    if (eyedropperActive) {
+      const pt = getCanvasPoint(e);
+      const hit = getFrameAtPoint(pt);
+      if (hit && hit.cellEl) {
+        const imgEl = hit.cellEl.querySelector('img');
+        if (imgEl && imgEl.naturalWidth) {
+          const u = hit.localX / Math.max(1, hit.width);
+          const v = hit.localY / Math.max(1, hit.height);
+          const tmpC = document.createElement('canvas');
+          tmpC.width = 1; tmpC.height = 1;
+          const tmpCtx2 = tmpC.getContext('2d', { willReadFrequently: true });
+          try {
+            tmpCtx2.drawImage(imgEl, Math.round(u * imgEl.naturalWidth), Math.round(v * imgEl.naturalHeight), 1, 1, 0, 0, 1, 1);
+            const px = tmpCtx2.getImageData(0, 0, 1, 1).data;
+            const hex = '#' + [px[0],px[1],px[2]].map(c => c.toString(16).padStart(2,'0')).join('');
+            setDrawColor(hex);
+          } catch(ex) {}
+        }
+      }
+      eyedropperActive = false;
+      if (drawEyedropperBtn) drawEyedropperBtn.classList.remove('active');
+      drawCanvas.style.cursor = state.drawEraser ? 'cell' : 'default';
+      return;
+    }
 
     // Save undo state
     drawUndoStack.push({
-      bg: state.bgDrawing ? new ImageData(new Uint8ClampedArray(state.bgDrawing.data), state.bgDrawing.width, state.bgDrawing.height) : null,
-      tpl: state.templateDrawing ? new ImageData(new Uint8ClampedArray(state.templateDrawing.data), state.templateDrawing.width, state.templateDrawing.height) : null,
-      sheet: (frameSheetCanvas.width && frameSheetCanvas.height) ? frameSheetCtx.getImageData(0, 0, frameSheetCanvas.width, frameSheetCanvas.height) : null
+      bg: (state.bgDrawing && canSnapshotCanvas(bgCanvas)) ? (_isCoarsePointer ? state.bgDrawing : new ImageData(new Uint8ClampedArray(state.bgDrawing.data), state.bgDrawing.width, state.bgDrawing.height)) : null,
+      tpl: (state.templateDrawing && canSnapshotCanvas(tplCanvas)) ? (_isCoarsePointer ? state.templateDrawing : new ImageData(new Uint8ClampedArray(state.templateDrawing.data), state.templateDrawing.width, state.templateDrawing.height)) : null,
+      sheet: (!_isCoarsePointer && canSnapshotCanvas(frameSheetCanvas)) ? frameSheetCtx.getImageData(0, 0, frameSheetCanvas.width, frameSheetCanvas.height) : null
     });
     if (drawUndoStack.length > 20) drawUndoStack.shift();
 
@@ -2616,13 +3130,35 @@ function resizeDrawCanvas() {
       
       // Long Stroke mode: initialize
       if (state.drawLongStroke) {
-        longStrokePath = [{ u, v }]; // Store normalized coordinates
+        const _lsTrailFrames = getLongStrokeTrailFrames();
+
+        if (_lsTrailFrames > 0) {
+          startLongStrokeTrailSnapshot();
+
+          longStrokePath = [{ u, v, brk: true, t: getLongStrokeTick() }]; // Store normalized coords + break + tick
+          longStrokeLastFrame = hit.frameIdx;
+          longStrokeBaseHit = hit;
+          lastPointerPos = pt; // allow stamping even if pointer doesn't move
+          longStrokeEndTick = null;
+
+          longStrokeFrameTicks.set(hit.frameIdx, getLongStrokeTick());
+          longStrokeTouchedFrames.add(hit.frameIdx);
+          longStrokeActiveFrames.add(hit.frameIdx);
+          renderLongStrokeFrame(hit.frameIdx);
+          requestComposite();
+          return;
+        }
+
+        // Legacy long-stroke behavior
+        longStrokePath = [{ u, v, brk: true, t: getLongStrokeTick() }];
         longStrokeLastFrame = hit.frameIdx;
         longStrokeBaseHit = hit;
+        lastPointerPos = pt;
+        longStrokeEndTick = null;
       }
 
       drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
-      compositeAllLayers();
+      requestComposite();
       return;
     }
 
@@ -2630,58 +3166,123 @@ function resizeDrawCanvas() {
     const target = getTargetCanvas();
     if (!target) return;
     drawDot(target.ctx, lastPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
-    compositeAllLayers();
+    requestComposite();
   };
   
+  let _shiftStartPoint = null;
+  
+  function constrainToLine(start, current) {
+    const dx = current.x - start.x;
+    const dy = current.y - start.y;
+    const absDx = Math.abs(dx), absDy = Math.abs(dy);
+    // Snap to nearest axis: horizontal, vertical, or 45° diagonal
+    if (absDx > absDy * 2) return { x: current.x, y: start.y }; // horizontal
+    if (absDy > absDx * 2) return { x: start.x, y: current.y }; // vertical
+    const diag = Math.max(absDx, absDy);
+    return { x: start.x + diag * Math.sign(dx), y: start.y + diag * Math.sign(dy) }; // 45°
+  }
+
   drawCanvas.onmousemove = e => {
     if (!isDrawing || !lastPoint) return;
+    let currentPoint = getCanvasPoint(e);
+    lastPointerPos = currentPoint;
+    // Shift constraint
+    if (e.shiftKey) {
+      if (!_shiftStartPoint) _shiftStartPoint = lastPoint;
+      currentPoint = constrainToLine(_shiftStartPoint, currentPoint);
+    } else {
+      _shiftStartPoint = null;
+    }
+    // Eyedropper: handled on mousedown only
+    if (eyedropperActive) return;
 
-    const currentPoint = getCanvasPoint(e);
+    if (skipNextSegment) {
+      // We temporarily lost a stable hit (e.g., in a gap or outside). Restart segment cleanly.
+      skipNextSegment = false;
+      if (state.drawTarget === 'frame' && activeFrameStroke) {
+        const hit0 = getFrameAtPoint(currentPoint);
+        if (!hit0) return;
+        ensureFrameSheet();
+        const u0 = Math.min(1, Math.max(0, hit0.localX / Math.max(1, hit0.width)));
+        const v0 = Math.min(1, Math.max(0, hit0.localY / Math.max(1, hit0.height)));
+        const sp0 = sheetPoint(hit0.frameIdx, u0, v0);
+        activeFrameStroke.frameIdx = hit0.frameIdx;
+        activeFrameStroke.lastSheet = sp0;
+        drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser);
+        lastPoint = currentPoint;
+        requestComposite();
+        return;
+      } else {
+        const t0 = getTargetCanvas();
+        if (!t0) return;
+        drawDot(t0.ctx, currentPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
+        lastPoint = currentPoint;
+        requestComposite();
+        return;
+      }
+    }
 
     // Frame sheet mode: draw a continuous stroke and auto-slice per frame tile
     if (state.drawTarget === 'frame' && activeFrameStroke) {
       const hit = getFrameAtPoint(currentPoint);
-      if (!hit) {
-        lastPoint = currentPoint;
-        return;
-      }
+      if (!hit) { skipNextSegment = true; return; }
       ensureFrameSheet();
 
       const u = Math.min(1, Math.max(0, hit.localX / Math.max(1, hit.width)));
       const v = Math.min(1, Math.max(0, hit.localY / Math.max(1, hit.height)));
       const sp = sheetPoint(hit.frameIdx, u, v);
-      
-      // Long Stroke mode: collect UV points
+      const _lsFrameChanged = state.drawLongStroke && (hit.frameIdx !== longStrokeLastFrame);
+
+      // Long Stroke mode: collect UV points, add a break marker when the frame changes
       if (state.drawLongStroke) {
-        longStrokePath.push({ u, v });
+        const _lsTick = state.isPlaying ? getLongStrokeTick() : advanceLongStrokeTick();
+        longStrokePath.push({ u, v, brk: _lsFrameChanged, t: _lsTick });
+        // Keep memory bounded
+        if (longStrokePath.length > 5000) longStrokePath = longStrokePath.slice(-5000);
+
+        // Trail mode: keep only last N frames visible (state.longStrokeFade)
+        if (getLongStrokeTrailFrames() > 0) {
+          if (!longStrokeSheetSnapshot) startLongStrokeTrailSnapshot();
+          longStrokeEndTick = null;
+          longStrokeFrameTicks.set(hit.frameIdx, _lsTick);
+          longStrokeTouchedFrames.add(hit.frameIdx);
+          longStrokeActiveFrames.add(hit.frameIdx);
+          renderLongStrokeFrame(hit.frameIdx);
+
+          if (hit.frameIdx !== longStrokeLastFrame) longStrokeLastFrame = hit.frameIdx;
+
+          activeFrameStroke.frameIdx = hit.frameIdx;
+          activeFrameStroke.lastSheet = sp;
+          lastPoint = currentPoint;
+          requestComposite();
+          return;
+        }
       }
 
-      // Long Stroke mode: when frame changes, draw entire accumulated path on new frame
-      if (state.drawLongStroke && hit.frameIdx !== longStrokeLastFrame && longStrokePath.length > 0) {
-        // Draw entire accumulated path on new frame
-        drawLongStrokeOnFrame(hit.frameIdx);
-        longStrokeLastFrame = hit.frameIdx;
+
+      // When cursor moves to different cell: cut stroke.
+      // In Long Stroke mode we also "stamp" the accumulated path onto the new frame,
+      // so the stroke becomes a real trail across animated frames.
+      const _frameChanged = (hit.frameIdx !== activeFrameStroke.frameIdx);
+
+      if (_frameChanged) {
+        if (state.drawLongStroke) {
+          drawLongStrokeOnFrame(hit.frameIdx);
+          longStrokeLastFrame = hit.frameIdx;
+        } else {
+          drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+        }
         activeFrameStroke.frameIdx = hit.frameIdx;
         activeFrameStroke.lastSheet = sp;
         lastPoint = currentPoint;
-        compositeAllLayers();
-        return;
-      }
-
-      if (hit.frameIdx !== activeFrameStroke.frameIdx) {
-        // Normal mode: Cut stroke at frame boundary
-        activeFrameStroke.frameIdx = hit.frameIdx;
-        activeFrameStroke.lastSheet = sp;
-        drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
-        lastPoint = currentPoint;
-        compositeAllLayers();
+        requestComposite();
         return;
       }
 
       drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
-      activeFrameStroke.lastSheet = sp;
+activeFrameStroke.lastSheet = sp;
       lastPoint = currentPoint;
-      compositeAllLayers();
+      requestComposite();
       return;
     }
 
@@ -2689,10 +3290,218 @@ function resizeDrawCanvas() {
     if (!target) return;
     drawSmoothLine(target.ctx, lastPoint, currentPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
     lastPoint = currentPoint;
-    compositeAllLayers();
+    requestComposite();
   };
   
-  // Draw accumulated long stroke path on a specific frame with optional fade
+  // Long Stroke helpers (trail by frames)
+  function getLongStrokeTick() {
+    // When the grid animation is playing, follow the global tick.
+    // When stopped, use a separate virtual tick so the long-stroke trail can still expire.
+    if (state.isPlaying) return (typeof state.currentTick === 'number') ? state.currentTick : 0;
+    return (typeof longStrokeVirtualTick === 'number') ? longStrokeVirtualTick : 0;
+  }
+
+  function advanceLongStrokeTick() {
+    // Only advance when not playing (frame-change counter / decay steps)
+    if (state.isPlaying) return getLongStrokeTick();
+    longStrokeVirtualTick = ((typeof longStrokeVirtualTick === 'number') ? longStrokeVirtualTick : 0) + 1;
+    return longStrokeVirtualTick;
+  }
+
+  function stopLongStrokeDecayTimer() {
+    if (longStrokeDecayInterval) {
+      clearInterval(longStrokeDecayInterval);
+      longStrokeDecayInterval = null;
+    }
+  }
+
+  function startLongStrokeDecayTimer() {
+    stopLongStrokeDecayTimer();
+    // If animation is running, updateAllCells() already advances state.currentTick, so no extra timer needed.
+    if (state.isPlaying) return;
+    const fps = Math.max(1, parseInt(state.animFps || 12, 10));
+    longStrokeDecayInterval = setInterval(() => {
+      if (!longStrokeSheetSnapshot || longStrokeEndTick == null || !state.drawLongStroke || longStrokePath.length === 0) {
+        stopLongStrokeDecayTimer();
+        return;
+      }
+      advanceLongStrokeTick();
+      updateLongStrokeTrail();
+      requestComposite();
+      // stop when trail is fully gone
+      if (!longStrokeSheetSnapshot || (longStrokeActiveFrames && longStrokeActiveFrames.size === 0)) {
+        stopLongStrokeDecayTimer();
+      }
+    }, 1000 / fps);
+  }
+function getLongStrokeTrailFrames() {
+    const n = parseInt(state.longStrokeFade || 0, 10);
+    return Number.isFinite(n) ? Math.max(0, n) : 0;
+  }
+
+  function startLongStrokeTrailSnapshot() {
+    // If a previous trail is still around, restore + reset first
+    stopLongStrokeDecayTimer();
+    cancelLongStrokeTrail(true);
+    ensureFrameSheet();
+    // Reset virtual tick baseline for stopped-animation mode
+    longStrokeVirtualTick = (state.isPlaying && typeof state.currentTick === 'number') ? state.currentTick : 0;
+    longStrokeSheetSnapshot = document.createElement('canvas');
+    longStrokeSheetSnapshot.width = frameSheetCanvas.width || 1;
+    longStrokeSheetSnapshot.height = frameSheetCanvas.height || 1;
+    const sctx = longStrokeSheetSnapshot.getContext('2d');
+    if (sctx) sctx.drawImage(frameSheetCanvas, 0, 0);
+    longStrokeFrameTicks = new Map();
+    longStrokeActiveFrames = new Set();
+    longStrokeTouchedFrames = new Set();
+    longStrokeEndTick = null;
+  }
+
+  function restoreLongStrokeTileFromSnapshot(frameIdx) {
+    if (!longStrokeSheetSnapshot) return;
+    const tw = state.frameSheetTileW || 1;
+    const th = state.frameSheetTileH || 1;
+    const cols = state.frameSheetCols || 1;
+    const sx = (frameIdx % cols) * tw;
+    const sy = Math.floor(frameIdx / cols) * th;
+    // Restore tile pixels from snapshot
+    frameSheetCtx.drawImage(longStrokeSheetSnapshot, sx, sy, tw, th, sx, sy, tw, th);
+  }
+
+  function renderLongStrokeFrame(frameIdx) {
+    if (!longStrokeSheetSnapshot) return;
+    const trailFrames = getLongStrokeTrailFrames();
+    if (trailFrames <= 0) return;
+    
+    const nowTick = getLongStrokeTick();
+    const endTick = (longStrokeEndTick == null) ? nowTick : longStrokeEndTick;
+    const windowStart = nowTick - trailFrames + 1;
+    
+    const frameTick = longStrokeFrameTicks.get(frameIdx);
+    if (frameTick == null) return;
+    const maxT = Math.min(frameTick, endTick);
+    
+    // Always start by restoring the tile, then draw only the part of the stroke that is inside the active window.
+    restoreLongStrokeTileFromSnapshot(frameIdx);
+    if (maxT < windowStart) return;
+    
+    const bs = getBrushSizeFrame(longStrokeBaseHit || { width: 1, height: 1 });
+    let prevSp = null;
+    let started = false;
+    
+    for (let i = 0; i < longStrokePath.length; i++) {
+      const pt = longStrokePath[i];
+      const t = (pt && typeof pt.t === 'number') ? pt.t : 0;
+      if (t < windowStart) { prevSp = null; started = false; continue; }
+      if (t > maxT) break;
+      
+      const sp = sheetPoint(frameIdx, pt.u, pt.v);
+      const brk = !!pt.brk || !started;
+      
+      if (brk || !prevSp) {
+        drawDot(frameSheetCtx, sp, state.drawColor, bs, state.drawEraser);
+      } else {
+        drawSmoothLine(frameSheetCtx, prevSp, sp, state.drawColor, bs, state.drawEraser);
+      }
+      
+      prevSp = sp;
+      started = true;
+    }
+  }
+
+  function stampLongStrokeFrame(frameIdx) {
+    if (!state.drawLongStroke) return;
+
+    const trailFrames = getLongStrokeTrailFrames();
+    const tick = getLongStrokeTick();
+
+    // Legacy mode (no trail cap): keep the old behavior (permanent stamping)
+    if (trailFrames <= 0) {
+      drawLongStrokeOnFrame(frameIdx);
+      return;
+    }
+
+    if (!longStrokeSheetSnapshot) startLongStrokeTrailSnapshot();
+    longStrokeFrameTicks.set(frameIdx, tick);
+    longStrokeTouchedFrames.add(frameIdx);
+    longStrokeActiveFrames.add(frameIdx);
+    renderLongStrokeFrame(frameIdx);
+  }
+
+  function updateLongStrokeTrail() {
+    const trailFrames = getLongStrokeTrailFrames();
+    if (trailFrames <= 0) return;
+    if (!longStrokeSheetSnapshot) return;
+    if (!longStrokeFrameTicks || !longStrokeFrameTicks.size) return;
+
+    const nowTick = getLongStrokeTick();
+    const endTick = (longStrokeEndTick == null) ? nowTick : longStrokeEndTick;
+    const windowStart = nowTick - trailFrames + 1;
+
+    const nextActive = new Set();
+    longStrokeFrameTicks.forEach((t, frameIdx) => {
+      if (t >= windowStart && t <= endTick) nextActive.add(frameIdx);
+    });
+
+    // Restore tiles that just fell out of the window
+    longStrokeActiveFrames.forEach(frameIdx => {
+      if (!nextActive.has(frameIdx)) {
+        restoreLongStrokeTileFromSnapshot(frameIdx);
+      }
+    });
+
+    // Re-render active tiles (they may need to update when window shifts)
+    nextActive.forEach(frameIdx => {
+      renderLongStrokeFrame(frameIdx);
+    });
+
+    longStrokeActiveFrames = nextActive;
+
+    // Cleanup when decay is done
+    if (longStrokeEndTick != null && longStrokeActiveFrames.size === 0) {
+      cancelLongStrokeTrail(false);
+    }
+  }
+
+  function cancelLongStrokeTrail(restore) {
+    stopLongStrokeDecayTimer();
+    if (restore && longStrokeSheetSnapshot) {
+      // Restore any tiles we touched or that are currently active
+      const tw = state.frameSheetTileW || 1;
+      const th = state.frameSheetTileH || 1;
+      const cols = state.frameSheetCols || 1;
+
+      const frames = new Set();
+      if (longStrokeTouchedFrames && longStrokeTouchedFrames.size) {
+        longStrokeTouchedFrames.forEach(f => frames.add(f));
+      }
+      if (longStrokeActiveFrames && longStrokeActiveFrames.size) {
+        longStrokeActiveFrames.forEach(f => frames.add(f));
+      }
+      if (longStrokeFrameTicks && longStrokeFrameTicks.size) {
+        longStrokeFrameTicks.forEach((_, f) => frames.add(f));
+      }
+
+      frames.forEach(frameIdx => {
+        const sx = (frameIdx % cols) * tw;
+        const sy = Math.floor(frameIdx / cols) * th;
+        frameSheetCtx.drawImage(longStrokeSheetSnapshot, sx, sy, tw, th, sx, sy, tw, th);
+      });
+    }
+
+    longStrokePath = [];
+    longStrokeLastFrame = -1;
+    longStrokeBaseHit = null;
+    lastPointerPos = null;
+
+    longStrokeSheetSnapshot = null;
+    longStrokeFrameTicks = new Map();
+    longStrokeActiveFrames = new Set();
+    longStrokeTouchedFrames = new Set();
+    longStrokeEndTick = null;
+  }
+
+  // Draw accumulated long stroke path on a specific frame (legacy mode only)
   function drawLongStrokeOnFrame(frameIdx) {
     if (longStrokePath.length < 1) return;
     ensureFrameSheet();
@@ -2700,60 +3509,84 @@ function resizeDrawCanvas() {
     const fadeFrames = state.longStrokeFade || 0;
     const pathLen = longStrokePath.length;
 
-    // Calculate start index based on fade
-    // If fadeFrames > 0, we only draw the last N points worth of path
+    // Calculate start index based on fade (points-based, legacy)
     let startIdx = 0;
-    if (fadeFrames > 0 && pathLen > fadeFrames * 10) { // Rough estimate: ~10 points per frame
+    if (fadeFrames > 0 && pathLen > fadeFrames * 10) {
       startIdx = Math.max(0, pathLen - fadeFrames * 10);
     }
 
     const bs = getBrushSizeFrame(longStrokeBaseHit);
 
+    let prevSp = null;
     for (let i = startIdx; i < longStrokePath.length; i++) {
       const pt = longStrokePath[i];
       const sp = sheetPoint(frameIdx, pt.u, pt.v);
 
-      if (i === startIdx) {
+      const brk = !!pt.brk || (i === startIdx);
+      if (brk || !prevSp) {
         drawDot(frameSheetCtx, sp, state.drawColor, bs, state.drawEraser);
       } else {
-        const prevPt = longStrokePath[i - 1];
-        const prevSp = sheetPoint(frameIdx, prevPt.u, prevPt.v);
         drawSmoothLine(frameSheetCtx, prevSp, sp, state.drawColor, bs, state.drawEraser);
       }
+      prevSp = sp;
     }
   }
 
-drawCanvas.onmouseup = () => {
-    if (isDrawing) {
-      isDrawing = false;
-      lastPoint = null;
-      
-      // Long Stroke cleanup
+  function endStroke() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    skipNextSegment = false;
+    lastPoint = null;
+
+    // Long Stroke cleanup / decay
+    if (state.drawLongStroke && getLongStrokeTrailFrames() > 0 && longStrokeSheetSnapshot) {
+      // Keep the trail around so it can decay over the next N frames
+      longStrokeEndTick = getLongStrokeTick();
+      startLongStrokeDecayTimer();
+    } else {
       longStrokePath = [];
       longStrokeLastFrame = -1;
       longStrokeBaseHit = null;
-      
-      if (state.drawTarget === 'frame' && activeFrameStroke) {
-        // final save already done during drawing
-        activeFrameStroke = null;
-      } else {
-        saveCurrentLayer();
-      }
+      lastPointerPos = null;
+      longStrokeSheetSnapshot = null;
+      longStrokeFrameTicks = new Map();
+      longStrokeActiveFrames = new Set();
+      longStrokeTouchedFrames = new Set();
+      longStrokeEndTick = null;
     }
+
+    if (state.drawTarget === 'frame' && activeFrameStroke) {
+      // final save already done during drawing
+      activeFrameStroke = null;
+    } else {
+      saveCurrentLayer();
+    }
+  }
+
+  drawCanvas.onmouseup = endStroke;
+  window.addEventListener('mouseup', endStroke, true);
+  window.addEventListener('blur', endStroke);
+
+  // Touch end/cancel should also finalize stroke
+  drawCanvas.ontouchend = e => {
+    if (state.drawMode) e.preventDefault();
+    endStroke();
+  };
+  drawCanvas.ontouchcancel = e => {
+    if (state.drawMode) e.preventDefault();
+    endStroke();
+  };
+
+  // Prevent iOS long-press context menu from interrupting drawing
+  drawCanvas.oncontextmenu = e => {
+    if (state.drawMode) e.preventDefault();
   };
   
   drawCanvas.onmouseleave = () => {
+    // Do NOT end stroke here. On iPad and during fast moves, leaving the canvas (or hitting a gap)
+    // can happen frequently. We just restart the segment when we return.
     if (isDrawing) {
-      isDrawing = false;
-      lastPoint = null;
-      longStrokePath = [];
-      longStrokeLastFrame = -1;
-      longStrokeBaseHit = null;
-      if (state.drawTarget === 'frame' && activeFrameStroke) {
-        activeFrameStroke = null;
-      } else {
-        saveCurrentLayer();
-      }
+      skipNextSegment = true;
     }
   };
   
@@ -2764,9 +3597,9 @@ drawCanvas.onmouseup = () => {
     e.preventDefault();
 
     drawUndoStack.push({
-      bg: state.bgDrawing ? new ImageData(new Uint8ClampedArray(state.bgDrawing.data), state.bgDrawing.width, state.bgDrawing.height) : null,
-      tpl: state.templateDrawing ? new ImageData(new Uint8ClampedArray(state.templateDrawing.data), state.templateDrawing.width, state.templateDrawing.height) : null,
-      sheet: (frameSheetCanvas.width && frameSheetCanvas.height) ? frameSheetCtx.getImageData(0, 0, frameSheetCanvas.width, frameSheetCanvas.height) : null
+      bg: (state.bgDrawing && canSnapshotCanvas(bgCanvas)) ? (_isCoarsePointer ? state.bgDrawing : new ImageData(new Uint8ClampedArray(state.bgDrawing.data), state.bgDrawing.width, state.bgDrawing.height)) : null,
+      tpl: (state.templateDrawing && canSnapshotCanvas(tplCanvas)) ? (_isCoarsePointer ? state.templateDrawing : new ImageData(new Uint8ClampedArray(state.templateDrawing.data), state.templateDrawing.width, state.templateDrawing.height)) : null,
+      sheet: (!_isCoarsePointer && canSnapshotCanvas(frameSheetCanvas)) ? frameSheetCtx.getImageData(0, 0, frameSheetCanvas.width, frameSheetCanvas.height) : null
     });
     if (drawUndoStack.length > 20) drawUndoStack.shift();
 
@@ -2791,12 +3624,36 @@ drawCanvas.onmouseup = () => {
       activeFrameStroke = { frameIdx: hit.frameIdx, lastSheet: sp };
       
       if (state.drawLongStroke) {
-        longStrokePath = [{ u, v }];
+        const _lsTrailFrames = getLongStrokeTrailFrames();
+
+        if (_lsTrailFrames > 0) {
+          startLongStrokeTrailSnapshot();
+
+          longStrokePath = [{ u, v, brk: true, t: getLongStrokeTick() }];
+          longStrokeLastFrame = hit.frameIdx;
+          longStrokeBaseHit = hit;
+          lastPointerPos = { x: pt.x, y: pt.y };
+          longStrokeEndTick = null;
+
+          longStrokeFrameTicks.set(hit.frameIdx, getLongStrokeTick());
+          longStrokeTouchedFrames.add(hit.frameIdx);
+          longStrokeActiveFrames.add(hit.frameIdx);
+          renderLongStrokeFrame(hit.frameIdx);
+          requestComposite();
+          if (typeof dbg === 'function') dbg(`Touch frame: idx=${hit.frameIdx}`);
+          return;
+        }
+
+        // Legacy long-stroke behavior
+        longStrokePath = [{ u, v, brk: true, t: getLongStrokeTick() }];
         longStrokeLastFrame = hit.frameIdx;
+        longStrokeBaseHit = hit;
+        lastPointerPos = { x: pt.x, y: pt.y };
+        longStrokeEndTick = null;
       }
       
       drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
-      compositeAllLayers();
+      requestComposite();
       if (typeof dbg === 'function') dbg(`Touch frame: idx=${hit.frameIdx}`);
       return;
     }
@@ -2804,57 +3661,102 @@ drawCanvas.onmouseup = () => {
     const target = getTargetCanvas();
     if (!target) return;
     drawDot(target.ctx, lastPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
-    compositeAllLayers();
+    requestComposite();
   };
   
   drawCanvas.ontouchmove = e => {
     if (!isDrawing || !lastPoint) return;
     e.preventDefault();
-
     const currentPoint = getCanvasPoint(e);
+    lastPointerPos = currentPoint;
+
+    if (skipNextSegment) {
+      // We temporarily lost a stable hit (e.g., in a gap or outside). Restart segment cleanly.
+      skipNextSegment = false;
+      if (state.drawTarget === 'frame' && activeFrameStroke) {
+        const hit0 = getFrameAtPoint(currentPoint);
+        if (!hit0) return;
+        ensureFrameSheet();
+        const u0 = Math.min(1, Math.max(0, hit0.localX / Math.max(1, hit0.width)));
+        const v0 = Math.min(1, Math.max(0, hit0.localY / Math.max(1, hit0.height)));
+        const sp0 = sheetPoint(hit0.frameIdx, u0, v0);
+        activeFrameStroke.frameIdx = hit0.frameIdx;
+        activeFrameStroke.lastSheet = sp0;
+        drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser);
+        lastPoint = currentPoint;
+        requestComposite();
+        return;
+      } else {
+        const t0 = getTargetCanvas();
+        if (!t0) return;
+        drawDot(t0.ctx, currentPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
+        lastPoint = currentPoint;
+        requestComposite();
+        return;
+      }
+    }
 
     // Frame sheet mode (same as mouse)
     if (state.drawTarget === 'frame' && activeFrameStroke) {
       const hit = getFrameAtPoint(currentPoint);
-      if (!hit) {
-        lastPoint = currentPoint;
-        return;
-      }
+      if (!hit) { skipNextSegment = true; return; }
       ensureFrameSheet();
       
       const u = Math.min(1, Math.max(0, hit.localX / Math.max(1, hit.width)));
       const v = Math.min(1, Math.max(0, hit.localY / Math.max(1, hit.height)));
       const sp = sheetPoint(hit.frameIdx, u, v);
-      
-      // Long Stroke mode
+      const _lsFrameChanged = state.drawLongStroke && (hit.frameIdx !== longStrokeLastFrame);
+
+      // Long Stroke mode: collect UV points, add a break marker when the frame changes
       if (state.drawLongStroke) {
-        longStrokePath.push({ u, v });
+        const _lsTick = state.isPlaying ? getLongStrokeTick() : advanceLongStrokeTick();
+        longStrokePath.push({ u, v, brk: _lsFrameChanged, t: _lsTick });
+        // Keep memory bounded
+        if (longStrokePath.length > 5000) longStrokePath = longStrokePath.slice(-5000);
+
+        // Trail mode: keep only last N frames visible (state.longStrokeFade)
+        if (getLongStrokeTrailFrames() > 0) {
+          if (!longStrokeSheetSnapshot) startLongStrokeTrailSnapshot();
+          longStrokeEndTick = null;
+          longStrokeFrameTicks.set(hit.frameIdx, _lsTick);
+          longStrokeTouchedFrames.add(hit.frameIdx);
+          longStrokeActiveFrames.add(hit.frameIdx);
+          renderLongStrokeFrame(hit.frameIdx);
+
+          if (hit.frameIdx !== longStrokeLastFrame) longStrokeLastFrame = hit.frameIdx;
+
+          activeFrameStroke.frameIdx = hit.frameIdx;
+          activeFrameStroke.lastSheet = sp;
+          lastPoint = currentPoint;
+          requestComposite();
+          return;
+        }
       }
-      
-      // Long Stroke: when frame changes, draw accumulated path
-      if (state.drawLongStroke && hit.frameIdx !== longStrokeLastFrame && longStrokePath.length > 0) {
-        drawLongStrokeOnFrame(hit.frameIdx);
-        longStrokeLastFrame = hit.frameIdx;
+
+
+      // When cursor moves to different cell: cut stroke.
+      // In Long Stroke mode we also "stamp" the accumulated path onto the new frame,
+      // so the stroke becomes a real trail across animated frames.
+      const _frameChanged = (hit.frameIdx !== activeFrameStroke.frameIdx);
+
+      if (_frameChanged) {
+        if (state.drawLongStroke) {
+          drawLongStrokeOnFrame(hit.frameIdx);
+          longStrokeLastFrame = hit.frameIdx;
+        } else {
+          drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+        }
         activeFrameStroke.frameIdx = hit.frameIdx;
         activeFrameStroke.lastSheet = sp;
         lastPoint = currentPoint;
-        compositeAllLayers();
+        requestComposite();
         return;
       }
-      
-      if (hit.frameIdx !== activeFrameStroke.frameIdx) {
-        activeFrameStroke.frameIdx = hit.frameIdx;
-        activeFrameStroke.lastSheet = sp;
-        drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
-        lastPoint = currentPoint;
-        compositeAllLayers();
-        return;
-      }
-      
+
       drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
       activeFrameStroke.lastSheet = sp;
       lastPoint = currentPoint;
-      compositeAllLayers();
+      requestComposite();
       return;
     }
 
@@ -2862,22 +3764,9 @@ drawCanvas.onmouseup = () => {
     if (!target) return;
     drawSmoothLine(target.ctx, lastPoint, currentPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
     lastPoint = currentPoint;
-    compositeAllLayers();
+    requestComposite();
   };
   
-  drawCanvas.ontouchend = () => {
-    if (isDrawing) {
-      isDrawing = false;
-      lastPoint = null;
-      longStrokePath = [];
-      longStrokeLastFrame = -1;
-      if (state.drawTarget === 'frame' && activeFrameStroke) {
-        activeFrameStroke = null;
-      } else {
-        saveCurrentLayer();
-      }
-    }
-  };
   
   function toggleOnionSkin() {
     state.drawOnion = !state.drawOnion;
@@ -2893,7 +3782,121 @@ drawCanvas.onmouseup = () => {
         c.classList.add('active');
       }
     });
+    const norm = color.toLowerCase();
+    state.recentColors = state.recentColors.filter(c => c.toLowerCase() !== norm);
+    state.recentColors.unshift(norm);
+    if (state.recentColors.length > 7) state.recentColors.length = 7;
+    try { localStorage.setItem('fg_recentColors', JSON.stringify(state.recentColors)); } catch(e) {}
+    renderRecentColors();
   }
+
+  // Load recent colors from localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem('fg_recentColors') || '[]');
+    if (Array.isArray(saved)) state.recentColors = saved.slice(0, 7);
+  } catch(e) {}
+
+  function renderRecentColors() {
+    const row = document.getElementById('recentColorsRow');
+    if (!row) return;
+    row.innerHTML = '';
+    state.recentColors.forEach(c => {
+      const swatch = document.createElement('div');
+      swatch.style.cssText = `background:${c};width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,0.15);flex-shrink:0;`;
+      swatch.onclick = () => setDrawColor(c);
+      row.appendChild(swatch);
+    });
+  }
+
+  // Eyedropper: pick color from canvas
+  const drawEyedropperBtn = document.getElementById('drawEyedropper');
+  let eyedropperActive = false;
+  if (drawEyedropperBtn) {
+    drawEyedropperBtn.onclick = () => {
+      eyedropperActive = !eyedropperActive;
+      drawEyedropperBtn.classList.toggle('active', eyedropperActive);
+      drawCanvas.style.cursor = eyedropperActive ? 'crosshair' : (state.drawEraser ? 'cell' : 'default');
+    };
+  }
+
+  // Video palette: extract dominant colors from video frames using k-means
+  function generateVideoPalette() {
+    if (!state.frames.length) return;
+    const sampleCount = Math.min(8, state.frames.length);
+    const step = Math.max(1, Math.floor(state.frames.length / sampleCount));
+    const pixels = [];
+    const sCanvas = document.createElement('canvas');
+    const sCtx = sCanvas.getContext('2d', { willReadFrequently: true });
+    sCanvas.width = 32; sCanvas.height = 32; // small sample
+
+    for (let i = 0; i < state.frames.length; i += step) {
+      const img = new Image();
+      img.src = state.frames[i].dataUrl;
+      try {
+        sCtx.drawImage(img, 0, 0, 32, 32);
+        const data = sCtx.getImageData(0, 0, 32, 32).data;
+        for (let p = 0; p < data.length; p += 16) { // sample every 4th pixel
+          pixels.push([data[p], data[p+1], data[p+2]]);
+        }
+      } catch(e) {}
+    }
+    if (!pixels.length) return;
+
+    // Simple k-means clustering
+    const k = 10;
+    let centers = [];
+    for (let i = 0; i < k; i++) centers.push(pixels[Math.floor(Math.random() * pixels.length)].slice());
+    
+    for (let iter = 0; iter < 15; iter++) {
+      const clusters = Array.from({length: k}, () => []);
+      pixels.forEach(px => {
+        let minD = Infinity, best = 0;
+        centers.forEach((c, ci) => {
+          const d = (px[0]-c[0])**2 + (px[1]-c[1])**2 + (px[2]-c[2])**2;
+          if (d < minD) { minD = d; best = ci; }
+        });
+        clusters[best].push(px);
+      });
+      centers = clusters.map((cl, ci) => {
+        if (!cl.length) return centers[ci];
+        const avg = [0,0,0];
+        cl.forEach(p => { avg[0]+=p[0]; avg[1]+=p[1]; avg[2]+=p[2]; });
+        return avg.map(v => Math.round(v / cl.length));
+      });
+    }
+
+    // Sort by luminance, filter out near-duplicates
+    const colors = centers
+      .map(c => ({ r: c[0], g: c[1], b: c[2], lum: c[0]*0.299 + c[1]*0.587 + c[2]*0.114 }))
+      .sort((a, b) => a.lum - b.lum)
+      .filter((c, i, arr) => {
+        if (i === 0) return true;
+        const prev = arr[i-1];
+        return Math.abs(c.lum - prev.lum) > 15 || Math.abs(c.r - prev.r) + Math.abs(c.g - prev.g) + Math.abs(c.b - prev.b) > 40;
+      });
+
+    state.videoPalette = colors.map(c => `#${[c.r,c.g,c.b].map(v => v.toString(16).padStart(2,'0')).join('')}`);
+    renderVideoPalette();
+  }
+
+  function renderVideoPalette() {
+    const row = document.getElementById('videoPaletteRow');
+    if (!row) return;
+    row.innerHTML = '';
+    row.style.display = state.videoPalette.length ? 'flex' : 'none';
+    state.videoPalette.forEach(c => {
+      const swatch = document.createElement('div');
+      swatch.className = 'draw-color';
+      swatch.style.cssText = `background:${c};width:20px;height:20px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);`;
+      swatch.onclick = () => setDrawColor(c);
+      row.appendChild(swatch);
+    });
+  }
+
+  // Video palette auto-generates when frames are loaded
+  renderRecentColors();
+  const genVideoPaletteBtn = document.getElementById('genVideoPalette');
+  if (genVideoPaletteBtn) genVideoPaletteBtn.onclick = generateVideoPalette;
   
   function setDrawTarget(target) {
     // Persist current layer before switching
@@ -2923,6 +3926,7 @@ drawCanvas.onmouseup = () => {
   };
   
   drawClear.onclick = () => {
+    cancelLongStrokeTrail(true);
     // Clear only current target
     if (state.drawTarget === 'background') {
       bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
@@ -2940,10 +3944,11 @@ drawCanvas.onmouseup = () => {
       if (typeof dbg === 'function') dbg('Cleared FRM');
     }
     drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-    compositeAllLayers();
+    requestComposite();
   };
   
   drawUndo.onclick = () => {
+    cancelLongStrokeTrail(true);
     if (drawUndoStack.length) {
       const prev = drawUndoStack.pop();
       if (prev.bg) {
@@ -2980,6 +3985,10 @@ drawCanvas.onmouseup = () => {
   drawLongStrokeBtn.onclick = () => {
     state.drawLongStroke = !state.drawLongStroke;
     drawLongStrokeBtn.classList.toggle('active', state.drawLongStroke);
+    if (!state.drawLongStroke) {
+      cancelLongStrokeTrail(true);
+      requestComposite();
+    }
   };
   drawColorInput.oninput = () => setDrawColor(drawColorInput.value);
   
@@ -2989,6 +3998,19 @@ drawCanvas.onmouseup = () => {
     drawSizeDot.style.height = Math.min(state.drawSize, 16) + 'px';
   };
   drawSizeSlider.oninput();
+  
+  const drawOpacitySlider = $('drawOpacitySlider'), drawOpacityValue = $('drawOpacityValue');
+  function updateOpacity(val) {
+    state.drawOpacity = Math.max(0.05, Math.min(1, val));
+    if (drawOpacitySlider) drawOpacitySlider.value = Math.round(state.drawOpacity * 100);
+    if (drawOpacityValue) drawOpacityValue.textContent = `${Math.round(state.drawOpacity * 100)}%`;
+  }
+  if (drawOpacitySlider) {
+    drawOpacitySlider.oninput = () => updateOpacity(parseInt(drawOpacitySlider.value) / 100);
+  }
+  const drawOpacityMinus = $('drawOpacityMinus'), drawOpacityPlus = $('drawOpacityPlus');
+  if (drawOpacityMinus) drawOpacityMinus.onclick = () => updateOpacity((state.drawOpacity || 1) - 0.1);
+  if (drawOpacityPlus) drawOpacityPlus.onclick = () => updateOpacity((state.drawOpacity || 1) + 0.1);
   
   drawColors.forEach(el => {
     el.onclick = () => setDrawColor(el.dataset.color);
@@ -3114,18 +4136,17 @@ drawCanvas.onmouseup = () => {
       toggleExportDraw.classList.toggle('active', state.exportDrawings);
     };
   }
+
+  if (toggleExportMetadata) {
+    toggleExportMetadata.onclick = () => {
+      state.exportShowMetadata = !state.exportShowMetadata;
+      toggleExportMetadata.classList.toggle('active', state.exportShowMetadata);
+    };
+    toggleExportMetadata.classList.toggle('active', state.exportShowMetadata);
+  }
   
   // Resize draw canvas when grid changes
-  const origRenderGrid = renderGrid;
-  renderGrid = function() {
-    origRenderGrid();
-    if (state.drawMode) {
-      setTimeout(() => {
-        resizeDrawCanvas();
-        compositeAllLayers();
-      }, 50);
-    }
-  };
+  // renderGrid draw canvas resize now integrated directly
 
   // GIF Grid Export - animated grid like JPEG but with looping frames
   async function exportGifGrid() {
@@ -3142,7 +4163,7 @@ drawCanvas.onmouseup = () => {
     const rows = Math.ceil(total / state.gridCols);
     const frameAspect = state.videoWidth / state.videoHeight;
     const gap = state.spacing;
-    const headerH = state.showMetadata ? 72 : 0;
+    const headerH = state.exportShowMetadata ? 72 : 0;
 
     let baseFrameW = 300;
     let baseFrameH = Math.round(baseFrameW / frameAspect);
@@ -3199,17 +4220,17 @@ drawCanvas.onmouseup = () => {
       ctx.fillStyle = state.bgColor;
       ctx.fillRect(0, 0, totalW, totalH);
 
-      if (state.showMetadata) {
+      if (state.exportShowMetadata) {
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, totalW, headerH);
         ctx.fillStyle = '#35f2a3';
         ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
         ctx.fillStyle = '#fff';
         ctx.font = `700 ${headerFontSize}px system-ui`;
-        ctx.fillText('FRAMEGRID v0.15', 22, headerH * 0.65);
+        ctx.fillText('FRAMEGRID v0.19d', 22, headerH * 0.65);
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = `${headerFontSize}px system-ui`;
-        const logoWidth = ctx.measureText('FRAMEGRID v0.15').width;
+        const logoWidth = ctx.measureText('FRAMEGRID v0.19d').width;
         const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
         const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${dateStr}`;
         ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
@@ -3244,9 +4265,9 @@ drawCanvas.onmouseup = () => {
           const frame = state.frames[animFrameIdx];
           const img = frameImages[animFrameIdx];
 
-          ctx.drawImage(img, x, y, frameW, frameH);
+          drawFrameCell(ctx, img, x, y, frameW, frameH);
 
-          if (state.showTimecode) {
+          if (computeShowTimecode()) {
             const padding = Math.round(4 * fontScale);
             const tcH = tcFontSize + padding * 2;
             const tcY = state.tcPosition === 'top' ? y : y + frameH - tcH;
@@ -3256,7 +4277,7 @@ drawCanvas.onmouseup = () => {
             ctx.font = `${tcFontSize}px system-ui`;
             ctx.textAlign = state.tcAlign;
             const textX = state.tcAlign === 'left' ? x + padding : state.tcAlign === 'right' ? x + frameW - padding : x + frameW / 2;
-            ctx.fillText(`${formatTime(frame.time)} / F${frame.frameNumber}`, textX, tcY + tcFontSize + padding - 2);
+            ctx.fillText(formatTimecode(frame, cellIndex, cellCount) || '', textX, tcY + tcFontSize + padding - 2);
             ctx.textAlign = 'left';
           }
           cellIndex++;
@@ -3295,7 +4316,7 @@ drawCanvas.onmouseup = () => {
     const maxSize = 2048;
     let gifWidth = Math.min(maxSize, state.videoWidth);
     let gifHeight = Math.round(gifWidth / frameAspect);
-    const headerH = state.showMetadata ? 48 : 0;
+    const headerH = state.exportShowMetadata ? 48 : 0;
     const totalHeight = gifHeight + headerH;
     
     if (totalHeight > maxSize) {
@@ -3332,24 +4353,24 @@ drawCanvas.onmouseup = () => {
           ctx.fillStyle = state.bgColor;
           ctx.fillRect(0, 0, gifWidth, gifHeight + headerH);
           
-          if (state.showMetadata) {
+          if (state.exportShowMetadata) {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, gifWidth, headerH);
             ctx.fillStyle = '#35f2a3';
             ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
             ctx.fillStyle = '#fff';
             ctx.font = `700 ${headerFontSize}px system-ui`;
-            ctx.fillText('FRAMEGRID v0.15', 22, headerH * 0.65);
+            ctx.fillText('FRAMEGRID v0.19d', 22, headerH * 0.65);
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.font = `${headerFontSize}px system-ui`;
-            const logoWidth = ctx.measureText('FRAMEGRID v0.15').width;
+            const logoWidth = ctx.measureText('FRAMEGRID v0.19d').width;
             const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · Frame ${i + 1}/${state.frames.length}`;
             ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
           }
           
-          ctx.drawImage(img, 0, headerH, gifWidth, gifHeight);
+          drawFrameCell(ctx, img, 0, headerH, gifWidth, gifHeight);
           
-          if (state.showTimecode) {
+          if (computeShowTimecode()) {
             const tcH = tcFontSize * 2;
             const tcY = state.tcPosition === 'top' ? headerH : headerH + gifHeight - tcH;
             ctx.fillStyle = `rgba(${r},${g},${b},${state.tcOpacity})`;
@@ -3358,7 +4379,7 @@ drawCanvas.onmouseup = () => {
             ctx.font = `${tcFontSize}px system-ui`;
             ctx.textAlign = state.tcAlign;
             const textX = state.tcAlign === 'left' ? 8 : state.tcAlign === 'right' ? gifWidth - 8 : gifWidth / 2;
-            ctx.fillText(`${formatTime(frame.time)} / F${frame.frameNumber}`, textX, tcY + tcFontSize + 4);
+            ctx.fillText(formatTimecode(frame, i, state.frames.length) || '', textX, tcY + tcFontSize + 4);
             ctx.textAlign = 'left';
           }
           
@@ -3395,7 +4416,9 @@ drawCanvas.onmouseup = () => {
   }
 
   // MP4 Export using mp4-muxer for true MP4 (H.264)
-  async function exportMp4(mode) {
+  async function exportMp4(mode, opts = {}) {
+    const drawingsOnly = !!(opts && opts.drawingsOnly);
+
     if (!state.frames.length) return;
     
     loadingOverlay.classList.add('visible');
@@ -3414,8 +4437,8 @@ drawCanvas.onmouseup = () => {
     const gap = state.spacing;
     
     // Quality settings - actual pixel sizes
-    const qualityMap = { low: 540, medium: 720, high: 2160, max: Math.max(state.videoWidth, state.videoHeight) };
-    const maxSize = qualityMap[state.exportQuality] || 720;
+    const qualityMap = { low: 540, medium: 720, hd: 1080, high: 2160, max: Math.max(state.videoWidth, state.videoHeight) };
+    const maxSize = qualityMap[state.exportQuality] || 1080;
     
     let canvasW, canvasH;
     
@@ -3425,7 +4448,7 @@ drawCanvas.onmouseup = () => {
       let baseFrameH = Math.round(baseFrameW / frameAspect);
       let gridW = state.gridCols * baseFrameW + (state.gridCols + 1) * gap;
       let gridH = rows * baseFrameH + (rows + 1) * gap;
-      const headerH = state.showMetadata ? 48 : 0;
+      const headerH = state.exportShowMetadata ? 48 : 0;
       canvasW = gridW;
       canvasH = headerH + gridH;
       // Scale down if needed
@@ -3436,7 +4459,7 @@ drawCanvas.onmouseup = () => {
       }
     } else {
       canvasW = Math.min(maxSize, state.videoWidth);
-      canvasH = Math.round(canvasW / frameAspect) + (state.showMetadata ? 36 : 0);
+      canvasH = Math.round(canvasW / frameAspect) + (state.exportShowMetadata ? 36 : 0);
     }
     
     // Dimensions must be even for H.264
@@ -3448,16 +4471,16 @@ drawCanvas.onmouseup = () => {
     canvas.height = canvasH;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     
-    loadingProgress.textContent = 'Loading frames...';
-    const frameImages = await Promise.all(state.frames.map(f => {
+    loadingProgress.textContent = drawingsOnly ? 'Preparing drawings export...' : 'Loading frames...';
+    const frameImages = drawingsOnly ? null : await Promise.all(state.frames.map(f => {
       return new Promise(resolve => {
         const img = new Image();
         img.onload = () => resolve(img);
         img.src = f.dataUrl;
       });
     }));
-    
-    // Generate animation sequence
+
+// Generate animation sequence
     let sequence = [];
     const frameCount = state.frames.length;
     if (state.animDirection === 'forward') {
@@ -3518,9 +4541,11 @@ drawCanvas.onmouseup = () => {
     
     // Configure encoder with fallback
     const codecConfigs = [
-      { codec: 'avc1.42001f', width: canvasW, height: canvasH, bitrate: 2000000, framerate: state.animFps }, // Baseline
-      { codec: 'avc1.4d001f', width: canvasW, height: canvasH, bitrate: 3000000, framerate: state.animFps }, // Main
-      { codec: 'avc1.640028', width: canvasW, height: canvasH, bitrate: 4000000, framerate: state.animFps }, // High
+      { codec: 'avc1.640033', width: canvasW, height: canvasH, bitrate: 8000000, framerate: state.animFps }, // High L5.1 (up to 4K)
+      { codec: 'avc1.640028', width: canvasW, height: canvasH, bitrate: 6000000, framerate: state.animFps }, // High L4.0
+      { codec: 'avc1.4d0033', width: canvasW, height: canvasH, bitrate: 5000000, framerate: state.animFps }, // Main L5.1
+      { codec: 'avc1.4d001f', width: canvasW, height: canvasH, bitrate: 4000000, framerate: state.animFps }, // Main L3.1
+      { codec: 'avc1.42001f', width: canvasW, height: canvasH, bitrate: 3000000, framerate: state.animFps }, // Baseline
     ];
     
     let configured = false;
@@ -3552,9 +4577,9 @@ drawCanvas.onmouseup = () => {
       ctx.fillRect(0, 0, canvasW, canvasH);
       
       if (mode === 'grid') {
-        renderMp4GridFrame(ctx, canvasW, canvasH, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b);
+        renderMp4GridFrame(ctx, canvasW, canvasH, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, drawingsOnly);
       } else {
-        renderMp4SingleFrame(ctx, canvasW, canvasH, frameImages, sequence[tick], r, g, b);
+        renderMp4SingleFrame(ctx, canvasW, canvasH, frameImages, sequence[tick], r, g, b, drawingsOnly);
       }
       
       // Create VideoFrame and encode
@@ -3587,14 +4612,14 @@ drawCanvas.onmouseup = () => {
     const name = (state.videoFile?.name || 'export').replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 20);
     const now = new Date();
     const date = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}${String(now.getFullYear()).slice(-2)}`;
-    link.download = `${name}_FG_${mode}_${state.frames.length}f_${state.animFps}fps_${date}.mp4`;
+    link.download = `${name}_FG_${mode}${drawingsOnly ? '_drawings' : ''}_${state.frames.length}f_${state.animFps}fps_${date}.mp4`;
     link.href = URL.createObjectURL(blob);
     link.click();
     URL.revokeObjectURL(link.href);
   }
   
-  function renderMp4GridFrame(ctx, w, h, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b) {
-    const headerH = state.showMetadata ? 48 : 0;
+  function renderMp4GridFrame(ctx, w, h, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, drawingsOnly = false) {
+    const headerH = state.exportShowMetadata ? 48 : 0;
     const gridH = h - headerH;
     const gap = state.spacing;
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
@@ -3607,11 +4632,11 @@ drawCanvas.onmouseup = () => {
     const frameCount = state.frames.length;
     
     // Header - same style as JPEG/PNG
-    if (state.showMetadata && headerH > 0) {
+    if (state.exportShowMetadata && headerH > 0) {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.15';
+      const logoText = 'FRAMEGRID v0.19d';
       const dateStr = state.videoDate ? formatDate(state.videoDate) : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const metaText = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${frameCount}f${cellInfo}${dateStr ? ' · ' + dateStr : ''}`;
@@ -3649,14 +4674,18 @@ drawCanvas.onmouseup = () => {
       const y = headerH + gap + row * (frameH + gap);
       
       const cellOrderIdx = cellOrder.indexOf(c);
-      // Animation goes through ALL frames
-      const animFrameIdx = (cellOrderIdx + sequence[tick % sequence.length]) % frameCount;
+      // Loop phases: same formula as updateAllCells
+      const phaseCount = Math.max(1, state.gridLoops || 1);
+      const cellOffset = Math.floor(cellOrderIdx * frameCount * phaseCount / Math.max(1, cellCount)) % frameCount;
+      const animFrameIdx = (sequence[tick % sequence.length] + cellOffset) % frameCount;
       const frame = state.frames[animFrameIdx];
       const img = frameImages[animFrameIdx];
       
-      if (img) ctx.drawImage(img, x, y, frameW, frameH);
+      if (!drawingsOnly && img) drawFrameCell(ctx, img, x, y, frameW, frameH);
+      // Drawings overlay (optional)
+      drawExportDrawings(ctx, x, y, frameW, frameH, animFrameIdx);
       
-      if (state.showTimecode && frame) {
+      if (computeShowTimecode() && frame) {
         const tcH = tcFontSize + 6;
         let tcY;
         if (state.tcPosition === 'top') tcY = y;
@@ -3668,14 +4697,57 @@ drawCanvas.onmouseup = () => {
         ctx.font = `${tcFontSize}px system-ui`;
         ctx.textAlign = state.tcAlign || 'left';
         const tcX = state.tcAlign === 'center' ? x + frameW / 2 : state.tcAlign === 'right' ? x + frameW - 3 : x + 3;
-        ctx.fillText(`${formatTime(frame.time)}`, tcX, tcY + tcFontSize);
+        ctx.fillText(formatTimecode(frame, c, cellCount) || '', tcX, tcY + tcFontSize);
         ctx.textAlign = 'left';
       }
     }
   }
   
-  function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b) {
-    const headerH = state.showMetadata ? 36 : 0;
+  
+  function drawExportDrawings(ctx, x, y, w, h, frameIdx) {
+    if (!state.exportDrawings) return;
+
+    // Template layer (same for every frame)
+    if (tplCanvas && tplCanvas.width && tplCanvas.height) {
+      ctx.drawImage(tplCanvas, x, y, w, h);
+    }
+
+    // Per-frame layer (frame sheet)
+    if (frameSheetCanvas && frameSheetCanvas.width && frameSheetCanvas.height) {
+      const tw = state.frameSheetTileW || 1;
+      const th = state.frameSheetTileH || 1;
+      const cols = state.frameSheetCols || 1;
+      if (tw > 0 && th > 0 && cols > 0 && Number.isFinite(frameIdx)) {
+        const sx = (frameIdx % cols) * tw;
+        const sy = Math.floor(frameIdx / cols) * th;
+        ctx.drawImage(frameSheetCanvas, sx, sy, tw, th, x, y, w, h);
+      }
+    }
+  }
+
+  function drawFrameCell(ctx, img, x, y, w, h) {
+    if (!img) return;
+    const s = Number(state.frameImgScale) || 1;
+    const ox = (Number(state.frameImgOffX) || 0) * 0.01 * w;
+    const oy = (Number(state.frameImgOffY) || 0) * 0.01 * h;
+
+    const dw = w * s;
+    const dh = h * s;
+    const dx = x + (w - dw) / 2 + ox;
+    const dy = y + (h - dh) / 2 + oy;
+
+    ctx.save();
+    ctx.fillStyle = String(state.frameBgColor || '#111111');
+    ctx.fillRect(x, y, w, h);
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.drawImage(img, dx, dy, dw, dh);
+    ctx.restore();
+  }
+
+function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawingsOnly = false) {
+    const headerH = state.exportShowMetadata ? 36 : 0;
     const frameH = h - headerH;
     const frame = state.frames[frameIdx];
     const img = frameImages[frameIdx];
@@ -3683,11 +4755,11 @@ drawCanvas.onmouseup = () => {
     const frameCount = state.frames.length;
     
     // Header - same style as JPEG/PNG
-    if (state.showMetadata) {
+    if (state.exportShowMetadata) {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.15';
+      const logoText = 'FRAMEGRID v0.19d';
       const metaText = `${state.videoFile?.name || 'video'} · Frame ${frameIdx + 1}/${frameCount} · ${formatTime(frame.time)}`;
       
       // Auto-fit font size
@@ -3715,9 +4787,11 @@ drawCanvas.onmouseup = () => {
       ctx.fillText(' · ' + metaText, 8 + dotSize + 6 + logoWidth, headerH * 0.65);
     }
     
-    ctx.drawImage(img, 0, headerH, w, frameH);
+    if (!drawingsOnly && img) drawFrameCell(ctx, img, 0, headerH, w, frameH);
+    // Drawings overlay (optional)
+    drawExportDrawings(ctx, 0, headerH, w, frameH, frameIdx);
     
-    if (state.showTimecode) {
+    if (computeShowTimecode()) {
       const tcH = tcFontSize * 2;
       let tcY;
       if (state.tcPosition === 'top') tcY = headerH;
@@ -3729,12 +4803,165 @@ drawCanvas.onmouseup = () => {
       ctx.font = `${tcFontSize}px system-ui`;
       ctx.textAlign = state.tcAlign || 'left';
       const tcX = state.tcAlign === 'center' ? w / 2 : state.tcAlign === 'right' ? w - 8 : 8;
-      ctx.fillText(`${formatTime(frame.time)} / F${frame.frameNumber}`, tcX, tcY + tcFontSize + 2);
+      ctx.fillText(formatTimecode(frame, frameIdx, state.frames.length) || '', tcX, tcY + tcFontSize + 2);
       ctx.textAlign = 'left';
     }
   }
 
   // EXPORT
+  // Export drawing layers as PNG sequence with alpha
+  async function exportPngSeqDrawings() {
+    if (!state.frames.length) return;
+    loadingOverlay.classList.add('visible');
+    loadingProgress.textContent = 'Exporting drawings...';
+    
+    const frameCount = state.frames.length;
+    ensureFrameSheet();
+    const tw = state.frameSheetTileW || 512;
+    const th = state.frameSheetTileH || 288;
+    const sheetCols = state.frameSheetCols || state.gridCols || 1;
+    
+    // Output at video resolution
+    const outW = state.videoWidth || tw;
+    const outH = state.videoHeight || th;
+    
+    const pngs = [];
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = outW;
+    tmpCanvas.height = outH;
+    const tmpCtx = tmpCanvas.getContext('2d');
+    
+    for (let i = 0; i < frameCount; i++) {
+      tmpCtx.clearRect(0, 0, outW, outH);
+      
+      // Extract this frame's tile from the frame sheet, scale to video res
+      if (frameSheetCanvas.width > 0 && frameSheetCanvas.height > 0) {
+        const col = i % sheetCols;
+        const row = Math.floor(i / sheetCols);
+        const sx = col * tw;
+        const sy = row * th;
+        tmpCtx.drawImage(frameSheetCanvas, sx, sy, tw, th, 0, 0, outW, outH);
+      }
+      
+      // Overlay template drawing (tplCanvas is per-frame size, just scale)
+      if (tplCanvas.width > 0 && tplCanvas.height > 0) {
+        tmpCtx.drawImage(tplCanvas, 0, 0, tplCanvas.width, tplCanvas.height, 0, 0, outW, outH);
+      }
+      
+      const blob = await new Promise(r => tmpCanvas.toBlob(r, 'image/png'));
+      pngs.push({ name: `draw_${String(i).padStart(4, '0')}.png`, blob });
+      loadingProgress.textContent = `Frame ${i + 1}/${frameCount}`;
+    }
+    
+    // If only 1 frame, download directly
+    if (pngs.length === 1) {
+      const url = URL.createObjectURL(pngs[0].blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = pngs[0].name;
+      a.click();
+      URL.revokeObjectURL(url);
+      loadingOverlay.classList.remove('visible');
+      return;
+    }
+    
+    // Multiple frames: create ZIP
+    loadingProgress.textContent = 'Creating ZIP...';
+    
+    // Minimal ZIP builder (no external library)
+    function createZip(files) {
+      const encoder = new TextEncoder();
+      const parts = [];
+      const centralDir = [];
+      let offset = 0;
+
+      for (const file of files) {
+        const name = encoder.encode(file.name);
+        const data = new Uint8Array(file.data);
+        // Local file header
+        const header = new Uint8Array(30 + name.length);
+        const hv = new DataView(header.buffer);
+        hv.setUint32(0, 0x04034b50, true); // sig
+        hv.setUint16(4, 20, true); // version needed
+        hv.setUint16(6, 0, true); // flags
+        hv.setUint16(8, 0, true); // compression: store
+        hv.setUint16(10, 0, true); // mod time
+        hv.setUint16(12, 0, true); // mod date
+        hv.setUint32(14, file.crc, true); // crc32
+        hv.setUint32(18, data.length, true); // compressed size
+        hv.setUint32(22, data.length, true); // uncompressed size
+        hv.setUint16(26, name.length, true); // name length
+        header.set(name, 30);
+
+        // Central directory entry
+        const cde = new Uint8Array(46 + name.length);
+        const cv = new DataView(cde.buffer);
+        cv.setUint32(0, 0x02014b50, true);
+        cv.setUint16(4, 20, true);
+        cv.setUint16(6, 20, true);
+        cv.setUint16(8, 0, true);
+        cv.setUint16(10, 0, true);
+        cv.setUint16(12, 0, true);
+        cv.setUint16(14, 0, true);
+        cv.setUint32(16, file.crc, true);
+        cv.setUint32(20, data.length, true);
+        cv.setUint32(24, data.length, true);
+        cv.setUint16(28, name.length, true);
+        cv.setUint32(42, offset, true); // local header offset
+        cde.set(name, 46);
+
+        parts.push(header, data);
+        centralDir.push(cde);
+        offset += header.length + data.length;
+      }
+
+      const cdOffset = offset;
+      let cdSize = 0;
+      centralDir.forEach(c => cdSize += c.length);
+
+      // End of central directory
+      const eocd = new Uint8Array(22);
+      const ev = new DataView(eocd.buffer);
+      ev.setUint32(0, 0x06054b50, true);
+      ev.setUint16(8, files.length, true);
+      ev.setUint16(10, files.length, true);
+      ev.setUint32(12, cdSize, true);
+      ev.setUint32(16, cdOffset, true);
+
+      return new Blob([...parts, ...centralDir, eocd], { type: 'application/zip' });
+    }
+
+    // CRC32 table
+    const crcTable = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      crcTable[n] = c;
+    }
+    function crc32(data) {
+      let crc = 0xFFFFFFFF;
+      for (let i = 0; i < data.length; i++) crc = crcTable[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    const zipFiles = [];
+    for (let i = 0; i < pngs.length; i++) {
+      const ab = await pngs[i].blob.arrayBuffer();
+      const data = new Uint8Array(ab);
+      zipFiles.push({ name: pngs[i].name, data, crc: crc32(data) });
+    }
+    const zipBlob = createZip(zipFiles);
+    const name = state.videoFile?.name?.replace(/\.[^.]+$/, '') || 'video';
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}_drawings_${frameCount}f.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    loadingOverlay.classList.remove('visible');
+  }
+
   function exportImage(format, maxSize) {
     if (!state.frames.length) return;
 
@@ -3744,7 +4971,7 @@ drawCanvas.onmouseup = () => {
     const rows = Math.ceil(total / state.gridCols);
     const frameAspect = state.videoWidth / state.videoHeight;
     const gap = state.spacing;
-    const headerH = state.showMetadata ? 72 : 0;
+    const headerH = state.exportShowMetadata ? 72 : 0;
 
     const screenGridWidth = framesGrid.offsetWidth || 600;
     const screenFrameW = (screenGridWidth - (state.gridCols + 1) * gap) / state.gridCols;
@@ -3780,7 +5007,7 @@ drawCanvas.onmouseup = () => {
     ctx.fillRect(0, 0, totalW, totalH);
 
     // Header
-    if (state.showMetadata) {
+    if (state.exportShowMetadata) {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, totalW, headerH);
       
@@ -3789,11 +5016,11 @@ drawCanvas.onmouseup = () => {
       
       ctx.fillStyle = '#fff';
       ctx.font = `700 ${headerFontSize}px system-ui`;
-      ctx.fillText('FRAMEGRID v0.15', 22, headerH * 0.65);
+      ctx.fillText('FRAMEGRID v0.19d', 22, headerH * 0.65);
       
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.font = `${headerFontSize}px system-ui`;
-      const logoWidth = ctx.measureText('FRAMEGRID v0.15').width;
+      const logoWidth = ctx.measureText('FRAMEGRID v0.19d').width;
       const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${cellInfo}${dateStr}`;
@@ -3836,8 +5063,10 @@ drawCanvas.onmouseup = () => {
       } else {
         const img = new Image();
         img.onload = () => {
-          ctx.drawImage(img, x, y, frameW, frameH);
-          if (state.showTimecode) {
+          drawFrameCell(ctx, img, x, y, frameW, frameH);
+          // Drawings overlay (optional)
+          drawExportDrawings(ctx, x, y, frameW, frameH, item.data.frameNumber);
+          if (computeShowTimecode()) {
             const padding = Math.round(4 * fontScale);
             const tcH = tcFontSize + padding * 2;
             const tcY = state.tcPosition === 'top' ? y : y + frameH - tcH;
@@ -3849,7 +5078,7 @@ drawCanvas.onmouseup = () => {
             ctx.font = `${tcFontSize}px system-ui`;
             ctx.textAlign = state.tcAlign;
             const textX = state.tcAlign === 'left' ? x + padding : state.tcAlign === 'right' ? x + frameW - padding : x + frameW / 2;
-            ctx.fillText(`${formatTime(item.data.time)} / F${item.data.frameNumber}`, textX, tcY + tcFontSize + padding - 2);
+            ctx.fillText(formatTimecode(item.data, i - (state.showInfoCard ? 1 : 0), cellCount) || '', textX, tcY + tcFontSize + padding - 2);
             ctx.textAlign = 'left';
           }
           resolve();
@@ -3883,9 +5112,9 @@ drawCanvas.onmouseup = () => {
   function formatTimecode(frame, index, totalFrames) {
     const parts = [];
     if (state.tcShowIndex) parts.push(`#${index + 1}`);
-    if (state.tcShowTime) parts.push(formatTime(frame.time));
+    if (state.tcShowTime) parts.push(`${frame.time.toFixed(2)}s`);
     if (state.tcShowFrame) parts.push(`F${frame.frameNumber}`);
-    return parts.join(' | ') || formatTime(frame.time);
+    return parts.join(' | ');
   }
   function formatDate(d) { return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 
@@ -3896,32 +5125,49 @@ drawCanvas.onmouseup = () => {
   spacingValue.textContent = `${state.spacing}px`;
   framesGrid.style.setProperty('--meta-font-size', `${state.fontSize}px`);
 
+  // Frame image transform defaults
+  if (frameImgScaleSlider) frameImgScaleSlider.value = String(state.frameImgScale);
+  if (frameImgScaleValue) frameImgScaleValue.textContent = state.frameImgScale.toFixed(2);
+  if (frameImgOffXSlider) frameImgOffXSlider.value = String(state.frameImgOffX);
+  if (frameImgOffXValue) frameImgOffXValue.textContent = `${state.frameImgOffX}%`;
+  if (frameImgOffYSlider) frameImgOffYSlider.value = String(state.frameImgOffY);
+  if (frameImgOffYValue) frameImgOffYValue.textContent = `${state.frameImgOffY}%`;
+  if (frameBgColorInput) frameBgColorInput.value = String(state.frameBgColor || '#111111');
+  framesGrid.style.setProperty('--img-scale', String(state.frameImgScale));
+  framesGrid.style.setProperty('--img-off-x', `${state.frameImgOffX}%`);
+  framesGrid.style.setProperty('--img-off-y', `${state.frameImgOffY}%`);
+
   document.onkeydown = e => {
     if (e.target.matches('input,select')) return;
-    if (e.key === 'Escape') { closeMenu(); if (state.isPlaying) stopAnimation(); if (state.drawMode) toggleDrawMode(); }
-    if (e.key === 'f' || e.key === 'F') { state.viewMode === 'single' ? fitToSingleFrame() : fitToScreen(); }
-    if (e.key === 'm' || e.key === 'M') toggleMenu();
-    if (e.key === ' ') { e.preventDefault(); state.isPlaying ? stopAnimation() : startAnimation(); }
-    if (e.key === 'g' || e.key === 'G') setViewMode('grid');
-    if (e.key === '1') setViewMode('single');
-    if (e.key === 'ArrowLeft') { e.preventDefault(); stepFrame(-1); }
-    if (e.key === 'ArrowRight') { e.preventDefault(); stepFrame(1); }
-    if (e.key === 'Home') { e.preventDefault(); resetToStart(); }
-    if (e.key === 'End') { e.preventDefault(); state.currentTick = state.frames.length - 1; updateAllCells(); }
-    if (e.key === 'd' || e.key === 'D') toggleDrawMode();
-    if ((e.key === 'e' || e.key === 'E') && state.drawMode) {
-      state.drawEraser = !state.drawEraser;
-      drawEraserBtn.classList.toggle('active', state.drawEraser);
-      drawCanvas.style.cursor = state.drawEraser ? 'cell' : 'crosshair';
-      brushCursor.classList.toggle('eraser', state.drawEraser);
+    const key = e.key;
+    if (key === 'Escape') { closeMenu(); if (state.isPlaying) stopAnimation(); if (state.drawMode) toggleDrawMode(); }
+    else if (key === ' ') { e.preventDefault(); state.isPlaying ? stopAnimation() : startAnimation(); }
+    else if (key === 'f' || key === 'F') { state.viewMode === 'single' ? fitToSingleFrame() : fitToScreen(); }
+    else if (key === 'm' || key === 'M') toggleMenu();
+    else if (key === 'd' || key === 'D') toggleDrawMode();
+    else if (key === 'g' || key === 'G') setViewMode('grid');
+    else if (key === '1') setViewMode('single');
+    else if (key === 'ArrowLeft') { e.preventDefault(); stepFrame(-1); }
+    else if (key === 'ArrowRight') { e.preventDefault(); stepFrame(1); }
+    else if (key === 'Home') { e.preventDefault(); resetToStart(); }
+    else if (key === 'End') { e.preventDefault(); state.currentTick = state.frames.length - 1; updateAllCells(); }
+    else if (state.drawMode) {
+      if (key === 'e' || key === 'E') { state.drawEraser = !state.drawEraser; drawEraserBtn.classList.toggle('active', state.drawEraser); drawCanvas.style.cursor = state.drawEraser ? 'cell' : 'crosshair'; brushCursor.classList.toggle('eraser', state.drawEraser); }
+      else if (key === 'i' || key === 'I') { eyedropperActive = !eyedropperActive; if (drawEyedropperBtn) drawEyedropperBtn.classList.toggle('active', eyedropperActive); drawCanvas.style.cursor = eyedropperActive ? 'crosshair' : 'default'; }
+      else if (key === 'c' || key === 'C') { if (drawClear) drawClear.onclick(); }
+      else if (key === 'o' || key === 'O') toggleOnionSkin();
+      else if (key === 'l' || key === 'L') { state.drawLongStroke = !state.drawLongStroke; drawLongStrokeBtn.classList.toggle('active', state.drawLongStroke); }
+      else if (key === 'b' || key === 'B') setDrawTarget('background');
+      else if (key === 't' || key === 'T') setDrawTarget('template');
+      else if (key === 'r' || key === 'R') setDrawTarget('frame');
+      else if (key === '[') setDrawSize((state.drawSize || 4) - 4);
+      else if (key === ']') setDrawSize((state.drawSize || 4) + 4);
+      else if (key === '1') { state.brushType = 'round'; brushBtns.forEach(b => b.classList.toggle('active', b.dataset.brush === 'round')); }
+      else if (key === '2') { state.brushType = 'pencil'; brushBtns.forEach(b => b.classList.toggle('active', b.dataset.brush === 'pencil')); }
+      else if (key === '3') { state.brushType = 'spray'; brushBtns.forEach(b => b.classList.toggle('active', b.dataset.brush === 'spray')); }
+      else if (key === '4') { state.brushType = 'calligraphy'; brushBtns.forEach(b => b.classList.toggle('active', b.dataset.brush === 'calligraphy')); }
+      else if ((e.ctrlKey || e.metaKey) && key === 'z') { e.preventDefault(); drawUndo.onclick(); }
     }
-    if ((e.key === 'o' || e.key === 'O') && state.drawMode) toggleOnionSkin();
-    if ((e.key === 'l' || e.key === 'L') && state.drawMode) { state.drawLongStroke = !state.drawLongStroke; drawLongStrokeBtn.classList.toggle('active', state.drawLongStroke); }
-    if ((e.key === 'b' || e.key === 'B') && state.drawMode) setDrawTarget('background');
-    if ((e.key === 't' || e.key === 'T') && state.drawMode) setDrawTarget('template');
-    if (e.key === '[' && state.drawMode) { state.drawSize = Math.max(1, state.drawSize - 4); drawSizeSlider.value = state.drawSize; drawSizeSlider.oninput(); }
-    if (e.key === ']' && state.drawMode) { state.drawSize = Math.min(100, state.drawSize + 4); drawSizeSlider.value = state.drawSize; drawSizeSlider.oninput(); }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && state.drawMode) { e.preventDefault(); drawUndo.onclick(); }
   };
 
   // Viewport changes (resize/orientation) - stabilize layout on iPad/Safari/Chrome
@@ -3929,9 +5175,12 @@ drawCanvas.onmouseup = () => {
   function onViewportChanged() {
     clearTimeout(viewportTimeout);
     viewportTimeout = setTimeout(() => {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
       // Rebuild grid if needed, then re-fit
       if (state.autoFit && state.frames.length) {
-        if (state.canvasAspect === 'auto') {
+        // On iOS rotation, intermediate viewport metrics can jump. Avoid auto-changing grid geometry there.
+        if (!isIOS && state.canvasAspect === 'auto') {
           state.gridCols = calculateOptimalColumns(state.frames.length);
           gridColsInput.value = state.gridCols;
           renderGrid();
@@ -3943,7 +5192,7 @@ drawCanvas.onmouseup = () => {
       // Keep draw overlay in sync with new geometry
       if (state.drawMode) {
         resizeDrawCanvas();
-        compositeAllLayers();
+        requestComposite();
       }
     }, 240);
   }
@@ -3993,11 +5242,7 @@ drawCanvas.onmouseup = () => {
   }, { passive: true });
 
   
-  const origToggleDrawMode = toggleDrawMode;
-  toggleDrawMode = function() {
-    origToggleDrawMode();
-    if (!state.drawMode) brushCursor.classList.remove('visible');
-  };
+  // toggleDrawMode brush cursor logic now integrated directly
 
   // Debug console for iPad
   const debugConsole = document.getElementById('debugConsole');
@@ -4034,19 +5279,7 @@ drawCanvas.onmouseup = () => {
     origError.apply(console, args);
   };
   
-  // Log draw mode changes
-  const origToggle2 = toggleDrawMode;
-  toggleDrawMode = function() {
-    origToggle2();
-    dbg(`DrawMode: ${state.drawMode}, canvas: ${drawCanvas.width}x${drawCanvas.height}`);
-  };
-  
-  // Log menu open
-  const origOpenMenu = openMenu;
-  openMenu = function() {
-    dbg('Menu opened');
-    origOpenMenu();
-  };
+  // debug logging now integrated into original functions
 
 })();
   </script>
