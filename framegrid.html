@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.21 STABLE                                    ║
+║      FRAMEGRID v0.21c STABLE                                    ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -9,14 +9,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.21</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>FRAMEGRID v0.21c</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; touch-action: pan-x pan-y; }
     html, body {
       width: 100%; height: 100%; overflow: hidden; background: #282828;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #fff; user-select: none; -webkit-user-select: none;
+      touch-action: none; /* Prevent browser zoom gestures */
     }
     .app { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #282828); }
 
@@ -592,7 +593,7 @@
   
   <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-      <div class="metadata-logo">FRAMEGRID v0.21</div>
+      <div class="metadata-logo">FRAMEGRID v0.21c</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -608,65 +609,66 @@
         <canvas class="draw-canvas" id="drawCanvas"></canvas>
       </div>
       
-      <!-- Floating Draw Palette -->
+      <!-- Floating Draw Palette - COMPACT -->
       <div class="draw-palette" id="drawPalette">
-        <!-- BLOCK 1: Tools + Brush -->
+        <!-- Row 1: Main tools -->
         <div class="draw-palette-row draw-tools-row">
-          <button class="draw-btn" id="drawToggle" title="Draw Mode (D)">✏</button>
+          <button class="draw-btn draw-brush-btn active" data-brush="round" title="Round brush">●</button>
+          <button class="draw-btn draw-brush-btn" data-brush="spray" title="Spray">✦</button>
           <button class="draw-btn" id="drawEraser" title="Eraser (E)">◯</button>
-          <button class="draw-btn" id="drawClear" title="Clear All (C)">✕</button>
-          <button class="draw-btn" id="drawUndo" title="Undo (Ctrl+Z)">↶</button>
           <div class="draw-row-sep"></div>
-          <input type="color" id="drawColorInput" value="#ffffff" class="draw-color-input" style="width:30px;height:30px;border:2px solid rgba(255,255,255,0.3);padding:0;cursor:pointer;border-radius:2px;background:none;">
-          <button class="draw-btn" id="drawEyedropper" title="Eyedropper (I)" style="font-size:12px;">⊙</button>
+          <input type="color" id="drawColorInput" value="#ffffff" class="draw-color-input" style="width:28px;height:28px;border:2px solid rgba(255,255,255,0.3);padding:0;cursor:pointer;border-radius:2px;background:none;">
         </div>
 
-        <div class="draw-palette-row" style="gap:2px;flex-wrap:wrap;">
-          <div id="recentColorsRow" style="display:flex;gap:2px;flex-wrap:wrap;"></div>
+        <!-- Row 2: Colors - Recent (circles) + Video palette (squares) -->
+        <div class="draw-palette-row" style="gap:3px;align-items:center;">
+          <div id="recentColorsRow" style="display:flex;gap:2px;"></div>
+          <div style="width:1px;height:16px;background:rgba(255,255,255,0.2);margin:0 2px;"></div>
+          <div id="videoPaletteRow" style="display:flex;gap:2px;"></div>
         </div>
 
-        <div class="draw-palette-row" id="videoPaletteRow" style="min-height:0;gap:2px;flex-wrap:wrap;display:none;"></div>
-
-        <div class="draw-palette-row" style="gap:3px;">
-          <button class="draw-btn draw-brush-btn active" data-brush="round" title="Round brush (1)">●</button>
-          <button class="draw-btn draw-brush-btn" data-brush="pencil" title="Pencil (2)" style="display:none;">✎</button>
-          <button class="draw-btn draw-brush-btn" data-brush="spray" title="Spray (3)">✦</button>
-          <button class="draw-btn draw-brush-btn" data-brush="calligraphy" title="Calligraphy (4)" style="display:none;">⟋</button>
+        <!-- Row 3: Size slider -->
+        <div class="draw-palette-row draw-slider-row" style="gap:4px;">
+          <button class="draw-btn" id="drawSizeMinus" style="width:24px;height:24px;">−</button>
+          <input type="range" class="draw-size-slider" id="drawSizeSlider" min="1" max="120" value="4" style="flex:1;">
+          <button class="draw-btn" id="drawSizePlus" style="width:24px;height:24px;">+</button>
+          <span style="font-size:9px;color:#666;min-width:20px;" id="drawSizeLabel">4</span>
         </div>
 
-        <div class="draw-slider-block">
-          <div class="draw-palette-row draw-slider-row">
-            <button class="draw-btn" id="drawSizeMinus" title="Smaller ([)">−</button>
-            <div class="draw-size-preview" id="drawSizePreview"><div class="draw-size-dot" id="drawSizeDot"></div></div>
-            <input type="range" class="draw-size-slider" id="drawSizeSlider" min="1" max="120" value="4">
-            <button class="draw-btn" id="drawSizePlus" title="Bigger (])">+</button>
-          </div>
-          <div class="draw-slider-caption">size</div>
+        <!-- Row 4: Opacity slider with +/- -->
+        <div class="draw-palette-row draw-slider-row" style="gap:4px;">
+          <button class="draw-btn" id="drawOpacityMinus" style="width:24px;height:24px;">−</button>
+          <input type="range" class="draw-size-slider" id="drawOpacitySlider" min="5" max="100" value="100" style="flex:1;">
+          <button class="draw-btn" id="drawOpacityPlus" style="width:24px;height:24px;">+</button>
+          <span style="font-size:9px;color:#666;min-width:28px;" id="drawOpacityLabel">100%</span>
         </div>
 
-        <div class="draw-slider-block">
-          <div class="draw-palette-row draw-slider-row">
-            <button class="draw-btn" id="drawOpacityMinus" title="Less opaque">−</button>
-            <div class="draw-size-preview"><span style="font-size:10px;color:#888;">α</span></div>
-            <input type="range" class="draw-size-slider" id="drawOpacitySlider" min="5" max="100" value="100">
-            <button class="draw-btn" id="drawOpacityPlus" title="More opaque">+</button>
-          </div>
-          <div class="draw-slider-caption">opacity</div>
-        </div>
-
-        <!-- BLOCK 2: Target + Modes -->
+        <!-- Row 5: Target buttons -->
         <div class="draw-target-row">
-          <button class="draw-target-btn active" data-target="background" title="Draw on background (B)">BG</button>
-          <button class="draw-target-btn" data-target="template" title="Draw on template (T)">TPL</button>
-          <button class="draw-target-btn" data-target="frame" title="Draw on current frame (R)">FRM</button>
+          <button class="draw-target-btn active" data-target="background" title="Background (B)">BG</button>
+          <button class="draw-target-btn" data-target="template" title="Template (T)">TPL</button>
+          <button class="draw-target-btn" data-target="frame" title="Frame (F)">FRM</button>
         </div>
-        <div class="draw-palette-row" style="gap:3px;">
-          <button class="draw-btn" id="drawOnion" title="Onion Skin (O)" style="display:none;">◐</button>
-          <button class="draw-btn" id="drawLongStroke" title="Long Stroke trail (L)">⟿</button>
-          <span style="font-size:9px;color:#888;">trail:</span>
-          <input type="number" class="menu-input" id="longStrokeFade" value="8" min="0" max="50" style="width:36px;height:20px;font-size:10px;padding:1px 3px;">
-          <button class="draw-btn" id="genVideoPalette" title="Regenerate palette from video" style="font-size:9px;padding:2px 5px;">↻ pal</button>
+
+        <!-- Row 6: Actions + Long Stroke with +/- -->
+        <div class="draw-palette-row" style="gap:3px;align-items:center;">
+          <button class="draw-btn" id="drawUndo" title="Undo (Z)">↶</button>
+          <button class="draw-btn" id="drawClear" title="Clear (C)">✕</button>
+          <div class="draw-row-sep"></div>
+          <button class="draw-btn" id="drawLongStroke" title="Long Stroke (L)">⟿</button>
+          <button class="draw-btn" id="trailMinus" style="width:20px;height:20px;font-size:10px;">−</button>
+          <input type="number" class="menu-input" id="longStrokeFade" value="8" min="0" max="50" style="width:28px;height:20px;font-size:10px;padding:1px 2px;text-align:center;" title="Trail frames">
+          <button class="draw-btn" id="trailPlus" style="width:20px;height:20px;font-size:10px;">+</button>
         </div>
+      </div>
+
+      <!-- Hidden elements for compatibility -->
+      <div style="display:none;">
+        <button id="drawOnion"></button>
+        <button id="drawEyedropper"></button>
+        <button id="genVideoPalette"></button>
+        <button id="drawToggle"></button>
+        <div id="drawSizePreview"><div id="drawSizeDot"></div></div>
       </div>
 
       <!-- Template Frame Window (LIVE layer editor) -->
@@ -1069,6 +1071,19 @@
   <script>
 (function() {
   'use strict';
+
+  // Prevent browser zoom on the entire page (especially important for iOS)
+  document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
+  
+  // Prevent double-tap zoom
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
 
   const state = {
     videoFile: null, videoUrl: null, videoDuration: 0,
@@ -2554,6 +2569,16 @@ function updateAllCells() {
       drawSizeDot.style.height = dotSize + 'px';
     }
     if (drawSizeSlider) drawSizeSlider.value = state.drawSize;
+    const sizeLabel = document.getElementById('drawSizeLabel');
+    if (sizeLabel) sizeLabel.textContent = state.drawSize;
+  }
+  
+  function updateDrawOpacityUI() {
+    const opacity = Math.round((state.drawOpacity || 1) * 100);
+    const slider = document.getElementById('drawOpacitySlider');
+    if (slider) slider.value = opacity;
+    const opacityLabel = document.getElementById('drawOpacityLabel');
+    if (opacityLabel) opacityLabel.textContent = opacity + '%';
   }
 
   function setDrawSize(v) {
@@ -4160,7 +4185,7 @@ const nowTick = getLongStrokeTick();
     const norm = color.toLowerCase();
     state.recentColors = state.recentColors.filter(c => c.toLowerCase() !== norm);
     state.recentColors.unshift(norm);
-    if (state.recentColors.length > 7) state.recentColors.length = 7;
+    if (state.recentColors.length > 4) state.recentColors.length = 7;
     try { localStorage.setItem('fg_recentColors', JSON.stringify(state.recentColors)); } catch(e) {}
     renderRecentColors();
   }
@@ -4200,7 +4225,7 @@ const nowTick = getLongStrokeTick();
   // Load recent colors from localStorage
   try {
     const saved = JSON.parse(localStorage.getItem('fg_recentColors') || '[]');
-    if (Array.isArray(saved)) state.recentColors = saved.slice(0, 7);
+    if (Array.isArray(saved)) state.recentColors = saved.slice(0, 4);
   } catch(e) {}
 
   function renderRecentColors() {
@@ -4282,7 +4307,7 @@ const nowTick = getLongStrokeTick();
         return Math.abs(c.lum - prev.lum) > 15 || Math.abs(c.r - prev.r) + Math.abs(c.g - prev.g) + Math.abs(c.b - prev.b) > 40;
       });
 
-    state.videoPalette = colors.map(c => `#${[c.r,c.g,c.b].map(v => v.toString(16).padStart(2,'0')).join('')}`);
+    state.videoPalette = colors.slice(0, 4).map(c => `#${[c.r,c.g,c.b].map(v => v.toString(16).padStart(2,'0')).join('')}`);
     renderVideoPalette();
   }
 
@@ -4389,35 +4414,51 @@ const nowTick = getLongStrokeTick();
   };
   
   drawOnionBtn.onclick = toggleOnionSkin;
-  drawLongStrokeBtn.onclick = () => {
+  function toggleLongStroke() {
     state.drawLongStroke = !state.drawLongStroke;
     drawLongStrokeBtn.classList.toggle('active', state.drawLongStroke);
     if (!state.drawLongStroke) {
       cancelLongStrokeTrail(true);
       requestComposite();
     }
-  };
+  }
+  
+  drawLongStrokeBtn.onclick = toggleLongStroke;
+  
   drawColorInput.oninput = () => {}; // preview only
     drawColorInput.onchange = () => setDrawColor(drawColorInput.value);
     drawSizeSlider.oninput = () => {
     state.drawSize = parseInt(drawSizeSlider.value);
-    drawSizeDot.style.width = Math.min(state.drawSize, 16) + 'px';
-    drawSizeDot.style.height = Math.min(state.drawSize, 16) + 'px';
+    updateDrawSizeUI();
   };
   drawSizeSlider.oninput();
   
-  const drawOpacitySlider = $('drawOpacitySlider'), drawOpacityValue = $('drawOpacityValue');
+  // Opacity controls
+  const drawOpacitySlider = $('drawOpacitySlider');
+  const drawOpacityMinus = $('drawOpacityMinus'), drawOpacityPlus = $('drawOpacityPlus');
+  
   function updateOpacity(val) {
     state.drawOpacity = Math.max(0.05, Math.min(1, val));
-    if (drawOpacitySlider) drawOpacitySlider.value = Math.round(state.drawOpacity * 100);
-    if (drawOpacityValue) drawOpacityValue.textContent = `${Math.round(state.drawOpacity * 100)}%`;
+    updateDrawOpacityUI();
   }
+  
   if (drawOpacitySlider) {
     drawOpacitySlider.oninput = () => updateOpacity(parseInt(drawOpacitySlider.value) / 100);
   }
-  const drawOpacityMinus = $('drawOpacityMinus'), drawOpacityPlus = $('drawOpacityPlus');
   if (drawOpacityMinus) drawOpacityMinus.onclick = () => updateOpacity((state.drawOpacity || 1) - 0.1);
   if (drawOpacityPlus) drawOpacityPlus.onclick = () => updateOpacity((state.drawOpacity || 1) + 0.1);
+  
+  // Trail frames +/- buttons
+  const trailMinus = $('trailMinus'), trailPlus = $('trailPlus');
+  
+  function updateTrailFrames(val) {
+    state.longStrokeFade = Math.max(0, Math.min(50, Math.round(val)));
+    if (longStrokeFadeInput) longStrokeFadeInput.value = state.longStrokeFade;
+  }
+  
+  if (trailMinus) trailMinus.onclick = () => updateTrailFrames((state.longStrokeFade || 8) - 1);
+  if (trailPlus) trailPlus.onclick = () => updateTrailFrames((state.longStrokeFade || 8) + 1);
+  if (longStrokeFadeInput) longStrokeFadeInput.onchange = () => updateTrailFrames(parseInt(longStrokeFadeInput.value) || 8);
   
   drawColors.forEach(el => {
     el.onclick = () => setDrawColor(el.dataset.color);
@@ -5618,10 +5659,10 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
     // Let the browser handle OS/app shortcuts
     if (e.metaKey || e.ctrlKey || e.altKey) return;
 
-    const k = e.key;
+    const code = e.code; // Physical key (works with any language)
 
     // Escape should always work
-    if (k === 'Escape') {
+    if (code === 'Escape') {
       e.preventDefault();
       if (typeof closeAllPopups === 'function') closeAllPopups();
       if (state.drawMode) setDrawMode(false);
@@ -5631,23 +5672,45 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
     // If user is actively typing in a text field, don't steal their characters.
     if (isTypingContext(e.target) && shouldLetFormHandleKey(e)) return;
 
-    const key = (k || '').toLowerCase();
-
-    if (key === ' ') { e.preventDefault(); togglePlay(); }
-    else if (key === 'd') { e.preventDefault(); setDrawMode(!state.drawMode); }
-    else if (key === 'b') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('background'); }
-    else if (key === 't') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('template'); }
-    else if (key === 'f') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('frame'); }
-    else if (key === 'e') { e.preventDefault(); toggleEraser(); }
-    else if (key === 'x') { e.preventDefault(); setDrawMode(false); }
-    else if (key === 'z') { e.preventDefault(); undoDraw(); }
-    else if (key === 'c') { e.preventDefault(); clearDrawTarget(); }
-    else if (key === 'i') { e.preventDefault(); toggleInfoCard(); }
-    else if (key === 'p') { e.preventDefault(); togglePalette(); }
-    else if (key === 'r') { e.preventDefault(); regenerateGrid(); }
-    else if (k === '[') { e.preventDefault(); state.drawSize = Math.max(1, (state.drawSize|0) - 1); updateDrawSizeUI(); }
-    else if (k === ']') { e.preventDefault(); state.drawSize = Math.min(200, (state.drawSize|0) + 1); updateDrawSizeUI(); }
-    else if (key === 'm') { e.preventDefault(); toggleMenu(); }
+    // Use physical key codes - works with ANY keyboard layout (Russian, English, etc.)
+    if (code === 'Space') { e.preventDefault(); togglePlay(); }
+    else if (code === 'KeyD') { e.preventDefault(); setDrawMode(!state.drawMode); }
+    else if (code === 'KeyB') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('background'); }
+    else if (code === 'KeyT') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('template'); }
+    else if (code === 'KeyF') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('frame'); }
+    else if (code === 'KeyE') { e.preventDefault(); toggleEraser(); }
+    else if (code === 'KeyX') { e.preventDefault(); setDrawMode(false); }
+    else if (code === 'KeyZ') { e.preventDefault(); undoDraw(); }
+    else if (code === 'KeyC') { e.preventDefault(); clearDrawTarget(); }
+    else if (code === 'KeyI') { e.preventDefault(); toggleInfoCard(); }
+    else if (code === 'KeyP') { e.preventDefault(); togglePalette(); }
+    else if (code === 'KeyR') { e.preventDefault(); regenerateGrid(); }
+    else if (code === 'KeyM') { e.preventDefault(); toggleMenu(); }
+    else if (code === 'KeyL') { e.preventDefault(); toggleLongStroke(); }
+    else if (code === 'BracketLeft') { 
+      e.preventDefault(); 
+      if (e.shiftKey) {
+        // Shift+[ = decrease opacity
+        state.drawOpacity = Math.max(0.05, (state.drawOpacity || 1) - 0.1);
+        updateDrawOpacityUI();
+      } else {
+        state.drawSize = Math.max(1, (state.drawSize|0) - 4); 
+        updateDrawSizeUI(); 
+      }
+    }
+    else if (code === 'BracketRight') { 
+      e.preventDefault(); 
+      if (e.shiftKey) {
+        // Shift+] = increase opacity
+        state.drawOpacity = Math.min(1, (state.drawOpacity || 1) + 0.1);
+        updateDrawOpacityUI();
+      } else {
+        state.drawSize = Math.min(200, (state.drawSize|0) + 4); 
+        updateDrawSizeUI(); 
+      }
+    }
+    else if (code === 'ArrowLeft') { e.preventDefault(); prevFrame(); }
+    else if (code === 'ArrowRight') { e.preventDefault(); nextFrame(); }
   }, true);
 
 
