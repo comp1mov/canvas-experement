@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.19d                                          ║
+║      FRAMEGRID v0.19k                                          ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.19d</title>
+  <title>FRAMEGRID v0.19k</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -574,7 +574,7 @@
   
   <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-      <div class="metadata-logo">FRAMEGRID v0.19d</div>
+      <div class="metadata-logo">FRAMEGRID v0.19k</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -668,7 +668,8 @@
       <div class="quick-toolbar" id="quickToolbar">
         <button class="quick-btn" id="qMode" title="View Mode (G/1)" style="font-size:10px;width:auto;padding:0 10px;">GRID</button>
         <button class="quick-btn" id="qFit" title="Fit to Screen (F)">□</button>
-        <button class="quick-btn" id="qReset" title="Reset to Start (Home)">|◀</button>
+                <button class="quick-btn" id="qOne" title="Zoom 100% (no fit)" style="font-size:10px;">1:1</button>
+<button class="quick-btn" id="qReset" title="Reset to Start (Home)">|◀</button>
         <button class="quick-btn" id="qPrev" title="Previous Frame (←)">◀</button>
         <button class="quick-btn" id="qPlay" title="Play/Stop (Space)">▶</button>
         <button class="quick-btn" id="qNext" title="Next Frame (→)">▶|</button>
@@ -996,10 +997,15 @@
         <div class="menu-section-content">
           <div id="infoPanel" style="font-size:10px;color:#aaa;line-height:1.6;font-family:monospace;">
             <div>Video: <span id="infoVideoRes">—</span></div>
-            <div>Grid cells: <span id="infoGridCells">—</span></div>
-            <div>Draw canvas: <span id="infoDrawRes">—</span></div>
-            <div>Frame tile: <span id="infoFrameTile">—</span></div>
-            <div>Draw scale: <span id="infoDrawScale">—</span></div>
+              <div>Capture: <span id="infoCaptureRes">—</span></div>
+              <div>Grid cells: <span id="infoGridCells">—</span></div>
+              <div>Cell display: <span id="infoCellRes">—</span></div>
+              <div>Draw canvas: <span id="infoDrawRes">—</span></div>
+              <div>TPL canvas: <span id="infoTplRes">—</span></div>
+              <div>FRM tile: <span id="infoFrameTile">—</span></div>
+              <div>Upscale: <span id="infoUpscale">—</span></div>
+              <div>Zoom: <span id="infoZoom">—</span></div>
+              <div>Draw scale: <span id="infoDrawScale">—</span></div>
           </div>
         </div>
       </div>
@@ -1010,7 +1016,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version 0.15 (gpt30)</div>
+          <div class="about-version">Version 0.19k (gpt-5.2)</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
           <div class="about-hotkeys">
@@ -1172,6 +1178,7 @@ exportQuality: 'hd', // low, medium, high, max
   
   // Quick toolbar
   const qMode = $('qMode'), qReset = $('qReset'), qPrev = $('qPrev'), qPlay = $('qPlay'), qNext = $('qNext'), qDraw = $('qDraw'), qFit = $('qFit');
+  const qOne = $('qOne');
   const qMenu = $('qMenu');
   
   // Timecode style controls
@@ -1219,6 +1226,16 @@ exportQuality: 'hd', // low, medium, high, max
     state.videoUrl = URL.createObjectURL(file);
     videoElement.src = state.videoUrl;
     videoElement.load();
+    // iOS/Safari reliability: ensure inline playback and prime the decoder
+    videoElement.muted = true;
+    videoElement.playsInline = true;
+    videoElement.setAttribute('playsinline','');
+    videoElement.setAttribute('webkit-playsinline','');
+    videoElement.preload = 'auto';
+    // Try a quick play/pause to enable frame seeking after the user gesture.
+    const p = videoElement.play();
+    if (p && p.catch) p.catch(()=>{});
+    setTimeout(() => { try { videoElement.pause(); } catch(e) {} }, 80);
     dropZone.classList.add('hidden');
     loadingOverlay.classList.add('visible');
   }
@@ -1264,6 +1281,9 @@ exportQuality: 'hd', // low, medium, high, max
 
   // FRAMES
   async function generateFrames() {
+    // Regenerate Grid should also reset drawings and caches, to avoid mismatched resolutions.
+    hardClearAllDrawingsAndUndo();
+
     if (!state.videoUrl) return;
     const times = calculateFrameTimes();
     
@@ -1278,9 +1298,20 @@ exportQuality: 'hd', // low, medium, high, max
     captureCanvas.width = Math.round(state.videoWidth * state.quality);
     captureCanvas.height = Math.round(state.videoHeight * state.quality);
 
-    for (let i = 0; i < times.length; i++) {
+    
+
+    state.captureW = captureCanvas.width;
+    state.captureH = captureCanvas.height;
+    state._frameTileDims = null;
+for (let i = 0; i < times.length; i++) {
       const time = times[i];
-      const dataUrl = await captureFrame(time);
+      let dataUrl = await captureFrame(time);
+      if (!dataUrl) {
+        // iOS/Safari occasional blank frame: retry once after a tiny delay.
+        await new Promise(r => setTimeout(r, 60));
+        dataUrl = await captureFrame(time);
+      }
+      if (!dataUrl) dataUrl = '';
       state.frames.push({ time, frameNumber: Math.floor(time * state.videoFps), dataUrl });
       progressFill.style.width = `${((i + 1) / times.length) * 100}%`;
       loadingProgress.textContent = `${i + 1} / ${times.length}`;
@@ -1296,6 +1327,10 @@ exportQuality: 'hd', // low, medium, high, max
     if (state.autoFit) fitToScreen();
     setTimeout(generateVideoPalette, 100); // auto-generate palette from video
   }
+  function regenerateGrid() {
+    generateFrames();
+  }
+
 
   function calculateFrameTimes() {
     const times = [], max = 1000;
@@ -1429,33 +1464,123 @@ exportQuality: 'hd', // low, medium, high, max
 
   function updateInfoPanel() {
     const iv = document.getElementById('infoVideoRes');
+    const icap = document.getElementById('infoCaptureRes');
     const ig = document.getElementById('infoGridCells');
+    const icell = document.getElementById('infoCellRes');
     const id = document.getElementById('infoDrawRes');
+    const itpl = document.getElementById('infoTplRes');
     const it = document.getElementById('infoFrameTile');
+    const iup = document.getElementById('infoUpscale');
+    const iz = document.getElementById('infoZoom');
     const is = document.getElementById('infoDrawScale');
-    if (!iv) return;
-    iv.textContent = state.videoWidth ? `${state.videoWidth}×${state.videoHeight}` : '—';
-    const cellCount = state.frames.length ? Math.ceil(state.frames.length / state.cellSize) : 0;
-    ig.textContent = cellCount ? `${cellCount} (${state.gridCols} cols)` : '—';
-    id.textContent = drawCanvas.width ? `${drawCanvas.width}×${drawCanvas.height}` : '—';
+
+    if (!iv || !ig || !id || !it || !is) return;
+
+    const vw = state.videoWidth || 0;
+    const vh = state.videoHeight || 0;
+    iv.textContent = vw && vh ? `${vw}×${vh}` : '—';
+
+    const cw = state.captureW || 0;
+    const ch = state.captureH || 0;
+    if (icap) icap.textContent = cw && ch ? `${cw}×${ch}` : '—';
+
+    // Frame count as currently configured in the grid (not the range length).
+    const cols = state.cols || 0;
+    const rows = state.rows || 0;
+    const cellCount = cols && rows ? (cols * rows) : 0;
+    ig.textContent = cellCount ? `${cellCount} (${cols} cols)` : '—';
+
+    // Draw canvas internal pixel buffer.
+    id.textContent = `${drawCanvas.width}×${drawCanvas.height}`;
+
+    if (itpl) itpl.textContent = `${tplCanvas.width}×${tplCanvas.height}`;
+
     const dims = getFrameTileDims();
-    it.textContent = dims.tw ? `${dims.tw}×${dims.th}` : '—';
-    const rect = drawCanvas.getBoundingClientRect();
-    const scale = rect.width > 0 ? (drawCanvas.width / rect.width).toFixed(2) : '—';
-    is.textContent = `${scale}x`;
+    it.textContent = `${dims.tw}×${dims.th}`;
+
+    // Zoom and upscaling diagnostics
+    if (iz) iz.textContent = (typeof state.scale === 'number') ? state.scale.toFixed(2) : '—';
+
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const targetCell = framesGrid.querySelector('.frame-item[data-cell-idx]');
+    if (icell || iup) {
+      if (targetCell) {
+        const r = targetCell.getBoundingClientRect();
+        const cssW = Math.round(r.width);
+        const cssH = Math.round(r.height);
+        if (icell) icell.textContent = `${cssW}×${cssH} css px`;
+
+        // compare device pixels on screen to stored FRM tile pixels
+        const upW = dims.tw ? (cssW * dpr) / dims.tw : 0;
+        const upH = dims.th ? (cssH * dpr) / dims.th : 0;
+        const up = Math.max(upW, upH);
+        if (iup) {
+          if (!up || !isFinite(up)) iup.textContent = '—';
+          else iup.textContent = `${up.toFixed(2)}x`;
+        }
+      } else {
+        if (icell) icell.textContent = '—';
+        if (iup) iup.textContent = '—';
+      }
+    }
+
+    // Draw scale = internal pixels / displayed css pixels (for the DRAW overlay canvas)
+    const r = drawCanvas.getBoundingClientRect();
+    const drawScale = (r.width > 0) ? (drawCanvas.width / r.width) : 0;
+    is.textContent = drawScale ? `${drawScale.toFixed(2)}x` : '—';
   }
 
-  function captureFrame(time) {
+    function captureFrame(time) {
     return new Promise(resolve => {
-      videoElement.currentTime = time;
-      videoElement.onseeked = () => {
-        captureCtx.drawImage(videoElement, 0, 0, captureCanvas.width, captureCanvas.height);
-        resolve(captureCanvas.toDataURL('image/jpeg', 0.9));
+      const v = videoElement;
+
+      const clampTime = (t) => {
+        if (!isFinite(t)) return 0;
+        if (v.duration && isFinite(v.duration)) {
+          // Keep a tiny epsilon away from the end to avoid iOS black frames.
+          return Math.min(Math.max(t, 0), Math.max(0, v.duration - 0.001));
+        }
+        return Math.max(t, 0);
       };
+
+      const target = clampTime(time);
+
+      let done = false;
+      const finish = (dataUrl) => {
+        if (done) return;
+        done = true;
+        resolve(dataUrl);
+      };
+
+      const onSeeked = () => {
+        // iOS/Safari can fire 'seeked' before the frame is actually ready for drawImage.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            try {
+              captureCtx.drawImage(v, 0, 0, captureCanvas.width, captureCanvas.height);
+              finish(captureCanvas.toDataURL('image/jpeg', 0.9));
+            } catch (e) {
+              // If drawImage fails (rare on iOS), resolve with null so caller can skip/retry.
+              finish(null);
+            }
+          });
+        });
+      };
+
+      v.addEventListener('seeked', onSeeked, { once: true });
+
+      // Fallback in case 'seeked' never fires (iOS edge cases).
+      setTimeout(() => {
+        if (!done) onSeeked();
+      }, 250);
+
+      if (Math.abs(v.currentTime - target) < 1e-4) {
+        onSeeked();
+      } else {
+        v.currentTime = target;
+      }
     });
   }
-
-
 
   function computeShowTimecode() {
     return !!(state.tcShowIndex || state.tcShowTime || state.tcShowFrame);
@@ -1752,7 +1877,33 @@ exportQuality: 'hd', // low, medium, high, max
     attempt();
   }
 
-  function fitToSingleFrame() {
+  
+  function zoomTo100() {
+    if (!state.frames.length) return;
+
+    // Reset to 1:1 and center current content in the viewport.
+    state.scale = 1;
+    state.panX = 0;
+    state.panY = 0;
+    updateTransform();
+
+    requestAnimationFrame(() => {
+      const areaRect = canvasArea.getBoundingClientRect();
+      const gridRect = framesGrid.getBoundingClientRect();
+
+      // Center grid (or single visible cell) in the view.
+      const areaCx = areaRect.left + areaRect.width * 0.5;
+      const areaCy = areaRect.top + areaRect.height * 0.5;
+      const gridCx = gridRect.left + gridRect.width * 0.5;
+      const gridCy = gridRect.top + gridRect.height * 0.5;
+
+      state.panX += (areaCx - gridCx);
+      state.panY += (areaCy - gridCy);
+      updateTransform();
+    });
+  }
+
+function fitToSingleFrame() {
     if (!state.frames.length) return;
     
     // Reset transform first to get true measurements
@@ -2049,6 +2200,7 @@ exportQuality: 'hd', // low, medium, high, max
   qNext.onclick = () => stepFrame(1);
   qPlay.onclick = () => { state.isPlaying ? stopAnimation() : startAnimation(); };
   qFit.onclick = () => { state.viewMode === 'single' ? fitToSingleFrame() : fitToScreen(); };
+  qOne.onclick = () => { zoomTo100(); };
   // qRegen and qExport removed from toolbar
   qMenu.onclick = toggleMenu;
   
@@ -2144,7 +2296,7 @@ exportQuality: 'hd', // low, medium, high, max
           if (longStrokePath.length > 5000) longStrokePath = longStrokePath.slice(-5000);
 
           if (_lsTrailFrames > 0) {
-            if (!longStrokeSheetSnapshot) startLongStrokeTrailSnapshot();
+            if (!longStrokeTileSnapshots || longStrokeTileSnapshots.size === 0) startLongStrokeTrailSnapshot();
             longStrokeEndTick = null;
             longStrokeLastFrame = hit.frameIdx;
             longStrokeBaseHit = longStrokeBaseHit || hit;
@@ -2166,7 +2318,7 @@ exportQuality: 'hd', // low, medium, high, max
       }
 
       // Trail mode: enforce "last N frames" window and decay after mouse-up
-      if (_lsTrailFrames > 0 && longStrokeSheetSnapshot && (isDrawing || longStrokeEndTick != null)) {
+      if (_lsTrailFrames > 0 && longStrokeTileSnapshots && longStrokeTileSnapshots.size && (isDrawing || longStrokeEndTick != null)) {
         updateLongStrokeTrail();
       }
     }
@@ -2404,7 +2556,7 @@ let isDrawing = false;
   let longStrokeLastFrame = -1;
   let longStrokeBaseHit = null;
   let lastPointerPos = null;
-  let longStrokeSheetSnapshot = null; // frame sheet snapshot before long stroke for clean redraw
+  let longStrokeTileSnapshots = new Map(); // frameIdx -> per-tile snapshot canvas for trail mode (avoids huge full-sheet snapshot)
   let longStrokeFrameTicks = new Map(); // frameIdx -> tick when frame was last stamped
   let longStrokeActiveFrames = new Set(); // frames currently showing the trail
   let longStrokeTouchedFrames = new Set(); // frames touched since stroke start
@@ -2485,6 +2637,13 @@ let isDrawing = false;
     drawToggle.classList.toggle('active', state.drawMode);
     
     if (state.drawMode) {
+      // Default target on entering Draw Mode: FRM
+      if (state.drawTarget !== 'frame') {
+        state.drawTarget = 'frame';
+        drawTargetBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === 'frame'));
+        showTemplateFrame(false);
+      }
+
       resizeDrawCanvas();
       compositeAllLayers();
       brushCursor.classList.toggle('eraser', state.drawEraser);
@@ -2701,38 +2860,52 @@ function resizeDrawCanvas() {
   // --- Frame-sheet helpers (per-frame drawings that follow animation) ---
   
   function getFrameTileDims() {
-    const vw = Math.max(1, state.videoWidth || 1);
-    const vh = Math.max(1, state.videoHeight || 1);
-    const aspect = vw / vh;
+    // Goal: FRM tile resolution tracks captured frame resolution (video * quality),
+    // but stays inside safe canvas limits (dimensions + total pixels).
+    const srcW = Math.max(1, state.captureW || Math.round((state.videoWidth || 1) * (state.quality || 1)));
+    const srcH = Math.max(1, state.captureH || Math.round((state.videoHeight || 1) * (state.quality || 1)));
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const maxTexW = isIOS ? 4096 : 16384;
+    // Conservative limits. Many systems can do more, but this avoids silent downscales / glitches.
+    const MAX_SHEET_SIDE = isIOS ? 4096 : 16384;
+    // Total pixel cap for the whole sheet. 48M px ~= 192MB RGBA.
+    const MAX_SHEET_PIXELS = isIOS ? 16_000_000 : 48_000_000;
+
     const cols = Math.max(1, state.gridCols || 1);
+    const rows = Math.max(1, Math.ceil((state.frames?.length || 1) / cols));
 
-    // Reuse locked dims if still safe
-    if (state._frameTileDims && !(isIOS && (cols * state._frameTileDims.tw > maxTexW))) {
-      return state._frameTileDims;
+    // Reuse cached dims if still valid
+    if (state._frameTileDims) {
+      const d = state._frameTileDims;
+      const same = d._srcW === srcW && d._srcH === srcH && d._cols === cols && d._rows === rows;
+      if (same) return d;
     }
 
-    let base = 512;
-    if (isIOS) {
-      base = Math.min(base, Math.floor(maxTexW / cols));
-      base = Math.max(160, Math.min(512, Math.floor(base / 32) * 32));
+    const reqSheetW = cols * srcW;
+    const reqSheetH = rows * srcH;
+    const reqPixels = reqSheetW * reqSheetH;
+
+    let scaleDim = Math.min(
+      1,
+      (MAX_SHEET_SIDE / Math.max(1, reqSheetW)),
+      (MAX_SHEET_SIDE / Math.max(1, reqSheetH))
+    );
+
+    let scaleArea = 1;
+    if (reqPixels > MAX_SHEET_PIXELS) {
+      scaleArea = Math.sqrt(MAX_SHEET_PIXELS / Math.max(1, reqPixels));
     }
 
-    let tw, th;
-    if (aspect >= 1) {
-      tw = base;
-      th = Math.max(64, Math.round(base / aspect));
-    } else {
-      th = base;
-      tw = Math.max(64, Math.round(base * aspect));
-    }
+    const scale = Math.min(scaleDim, scaleArea);
 
-    tw = tw % 2 === 0 ? tw : tw + 1;
-    th = th % 2 === 0 ? th : th + 1;
+    let tw = Math.max(2, Math.round(srcW * scale));
+    let th = Math.max(2, Math.round(srcH * scale));
 
-    state._frameTileDims = { tw, th };
+    // Keep even dims for slightly nicer sampling
+    if (tw % 2) tw += 1;
+    if (th % 2) th += 1;
+
+    state._frameTileDims = { tw, th, _srcW: srcW, _srcH: srcH, _cols: cols, _rows: rows, _scale: scale };
     return state._frameTileDims;
   }
 
@@ -3138,7 +3311,7 @@ function compositeAllLayers() {
           longStrokePath = [{ u, v, brk: true, t: getLongStrokeTick() }]; // Store normalized coords + break + tick
           longStrokeLastFrame = hit.frameIdx;
           longStrokeBaseHit = hit;
-          lastPointerPos = pt; // allow stamping even if pointer doesn't move
+          lastPointerPos = lastPoint; // allow stamping even if pointer doesn't move
           longStrokeEndTick = null;
 
           longStrokeFrameTicks.set(hit.frameIdx, getLongStrokeTick());
@@ -3153,7 +3326,7 @@ function compositeAllLayers() {
         longStrokePath = [{ u, v, brk: true, t: getLongStrokeTick() }];
         longStrokeLastFrame = hit.frameIdx;
         longStrokeBaseHit = hit;
-        lastPointerPos = pt;
+        lastPointerPos = lastPoint;
         longStrokeEndTick = null;
       }
 
@@ -3242,7 +3415,7 @@ function compositeAllLayers() {
 
         // Trail mode: keep only last N frames visible (state.longStrokeFade)
         if (getLongStrokeTrailFrames() > 0) {
-          if (!longStrokeSheetSnapshot) startLongStrokeTrailSnapshot();
+          if (!longStrokeTileSnapshots || longStrokeTileSnapshots.size === 0) startLongStrokeTrailSnapshot();
           longStrokeEndTick = null;
           longStrokeFrameTicks.set(hit.frameIdx, _lsTick);
           longStrokeTouchedFrames.add(hit.frameIdx);
@@ -3321,7 +3494,7 @@ activeFrameStroke.lastSheet = sp;
     if (state.isPlaying) return;
     const fps = Math.max(1, parseInt(state.animFps || 12, 10));
     longStrokeDecayInterval = setInterval(() => {
-      if (!longStrokeSheetSnapshot || longStrokeEndTick == null || !state.drawLongStroke || longStrokePath.length === 0) {
+      if (!longStrokeTileSnapshots || longStrokeTileSnapshots.size === 0 || longStrokeEndTick == null || !state.drawLongStroke || longStrokePath.length === 0) {
         stopLongStrokeDecayTimer();
         return;
       }
@@ -3329,7 +3502,7 @@ activeFrameStroke.lastSheet = sp;
       updateLongStrokeTrail();
       requestComposite();
       // stop when trail is fully gone
-      if (!longStrokeSheetSnapshot || (longStrokeActiveFrames && longStrokeActiveFrames.size === 0)) {
+      if (!longStrokeTileSnapshots || longStrokeTileSnapshots.size === 0 || (longStrokeActiveFrames && longStrokeActiveFrames.size === 0)) {
         stopLongStrokeDecayTimer();
       }
     }, 1000 / fps);
@@ -3344,36 +3517,59 @@ function getLongStrokeTrailFrames() {
     stopLongStrokeDecayTimer();
     cancelLongStrokeTrail(true);
     ensureFrameSheet();
+
     // Reset virtual tick baseline for stopped-animation mode
     longStrokeVirtualTick = (state.isPlaying && typeof state.currentTick === 'number') ? state.currentTick : 0;
-    longStrokeSheetSnapshot = document.createElement('canvas');
-    longStrokeSheetSnapshot.width = frameSheetCanvas.width || 1;
-    longStrokeSheetSnapshot.height = frameSheetCanvas.height || 1;
-    const sctx = longStrokeSheetSnapshot.getContext('2d');
-    if (sctx) sctx.drawImage(frameSheetCanvas, 0, 0);
+
+    // Reset trail bookkeeping
+    longStrokeTileSnapshots = new Map();
     longStrokeFrameTicks = new Map();
     longStrokeActiveFrames = new Set();
     longStrokeTouchedFrames = new Set();
     longStrokeEndTick = null;
   }
 
-  function restoreLongStrokeTileFromSnapshot(frameIdx) {
-    if (!longStrokeSheetSnapshot) return;
+  function ensureLongStrokeTileSnapshot(frameIdx) {
+    if (!longStrokeTileSnapshots) longStrokeTileSnapshots = new Map();
+    if (longStrokeTileSnapshots.has(frameIdx)) return;
+
     const tw = state.frameSheetTileW || 1;
     const th = state.frameSheetTileH || 1;
     const cols = state.frameSheetCols || 1;
     const sx = (frameIdx % cols) * tw;
     const sy = Math.floor(frameIdx / cols) * th;
-    // Restore tile pixels from snapshot
-    frameSheetCtx.drawImage(longStrokeSheetSnapshot, sx, sy, tw, th, sx, sy, tw, th);
+
+    const snap = document.createElement('canvas');
+    snap.width = tw;
+    snap.height = th;
+    const sctx = snap.getContext('2d');
+    if (sctx) {
+      // Snapshot current tile pixels (base state before we draw trail on it)
+      sctx.drawImage(frameSheetCanvas, sx, sy, tw, th, 0, 0, tw, th);
+      longStrokeTileSnapshots.set(frameIdx, snap);
+    }
+  }
+
+  function restoreLongStrokeTileFromSnapshot(frameIdx) {
+    if (!longStrokeTileSnapshots) return;
+    const snap = longStrokeTileSnapshots.get(frameIdx);
+    if (!snap) return;
+
+    const tw = state.frameSheetTileW || 1;
+    const th = state.frameSheetTileH || 1;
+    const cols = state.frameSheetCols || 1;
+    const sx = (frameIdx % cols) * tw;
+    const sy = Math.floor(frameIdx / cols) * th;
+
+    frameSheetCtx.drawImage(snap, 0, 0, tw, th, sx, sy, tw, th);
   }
 
   function renderLongStrokeFrame(frameIdx) {
-    if (!longStrokeSheetSnapshot) return;
     const trailFrames = getLongStrokeTrailFrames();
     if (trailFrames <= 0) return;
-    
-    const nowTick = getLongStrokeTick();
+    // Snapshot base tile on first touch to avoid full-sheet duplication
+    ensureLongStrokeTileSnapshot(frameIdx);
+const nowTick = getLongStrokeTick();
     const endTick = (longStrokeEndTick == null) ? nowTick : longStrokeEndTick;
     const windowStart = nowTick - trailFrames + 1;
     
@@ -3421,7 +3617,8 @@ function getLongStrokeTrailFrames() {
       return;
     }
 
-    if (!longStrokeSheetSnapshot) startLongStrokeTrailSnapshot();
+    if (!longStrokeTileSnapshots || longStrokeTileSnapshots.size === 0) startLongStrokeTrailSnapshot();
+    ensureLongStrokeTileSnapshot(frameIdx);
     longStrokeFrameTicks.set(frameIdx, tick);
     longStrokeTouchedFrames.add(frameIdx);
     longStrokeActiveFrames.add(frameIdx);
@@ -3431,7 +3628,7 @@ function getLongStrokeTrailFrames() {
   function updateLongStrokeTrail() {
     const trailFrames = getLongStrokeTrailFrames();
     if (trailFrames <= 0) return;
-    if (!longStrokeSheetSnapshot) return;
+    if (!longStrokeTileSnapshots || longStrokeTileSnapshots.size === 0) return;
     if (!longStrokeFrameTicks || !longStrokeFrameTicks.size) return;
 
     const nowTick = getLongStrokeTick();
@@ -3447,9 +3644,10 @@ function getLongStrokeTrailFrames() {
     longStrokeActiveFrames.forEach(frameIdx => {
       if (!nextActive.has(frameIdx)) {
         restoreLongStrokeTileFromSnapshot(frameIdx);
+        if (longStrokeTileSnapshots) longStrokeTileSnapshots.delete(frameIdx);
+        if (longStrokeFrameTicks) longStrokeFrameTicks.delete(frameIdx);
       }
     });
-
     // Re-render active tiles (they may need to update when window shifts)
     nextActive.forEach(frameIdx => {
       renderLongStrokeFrame(frameIdx);
@@ -3465,8 +3663,8 @@ function getLongStrokeTrailFrames() {
 
   function cancelLongStrokeTrail(restore) {
     stopLongStrokeDecayTimer();
-    if (restore && longStrokeSheetSnapshot) {
-      // Restore any tiles we touched or that are currently active
+
+    if (restore && longStrokeTileSnapshots) {
       const tw = state.frameSheetTileW || 1;
       const th = state.frameSheetTileH || 1;
       const cols = state.frameSheetCols || 1;
@@ -3483,9 +3681,11 @@ function getLongStrokeTrailFrames() {
       }
 
       frames.forEach(frameIdx => {
+        const snap = longStrokeTileSnapshots.get(frameIdx);
+        if (!snap) return;
         const sx = (frameIdx % cols) * tw;
         const sy = Math.floor(frameIdx / cols) * th;
-        frameSheetCtx.drawImage(longStrokeSheetSnapshot, sx, sy, tw, th, sx, sy, tw, th);
+        frameSheetCtx.drawImage(snap, 0, 0, tw, th, sx, sy, tw, th);
       });
     }
 
@@ -3494,12 +3694,15 @@ function getLongStrokeTrailFrames() {
     longStrokeBaseHit = null;
     lastPointerPos = null;
 
-    longStrokeSheetSnapshot = null;
+    longStrokeTileSnapshots = new Map();
     longStrokeFrameTicks = new Map();
     longStrokeActiveFrames = new Set();
     longStrokeTouchedFrames = new Set();
     longStrokeEndTick = null;
   }
+
+// Draw accumulated long stroke path on a specific frame (legacy mode only)
+
 
   // Draw accumulated long stroke path on a specific frame (legacy mode only)
   function drawLongStrokeOnFrame(frameIdx) {
@@ -3539,7 +3742,7 @@ function getLongStrokeTrailFrames() {
     lastPoint = null;
 
     // Long Stroke cleanup / decay
-    if (state.drawLongStroke && getLongStrokeTrailFrames() > 0 && longStrokeSheetSnapshot) {
+    if (state.drawLongStroke && getLongStrokeTrailFrames() > 0 && longStrokeTileSnapshots && longStrokeTileSnapshots.size) {
       // Keep the trail around so it can decay over the next N frames
       longStrokeEndTick = getLongStrokeTick();
       startLongStrokeDecayTimer();
@@ -3548,7 +3751,7 @@ function getLongStrokeTrailFrames() {
       longStrokeLastFrame = -1;
       longStrokeBaseHit = null;
       lastPointerPos = null;
-      longStrokeSheetSnapshot = null;
+      longStrokeTileSnapshots = new Map();
       longStrokeFrameTicks = new Map();
       longStrokeActiveFrames = new Set();
       longStrokeTouchedFrames = new Set();
@@ -3716,7 +3919,7 @@ function getLongStrokeTrailFrames() {
 
         // Trail mode: keep only last N frames visible (state.longStrokeFade)
         if (getLongStrokeTrailFrames() > 0) {
-          if (!longStrokeSheetSnapshot) startLongStrokeTrailSnapshot();
+          if (!longStrokeTileSnapshots || longStrokeTileSnapshots.size === 0) startLongStrokeTrailSnapshot();
           longStrokeEndTick = null;
           longStrokeFrameTicks.set(hit.frameIdx, _lsTick);
           longStrokeTouchedFrames.add(hit.frameIdx);
@@ -3789,6 +3992,38 @@ function getLongStrokeTrailFrames() {
     try { localStorage.setItem('fg_recentColors', JSON.stringify(state.recentColors)); } catch(e) {}
     renderRecentColors();
   }
+
+  function hardClearAllDrawingsAndUndo() {
+    // stop any active long-stroke trail bookkeeping
+    try { if (typeof flushLongFrameTrailNow === 'function') flushLongFrameTrailNow(true); } catch (e) {}
+    try { if (typeof cancelLongFrameTrail === 'function') cancelLongFrameTrail(true); } catch (e) {}
+
+    // Clear raster layers
+    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    tplCtx.clearRect(0, 0, tplCanvas.width, tplCanvas.height);
+    frameSheetCtx.clearRect(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
+    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+
+    // Reset stored ImageData / caches
+    state.bgDrawing = null;
+    state.templateDrawing = null;
+    state.frameDrawings = {};
+    state.frameSheetDrawing = null;
+
+    // Reset sheet layout so it will be rebuilt with the new tile dims
+    state.frameSheetCols = 0;
+    state.frameSheetRows = 0;
+    state.frameSheetTileW = 0;
+    state.frameSheetTileH = 0;
+
+    // Clear undo stack
+    if (Array.isArray(drawUndoStack)) drawUndoStack.length = 0;
+
+    // Ensure UI stays consistent
+    requestComposite();
+    updateInfoPanel();
+  }
+
 
   // Load recent colors from localStorage
   try {
@@ -3990,9 +4225,9 @@ function getLongStrokeTrailFrames() {
       requestComposite();
     }
   };
-  drawColorInput.oninput = () => setDrawColor(drawColorInput.value);
-  
-  drawSizeSlider.oninput = () => {
+  drawColorInput.oninput = () => {}; // preview only
+    drawColorInput.onchange = () => setDrawColor(drawColorInput.value);
+    drawSizeSlider.oninput = () => {
     state.drawSize = parseInt(drawSizeSlider.value);
     drawSizeDot.style.width = Math.min(state.drawSize, 16) + 'px';
     drawSizeDot.style.height = Math.min(state.drawSize, 16) + 'px';
@@ -4227,10 +4462,10 @@ function getLongStrokeTrailFrames() {
         ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
         ctx.fillStyle = '#fff';
         ctx.font = `700 ${headerFontSize}px system-ui`;
-        ctx.fillText('FRAMEGRID v0.19d', 22, headerH * 0.65);
+        ctx.fillText('FRAMEGRID v0.19k', 22, headerH * 0.65);
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = `${headerFontSize}px system-ui`;
-        const logoWidth = ctx.measureText('FRAMEGRID v0.19d').width;
+        const logoWidth = ctx.measureText('FRAMEGRID v0.19k').width;
         const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
         const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${dateStr}`;
         ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
@@ -4360,10 +4595,10 @@ function getLongStrokeTrailFrames() {
             ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
             ctx.fillStyle = '#fff';
             ctx.font = `700 ${headerFontSize}px system-ui`;
-            ctx.fillText('FRAMEGRID v0.19d', 22, headerH * 0.65);
+            ctx.fillText('FRAMEGRID v0.19k', 22, headerH * 0.65);
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.font = `${headerFontSize}px system-ui`;
-            const logoWidth = ctx.measureText('FRAMEGRID v0.19d').width;
+            const logoWidth = ctx.measureText('FRAMEGRID v0.19k').width;
             const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · Frame ${i + 1}/${state.frames.length}`;
             ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
           }
@@ -4636,7 +4871,7 @@ function getLongStrokeTrailFrames() {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.19d';
+      const logoText = 'FRAMEGRID v0.19k';
       const dateStr = state.videoDate ? formatDate(state.videoDate) : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const metaText = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${frameCount}f${cellInfo}${dateStr ? ' · ' + dateStr : ''}`;
@@ -4759,7 +4994,7 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.19d';
+      const logoText = 'FRAMEGRID v0.19k';
       const metaText = `${state.videoFile?.name || 'video'} · Frame ${frameIdx + 1}/${frameCount} · ${formatTime(frame.time)}`;
       
       // Auto-fit font size
@@ -5016,11 +5251,11 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
       
       ctx.fillStyle = '#fff';
       ctx.font = `700 ${headerFontSize}px system-ui`;
-      ctx.fillText('FRAMEGRID v0.19d', 22, headerH * 0.65);
+      ctx.fillText('FRAMEGRID v0.19k', 22, headerH * 0.65);
       
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.font = `${headerFontSize}px system-ui`;
-      const logoWidth = ctx.measureText('FRAMEGRID v0.19d').width;
+      const logoWidth = ctx.measureText('FRAMEGRID v0.19k').width;
       const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${cellInfo}${dateStr}`;
@@ -5137,38 +5372,109 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
   framesGrid.style.setProperty('--img-off-x', `${state.frameImgOffX}%`);
   framesGrid.style.setProperty('--img-off-y', `${state.frameImgOffY}%`);
 
-  document.onkeydown = e => {
-    if (e.target.matches('input,select')) return;
-    const key = e.key;
-    if (key === 'Escape') { closeMenu(); if (state.isPlaying) stopAnimation(); if (state.drawMode) toggleDrawMode(); }
-    else if (key === ' ') { e.preventDefault(); state.isPlaying ? stopAnimation() : startAnimation(); }
-    else if (key === 'f' || key === 'F') { state.viewMode === 'single' ? fitToSingleFrame() : fitToScreen(); }
-    else if (key === 'm' || key === 'M') toggleMenu();
-    else if (key === 'd' || key === 'D') toggleDrawMode();
-    else if (key === 'g' || key === 'G') setViewMode('grid');
-    else if (key === '1') setViewMode('single');
-    else if (key === 'ArrowLeft') { e.preventDefault(); stepFrame(-1); }
-    else if (key === 'ArrowRight') { e.preventDefault(); stepFrame(1); }
-    else if (key === 'Home') { e.preventDefault(); resetToStart(); }
-    else if (key === 'End') { e.preventDefault(); state.currentTick = state.frames.length - 1; updateAllCells(); }
-    else if (state.drawMode) {
-      if (key === 'e' || key === 'E') { state.drawEraser = !state.drawEraser; drawEraserBtn.classList.toggle('active', state.drawEraser); drawCanvas.style.cursor = state.drawEraser ? 'cell' : 'crosshair'; brushCursor.classList.toggle('eraser', state.drawEraser); }
-      else if (key === 'i' || key === 'I') { eyedropperActive = !eyedropperActive; if (drawEyedropperBtn) drawEyedropperBtn.classList.toggle('active', eyedropperActive); drawCanvas.style.cursor = eyedropperActive ? 'crosshair' : 'default'; }
-      else if (key === 'c' || key === 'C') { if (drawClear) drawClear.onclick(); }
-      else if (key === 'o' || key === 'O') toggleOnionSkin();
-      else if (key === 'l' || key === 'L') { state.drawLongStroke = !state.drawLongStroke; drawLongStrokeBtn.classList.toggle('active', state.drawLongStroke); }
-      else if (key === 'b' || key === 'B') setDrawTarget('background');
-      else if (key === 't' || key === 'T') setDrawTarget('template');
-      else if (key === 'r' || key === 'R') setDrawTarget('frame');
-      else if (key === '[') setDrawSize((state.drawSize || 4) - 4);
-      else if (key === ']') setDrawSize((state.drawSize || 4) + 4);
-      else if (key === '1') { state.brushType = 'round'; brushBtns.forEach(b => b.classList.toggle('active', b.dataset.brush === 'round')); }
-      else if (key === '2') { state.brushType = 'pencil'; brushBtns.forEach(b => b.classList.toggle('active', b.dataset.brush === 'pencil')); }
-      else if (key === '3') { state.brushType = 'spray'; brushBtns.forEach(b => b.classList.toggle('active', b.dataset.brush === 'spray')); }
-      else if (key === '4') { state.brushType = 'calligraphy'; brushBtns.forEach(b => b.classList.toggle('active', b.dataset.brush === 'calligraphy')); }
-      else if ((e.ctrlKey || e.metaKey) && key === 'z') { e.preventDefault(); drawUndo.onclick(); }
+  
+  function isTypingContext(el) {
+    if (!el) return false;
+    if (el.isContentEditable) return true;
+    const tag = (el.tagName || '').toLowerCase();
+    if (tag === 'textarea') return true;
+    if (tag === 'input') {
+      const t = (el.type || '').toLowerCase();
+      return ['text','search','email','url','tel','password','number'].includes(t);
     }
-  };
+    if (tag === 'select') return true;
+    return false;
+  }
+
+  function shouldLetFormHandleKey(e) {
+    const el = e.target;
+    const tag = (el && el.tagName ? el.tagName.toLowerCase() : '');
+    if (tag === 'textarea') return true;
+
+    if (tag === 'input') {
+      const t = (el.type || '').toLowerCase();
+      const k = e.key;
+
+      // Always allow navigation/edit keys inside inputs
+      if (['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Tab','Enter'].includes(k)) return true;
+
+      if (t === 'number') {
+        // Allow only numeric editing chars for number inputs. Everything else can be a hotkey.
+        if ((k >= '0' && k <= '9') || k === '.' || k === '-' ) return true;
+        return false;
+      }
+
+      // For text-like inputs, allow normal typing
+      if (k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) return true;
+      return false;
+    }
+
+    if (tag === 'select') {
+      // Let selects keep their usual behavior for arrows/enter/space.
+      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Tab','Enter',' '].includes(e.key)) return true;
+      return false;
+    }
+
+    return false;
+  }
+
+  // Hotkeys should work even after clicking the menu, so we listen in capture phase.
+  // In this build, UI actions are mostly wired as button clicks. We provide small wrappers so hotkeys stay stable.
+  function togglePlay() {
+    if (state.isPlaying) stopAnimation();
+    else startAnimation();
+  }
+  function setDrawMode(on) {
+    const desired = !!on;
+    if (!!state.drawMode !== desired) toggleDrawMode();
+  }
+  function toggleEraser() {
+    if (typeof drawEraserBtn !== 'undefined' && drawEraserBtn) drawEraserBtn.click();
+  }
+  function undoDraw() {
+    if (typeof drawUndo !== 'undefined' && drawUndo) drawUndo.click();
+  }
+  function clearDrawTarget() {
+    if (typeof drawClear !== 'undefined' && drawClear) drawClear.click();
+  }
+  function togglePalette() {
+    // Palette visibility only, does not change draw mode.
+    if (typeof drawPalette !== 'undefined' && drawPalette) drawPalette.classList.toggle('visible');
+  }
+
+  window.addEventListener('keydown', (e) => {
+    // Let the browser handle OS/app shortcuts
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    const k = e.key;
+
+    // Escape should always work
+    if (k === 'Escape') {
+      e.preventDefault();
+      if (typeof closeAllPopups === 'function') closeAllPopups();
+      if (state.drawMode) setDrawMode(false);
+      return;
+    }
+
+    // If user is actively typing in a text field, don't steal their characters.
+    if (isTypingContext(e.target) && shouldLetFormHandleKey(e)) return;
+
+    const key = (k || '').toLowerCase();
+
+    if (key === ' ') { e.preventDefault(); togglePlay(); }
+    else if (key === 'd') { e.preventDefault(); setDrawMode(!state.drawMode); }
+    else if (key === 'b') { e.preventDefault(); setDrawTarget('bg'); }
+    else if (key === 't') { e.preventDefault(); setDrawTarget('tpl'); }
+    else if (key === 'f') { e.preventDefault(); setDrawTarget('frame'); }
+    else if (key === 'e') { e.preventDefault(); toggleEraser(); }
+    else if (key === 'x') { e.preventDefault(); setDrawMode(false); }
+    else if (key === 'z') { e.preventDefault(); undoDraw(); }
+    else if (key === 'c') { e.preventDefault(); clearDrawTarget(); }
+    else if (key === 'i') { e.preventDefault(); toggleInfoCard(); }
+    else if (key === 'p') { e.preventDefault(); togglePalette(); }
+    else if (key === 'r') { e.preventDefault(); regenerateGrid(); }
+  }, true);
+
 
   // Viewport changes (resize/orientation) - stabilize layout on iPad/Safari/Chrome
   let viewportTimeout;
