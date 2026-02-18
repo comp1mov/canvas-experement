@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.20                                     ║
+║      FRAMEGRID v0.21 STABLE                                    ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.20</title>
+  <title>FRAMEGRID v0.21</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -2287,12 +2287,16 @@ function updateAllCells() {
     if (!frameCount) return;
     const cellOrder = generateCellOrder(totalCells, state.gridCols);
     const pingPongCycle = frameCount > 1 ? (frameCount - 1) * 2 : 1;
+    
+    // Pre-compute reverse mapping for O(1) lookup instead of O(n) indexOf
+    const cellOrderMap = new Map();
+    cellOrder.forEach((cell, idx) => cellOrderMap.set(cell, idx));
 
     items.forEach((item, i) => {
       if (i < offset) return;
       const cellIdx = i - offset;
-      const cellOrderIdx = cellOrder.indexOf(cellIdx);
-      const rawOffset = cellOrderIdx >= 0 ? cellOrderIdx : 0;
+      const cellOrderIdx = cellOrderMap.get(cellIdx) ?? 0;
+      const rawOffset = cellOrderIdx;
       // Loop phases: scale offset so pattern repeats gridLoops times across grid
       const phaseCount = Math.max(1, state.gridLoops || 1);
       const cellOffset = Math.floor(rawOffset * frameCount * phaseCount / Math.max(1, totalCells)) % frameCount;
@@ -2734,7 +2738,8 @@ let isDrawing = false;
   }
 function resizeDrawCanvas() {
     const inner = canvasInner;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    // Use lower resolution on touch devices to improve performance
+    const dpr = _isCoarsePointer ? 1 : Math.min(2, window.devicePixelRatio || 1);
     const newW = Math.round(inner.scrollWidth * dpr);
     const newH = Math.round(inner.scrollHeight * dpr);
 
@@ -3982,7 +3987,7 @@ const nowTick = getLongStrokeTick();
           longStrokePath = [{ u, v, brk: true, t: getLongStrokeTick() }];
           longStrokeLastFrame = hit.frameIdx;
           longStrokeBaseHit = hit;
-          lastPointerPos = { x: pt.x, y: pt.y };
+          lastPointerPos = { x: lastPoint.x, y: lastPoint.y };
           longStrokeEndTick = null;
 
           longStrokeFrameTicks.set(hit.frameIdx, getLongStrokeTick());
@@ -3998,7 +4003,7 @@ const nowTick = getLongStrokeTick();
         longStrokePath = [{ u, v, brk: true, t: getLongStrokeTick() }];
         longStrokeLastFrame = hit.frameIdx;
         longStrokeBaseHit = hit;
-        lastPointerPos = { x: pt.x, y: pt.y };
+        lastPointerPos = { x: lastPoint.x, y: lastPoint.y };
         longStrokeEndTick = null;
       }
       
