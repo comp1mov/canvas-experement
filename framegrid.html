@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.19k                                          ║
+║      FRAMEGRID v0.20                                     ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.19k</title>
+  <title>FRAMEGRID v0.20</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -53,7 +53,7 @@
     .canvas-inner { position: absolute; transform-origin: 0 0; padding: clamp(520px, 28vw, 1400px); box-sizing: border-box; }
 
     /* GRID */
-    .frames-grid { display: grid; gap: var(--grid-gap, 2px); }
+    .frames-grid { display: grid; gap: var(--grid-gap, 2px); width: max-content; align-content: start; }
     .frame-item { background: #000; position: relative; }
     .frame-item.dimmed { opacity: 0.25; }
     .frame-image-wrap {
@@ -68,6 +68,24 @@
       transform: translate(var(--img-off-x, 0%), var(--img-off-y, 0%)) scale(var(--img-scale, 1));
       transform-origin: center;
     }
+
+    /* Onion skin overlay (prev/next frames) */
+    .frame-image-wrap img.frame-onion {
+      position: absolute; inset: 0; z-index: 2;
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      pointer-events: none;
+      transform: translate(var(--img-off-x, 0%), var(--img-off-y, 0%)) scale(var(--img-scale, 1));
+      transform-origin: center;
+      mix-blend-mode: normal;
+    }
+    .frames-grid.onion-off img.frame-onion { display: none; }
+    .frame-image-wrap img.onion-prev1 { opacity: 0.50; }
+    .frame-image-wrap img.onion-prev2 { opacity: 0.25; }
+    .frame-image-wrap img.onion-next1 { opacity: 0.50; }
+    .frame-image-wrap img.onion-next2 { opacity: 0.25; }
+
+    .frame-timecode { z-index: 3; }
     
     .frame-timecode {
       position: absolute; z-index: 2;
@@ -574,7 +592,7 @@
   
   <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-      <div class="metadata-logo">FRAMEGRID v0.19k</div>
+      <div class="metadata-logo">FRAMEGRID v0.20</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -1016,7 +1034,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version 0.19k (gpt-5.2)</div>
+          <div class="about-version">Version 20</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
           <div class="about-hotkeys">
@@ -1064,6 +1082,8 @@
     tcShowTime: false,
     tcShowFrame: true, // F123
     autoFit: true, canvasAspect: 'auto', bgColor: '#020202',
+    previewCellW: 240, // preview cell width in CSS px (stabilizes iPad grid sizing)
+
     fontSize: 10, spacing: 2,
     tcTextColor: '#ffffff', tcBgColor: '#000000', tcOpacity: 0.7,
     tcAlign: 'left', tcPosition: 'top', tcPadding: 0, tcMargin: 0,
@@ -1324,7 +1344,7 @@ for (let i = 0; i < times.length; i++) {
     metaFrames.innerHTML = `<span>${state.frames.length}f</span>`;
     renderGrid();
     updateGridHint();
-    if (state.autoFit) fitToScreen();
+    if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); }
     setTimeout(generateVideoPalette, 100); // auto-generate palette from video
   }
   function regenerateGrid() {
@@ -1605,7 +1625,10 @@ for (let i = 0; i < times.length; i++) {
 
   function renderGrid() {
     framesGrid.innerHTML = '';
-    framesGrid.style.gridTemplateColumns = `repeat(${state.gridCols}, 1fr)`;
+    framesGrid.classList.toggle('onion-off', !state.drawOnion);
+    framesGrid.style.setProperty('--cell-w', `${state.previewCellW || 240}px`);
+    framesGrid.style.gridTemplateColumns = `repeat(${state.gridCols}, var(--cell-w))`;
+    framesGrid.style.gridAutoRows = 'auto';
     framesGrid.style.setProperty('--grid-gap', `${state.spacing}px`);
     framesGrid.style.setProperty('--meta-font-size', `${state.fontSize}px`);
     applyFrameImgTransform();
@@ -2049,7 +2072,7 @@ function fitToSingleFrame() {
   if (toggleTcTime) toggleTcTime.onclick = () => { state.tcShowTime = !state.tcShowTime; toggleTcTime.classList.toggle('active', state.tcShowTime); updateAllTimecodes(); updateTimecodeVisibility(); };
   if (toggleTcFrame) toggleTcFrame.onclick = () => { state.tcShowFrame = !state.tcShowFrame; toggleTcFrame.classList.toggle('active', state.tcShowFrame); updateAllTimecodes(); updateTimecodeVisibility(); };
   
-  toggleInfoCard.onclick = () => { state.showInfoCard = !state.showInfoCard; toggleInfoCard.classList.toggle('active', state.showInfoCard); if (state.frames.length) { renderGrid(); updateGridHint(); if (state.autoFit) fitToScreen(); } };
+  toggleInfoCard.onclick = () => { state.showInfoCard = !state.showInfoCard; toggleInfoCard.classList.toggle('active', state.showInfoCard); if (state.frames.length) { renderGrid(); updateGridHint(); if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); } } };
   toggleAutoFit.onclick = () => {
     state.autoFit = !state.autoFit;
     toggleAutoFit.classList.toggle('active', state.autoFit);
@@ -2063,15 +2086,15 @@ function fitToSingleFrame() {
   };
 
   fontSizeSlider.oninput = () => { state.fontSize = parseInt(fontSizeSlider.value); fontSizeValue.textContent = `${state.fontSize}px`; framesGrid.style.setProperty('--meta-font-size', `${state.fontSize}px`); };
-  spacingSlider.oninput = () => { state.spacing = parseInt(spacingSlider.value); spacingValue.textContent = `${state.spacing}px`; framesGrid.style.setProperty('--grid-gap', `${state.spacing}px`); if (state.autoFit) fitToScreen(); };
+  spacingSlider.oninput = () => { state.spacing = parseInt(spacingSlider.value); spacingValue.textContent = `${state.spacing}px`; framesGrid.style.setProperty('--grid-gap', `${state.spacing}px`); if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); } };
   bgColorInput.oninput = () => { state.bgColor = bgColorInput.value; app.style.setProperty('--bg-color', state.bgColor); };
 
   // Timecode style controls
   tcTextColorInput.oninput = () => { state.tcTextColor = tcTextColorInput.value; updateTimecodeStyles(); };
   tcBgColorInput.oninput = () => { state.tcBgColor = tcBgColorInput.value; updateTimecodeStyles(); };
   tcOpacitySlider.oninput = () => { state.tcOpacity = parseInt(tcOpacitySlider.value) / 100; tcOpacityValue.textContent = `${tcOpacitySlider.value}%`; updateTimecodeStyles(); };
-  tcAlignSelect.onchange = () => { state.tcAlign = tcAlignSelect.value; renderGrid(); if (state.autoFit) fitToScreen(); };
-  tcPositionSelect.onchange = () => { state.tcPosition = tcPositionSelect.value; renderGrid(); if (state.autoFit) fitToScreen(); };
+  tcAlignSelect.onchange = () => { state.tcAlign = tcAlignSelect.value; renderGrid(); if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); } };
+  tcPositionSelect.onchange = () => { state.tcPosition = tcPositionSelect.value; renderGrid(); if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); } };
   const tcPaddingSlider = $('tcPaddingSlider'), tcPaddingValue = $('tcPaddingValue');
   if (tcPaddingSlider) tcPaddingSlider.oninput = () => { state.tcPadding = parseInt(tcPaddingSlider.value); tcPaddingValue.textContent = `${state.tcPadding}px`; updateTimecodeStyles(); };
   const tcMarginSlider = $('tcMarginSlider'), tcMarginValue = $('tcMarginValue');
@@ -2235,7 +2258,28 @@ function fitToSingleFrame() {
   }
   
   // FIX v0.16: updateAllCells uses state.currentTick, updates BOTH img elements
-  function updateAllCells() {
+  
+  function updateOnionForItem(item, frameIdx) {
+    if (!state.drawOnion) return;
+    const n = state.frames.length;
+    if (!n) return;
+    const idxPrev1 = (frameIdx - 1 + n) % n;
+    const idxPrev2 = (frameIdx - 2 + n) % n;
+    const idxNext1 = (frameIdx + 1) % n;
+    const idxNext2 = (frameIdx + 2) % n;
+
+    const p1 = item.querySelector('img.onion-prev1');
+    const p2 = item.querySelector('img.onion-prev2');
+    const n1 = item.querySelector('img.onion-next1');
+    const n2 = item.querySelector('img.onion-next2');
+
+    if (p1) p1.src = state.frames[idxPrev1].dataUrl;
+    if (p2) p2.src = state.frames[idxPrev2].dataUrl;
+    if (n1) n1.src = state.frames[idxNext1].dataUrl;
+    if (n2) n2.src = state.frames[idxNext2].dataUrl;
+  }
+
+function updateAllCells() {
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
     const totalCells = items.length - offset;
@@ -2272,6 +2316,7 @@ function fitToSingleFrame() {
 
       const mainImg = item.querySelector('.frame-main-img');
       if (mainImg) mainImg.src = frame.dataUrl;
+      updateOnionForItem(item, frameIdx);
 
       const tc = item.querySelector('.frame-timecode');
       if (tc && computeShowTimecode()) {
@@ -3204,20 +3249,89 @@ function compositeAllLayers() {
 
   function drawSmoothLine(ctx, from, to, color, size, eraser) {
     ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = size;
-    
+
+    const brush = state.brushType || 'round';
+
+    // Common state
     if (eraser) {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.strokeStyle = 'rgba(0,0,0,1)';
+      ctx.fillStyle = 'rgba(0,0,0,1)';
+      ctx.globalAlpha = 1;
     } else {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = state.drawOpacity || 1;
       ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.globalAlpha = state.drawOpacity || 1;
     }
-    
-    ctx.beginPath();
+
+    // Brush styles
+    if (brush === 'pencil') {
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'miter';
+      ctx.lineWidth = Math.max(1, size * 0.65);
+      if (!eraser) ctx.globalAlpha *= 0.75;
+    } else if (brush === 'spray') {
+      // Light spray: stamp small dots along the segment
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const dist = Math.hypot(dx, dy) || 0;
+      const step = Math.max(2, size * 0.55);
+      const steps = Math.max(1, Math.ceil(dist / step));
+      const count = Math.min(10, Math.max(4, Math.round(size * 0.8)));
+      const radius = Math.max(2, size * 0.9);
+      if (!eraser) ctx.globalAlpha *= 0.35;
+
+      for (let i = 0; i <= steps; i++) {
+        const t = steps === 0 ? 0 : (i / steps);
+        const cx = from.x + dx * t;
+        const cy = from.y + dy * t;
+        for (let j = 0; j < count; j++) {
+          const a = Math.random() * Math.PI * 2;
+          const r = Math.random() * radius;
+          const px = cx + Math.cos(a) * r;
+          const py = cy + Math.sin(a) * r;
+          ctx.beginPath();
+          ctx.arc(px, py, 1.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+      return;
+    } else if (brush === 'calligraphy') {
+      // Simple calligraphy: stamp thin ellipses oriented to stroke direction
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const dist = Math.hypot(dx, dy) || 0;
+      const ang = Math.atan2(dy, dx) + Math.PI / 6; // slight slant
+      const step = Math.max(2, size * 0.65);
+      const steps = Math.max(1, Math.ceil(dist / step));
+      const w = Math.max(2, size * 1.1);
+      const h = Math.max(1, size * 0.35);
+      if (!eraser) ctx.globalAlpha *= 0.85;
+
+      for (let i = 0; i <= steps; i++) {
+        const t = steps === 0 ? 0 : (i / steps);
+        const cx = from.x + dx * t;
+        const cy = from.y + dy * t;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(ang);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+      return;
+    } else {
+      // round (default)
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = size;
+    }
+
+ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     const midX = (from.x + to.x) / 2;
     const midY = (from.y + to.y) / 2;
@@ -3237,9 +3351,42 @@ function compositeAllLayers() {
       ctx.globalAlpha = state.drawOpacity || 1;
       ctx.fillStyle = color;
     }
-    ctx.beginPath();
-    ctx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
-    ctx.fill();
+    const brush = state.brushType || 'round';
+
+    if (brush === 'spray') {
+      const count = Math.min(14, Math.max(6, Math.round(size * 1.2)));
+      const radius = Math.max(2, size * 1.0);
+      if (!eraser) ctx.globalAlpha *= 0.35;
+      for (let j = 0; j < count; j++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.random() * radius;
+        const px = point.x + Math.cos(a) * r;
+        const py = point.y + Math.sin(a) * r;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (brush === 'calligraphy') {
+      const w = Math.max(2, size * 1.1);
+      const h = Math.max(1, size * 0.35);
+      const ang = Math.PI / 6;
+      ctx.save();
+      ctx.translate(point.x, point.y);
+      ctx.rotate(ang);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else if (brush === 'pencil') {
+      const s2 = Math.max(1, size * 0.65);
+      if (!eraser) ctx.globalAlpha *= 0.75;
+      ctx.fillRect(point.x - s2 / 2, point.y - s2 / 2, s2, s2);
+    } else {
+      // round
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
   
@@ -3974,6 +4121,8 @@ const nowTick = getLongStrokeTick();
   function toggleOnionSkin() {
     state.drawOnion = !state.drawOnion;
     drawOnionBtn.classList.toggle('active', state.drawOnion);
+    framesGrid.classList.toggle('onion-off', !state.drawOnion);
+    if (state.frames.length) updateAllCells();
   }
   
   function setDrawColor(color) {
@@ -4462,10 +4611,10 @@ const nowTick = getLongStrokeTick();
         ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
         ctx.fillStyle = '#fff';
         ctx.font = `700 ${headerFontSize}px system-ui`;
-        ctx.fillText('FRAMEGRID v0.19k', 22, headerH * 0.65);
+        ctx.fillText('FRAMEGRID v0.20', 22, headerH * 0.65);
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = `${headerFontSize}px system-ui`;
-        const logoWidth = ctx.measureText('FRAMEGRID v0.19k').width;
+        const logoWidth = ctx.measureText('FRAMEGRID v0.20').width;
         const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
         const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${dateStr}`;
         ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
@@ -4595,10 +4744,10 @@ const nowTick = getLongStrokeTick();
             ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
             ctx.fillStyle = '#fff';
             ctx.font = `700 ${headerFontSize}px system-ui`;
-            ctx.fillText('FRAMEGRID v0.19k', 22, headerH * 0.65);
+            ctx.fillText('FRAMEGRID v0.20', 22, headerH * 0.65);
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.font = `${headerFontSize}px system-ui`;
-            const logoWidth = ctx.measureText('FRAMEGRID v0.19k').width;
+            const logoWidth = ctx.measureText('FRAMEGRID v0.20').width;
             const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · Frame ${i + 1}/${state.frames.length}`;
             ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
           }
@@ -4871,7 +5020,7 @@ const nowTick = getLongStrokeTick();
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.19k';
+      const logoText = 'FRAMEGRID v0.20';
       const dateStr = state.videoDate ? formatDate(state.videoDate) : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const metaText = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${frameCount}f${cellInfo}${dateStr ? ' · ' + dateStr : ''}`;
@@ -4994,7 +5143,7 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.19k';
+      const logoText = 'FRAMEGRID v0.20';
       const metaText = `${state.videoFile?.name || 'video'} · Frame ${frameIdx + 1}/${frameCount} · ${formatTime(frame.time)}`;
       
       // Auto-fit font size
@@ -5251,11 +5400,11 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
       
       ctx.fillStyle = '#fff';
       ctx.font = `700 ${headerFontSize}px system-ui`;
-      ctx.fillText('FRAMEGRID v0.19k', 22, headerH * 0.65);
+      ctx.fillText('FRAMEGRID v0.20', 22, headerH * 0.65);
       
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.font = `${headerFontSize}px system-ui`;
-      const logoWidth = ctx.measureText('FRAMEGRID v0.19k').width;
+      const logoWidth = ctx.measureText('FRAMEGRID v0.20').width;
       const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${cellInfo}${dateStr}`;
@@ -5473,6 +5622,9 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
     else if (key === 'i') { e.preventDefault(); toggleInfoCard(); }
     else if (key === 'p') { e.preventDefault(); togglePalette(); }
     else if (key === 'r') { e.preventDefault(); regenerateGrid(); }
+    else if (k === '[') { e.preventDefault(); state.drawSize = Math.max(1, (state.drawSize|0) - 1); updateDrawSizeUI(); }
+    else if (k === ']') { e.preventDefault(); state.drawSize = Math.min(200, (state.drawSize|0) + 1); updateDrawSizeUI(); }
+    else if (key === 'm') { e.preventDefault(); toggleMenu(); }
   }, true);
 
 
