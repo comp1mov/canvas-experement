@@ -592,7 +592,7 @@
   
   <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-      <div class="metadata-logo">FRAMEGRID v0.20</div>
+      <div class="metadata-logo">FRAMEGRID v0.21</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -629,9 +629,9 @@
 
         <div class="draw-palette-row" style="gap:3px;">
           <button class="draw-btn draw-brush-btn active" data-brush="round" title="Round brush (1)">●</button>
-          <button class="draw-btn draw-brush-btn" data-brush="pencil" title="Pencil (2)">✎</button>
+          <button class="draw-btn draw-brush-btn" data-brush="pencil" title="Pencil (2)" style="display:none;">✎</button>
           <button class="draw-btn draw-brush-btn" data-brush="spray" title="Spray (3)">✦</button>
-          <button class="draw-btn draw-brush-btn" data-brush="calligraphy" title="Calligraphy (4)">⟋</button>
+          <button class="draw-btn draw-brush-btn" data-brush="calligraphy" title="Calligraphy (4)" style="display:none;">⟋</button>
         </div>
 
         <div class="draw-slider-block">
@@ -661,7 +661,7 @@
           <button class="draw-target-btn" data-target="frame" title="Draw on current frame (R)">FRM</button>
         </div>
         <div class="draw-palette-row" style="gap:3px;">
-          <button class="draw-btn" id="drawOnion" title="Onion Skin (O)">◐</button>
+          <button class="draw-btn" id="drawOnion" title="Onion Skin (O)" style="display:none;">◐</button>
           <button class="draw-btn" id="drawLongStroke" title="Long Stroke trail (L)">⟿</button>
           <span style="font-size:9px;color:#888;">trail:</span>
           <input type="number" class="menu-input" id="longStrokeFade" value="8" min="0" max="50" style="width:36px;height:20px;font-size:10px;padding:1px 3px;">
@@ -1034,7 +1034,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version 20</div>
+          <div class="about-version">Version 21</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
           <div class="about-hotkeys">
@@ -1746,9 +1746,17 @@ for (let i = 0; i < times.length; i++) {
   // Touch
   let lastDist = 0;
   let lastTouchCenter = null;
+  let threeFingersStartY = null;
+  let threeFingersStartSize = null;
+  
   canvasArea.ontouchstart = e => {
     if (e.target.closest('.drop-zone,.side-menu,.draw-palette')) return;
-    if (e.touches.length === 1 && !state.drawMode) {
+    if (e.touches.length === 3 && state.drawMode) {
+      // Three fingers = brush size adjustment
+      e.preventDefault();
+      threeFingersStartY = (e.touches[0].clientY + e.touches[1].clientY + e.touches[2].clientY) / 3;
+      threeFingersStartSize = state.drawSize;
+    } else if (e.touches.length === 1 && !state.drawMode) {
       // Single finger pan (only when not drawing)
       state.isPanning = true;
       state.startMouseX = e.touches[0].clientX; state.startMouseY = e.touches[0].clientY;
@@ -1766,7 +1774,15 @@ for (let i = 0; i < times.length; i++) {
   };
   canvasArea.ontouchmove = e => {
     if (e.target.closest('.drop-zone,.side-menu,.draw-palette')) return;
-    if (e.touches.length === 2) {
+    if (e.touches.length === 3 && threeFingersStartY !== null && state.drawMode) {
+      // Three fingers drag = change brush size
+      e.preventDefault();
+      const currentY = (e.touches[0].clientY + e.touches[1].clientY + e.touches[2].clientY) / 3;
+      const deltaY = threeFingersStartY - currentY; // up = bigger
+      const newSize = Math.max(1, Math.min(120, threeFingersStartSize + Math.round(deltaY / 3)));
+      state.drawSize = newSize;
+      updateDrawSizeUI();
+    } else if (e.touches.length === 2) {
       e.preventDefault();
       const dist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
       const rect = canvasArea.getBoundingClientRect();
@@ -1800,7 +1816,7 @@ for (let i = 0; i < times.length; i++) {
       updateTransform();
     }
   };
-  canvasArea.ontouchend = () => { state.isPanning = false; lastDist = 0; lastTouchCenter = null; };
+  canvasArea.ontouchend = () => { state.isPanning = false; lastDist = 0; lastTouchCenter = null; threeFingersStartY = null; threeFingersStartSize = null; };
 
   function updateTransform() {
     const MIN_VIEW_SCALE = 0.15;
@@ -1812,12 +1828,14 @@ for (let i = 0; i < times.length; i++) {
     if (!Number.isFinite(state.panX)) state.panX = 0;
     if (!Number.isFinite(state.panY)) state.panY = 0;
     
-    // Clamp pan so content can't fly off screen
+    // Clamp pan so content stays mostly visible
     const areaRect = canvasArea.getBoundingClientRect();
     if (areaRect.width > 0 && areaRect.height > 0) {
-      const maxPan = Math.max(areaRect.width, areaRect.height) * state.scale * 2;
-      state.panX = Math.max(-maxPan, Math.min(maxPan, state.panX));
-      state.panY = Math.max(-maxPan, Math.min(maxPan, state.panY));
+      // Allow panning up to 80% of viewport in each direction
+      const maxPanX = areaRect.width * 0.8;
+      const maxPanY = areaRect.height * 0.8;
+      state.panX = Math.max(-maxPanX, Math.min(maxPanX, state.panX));
+      state.panY = Math.max(-maxPanY, Math.min(maxPanY, state.panY));
     }
 
     canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.scale})`;
@@ -4616,10 +4634,10 @@ const nowTick = getLongStrokeTick();
         ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
         ctx.fillStyle = '#fff';
         ctx.font = `700 ${headerFontSize}px system-ui`;
-        ctx.fillText('FRAMEGRID v0.20', 22, headerH * 0.65);
+        ctx.fillText('FRAMEGRID v0.21', 22, headerH * 0.65);
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = `${headerFontSize}px system-ui`;
-        const logoWidth = ctx.measureText('FRAMEGRID v0.20').width;
+        const logoWidth = ctx.measureText('FRAMEGRID v0.21').width;
         const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
         const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${dateStr}`;
         ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
@@ -4749,10 +4767,10 @@ const nowTick = getLongStrokeTick();
             ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
             ctx.fillStyle = '#fff';
             ctx.font = `700 ${headerFontSize}px system-ui`;
-            ctx.fillText('FRAMEGRID v0.20', 22, headerH * 0.65);
+            ctx.fillText('FRAMEGRID v0.21', 22, headerH * 0.65);
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.font = `${headerFontSize}px system-ui`;
-            const logoWidth = ctx.measureText('FRAMEGRID v0.20').width;
+            const logoWidth = ctx.measureText('FRAMEGRID v0.21').width;
             const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · Frame ${i + 1}/${state.frames.length}`;
             ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
           }
@@ -5025,7 +5043,7 @@ const nowTick = getLongStrokeTick();
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.20';
+      const logoText = 'FRAMEGRID v0.21';
       const dateStr = state.videoDate ? formatDate(state.videoDate) : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const metaText = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${frameCount}f${cellInfo}${dateStr ? ' · ' + dateStr : ''}`;
@@ -5148,7 +5166,7 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.20';
+      const logoText = 'FRAMEGRID v0.21';
       const metaText = `${state.videoFile?.name || 'video'} · Frame ${frameIdx + 1}/${frameCount} · ${formatTime(frame.time)}`;
       
       // Auto-fit font size
@@ -5405,11 +5423,11 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
       
       ctx.fillStyle = '#fff';
       ctx.font = `700 ${headerFontSize}px system-ui`;
-      ctx.fillText('FRAMEGRID v0.20', 22, headerH * 0.65);
+      ctx.fillText('FRAMEGRID v0.21', 22, headerH * 0.65);
       
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.font = `${headerFontSize}px system-ui`;
-      const logoWidth = ctx.measureText('FRAMEGRID v0.20').width;
+      const logoWidth = ctx.measureText('FRAMEGRID v0.21').width;
       const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${cellInfo}${dateStr}`;
@@ -5617,9 +5635,9 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
 
     if (key === ' ') { e.preventDefault(); togglePlay(); }
     else if (key === 'd') { e.preventDefault(); setDrawMode(!state.drawMode); }
-    else if (key === 'b') { e.preventDefault(); setDrawTarget('bg'); }
-    else if (key === 't') { e.preventDefault(); setDrawTarget('tpl'); }
-    else if (key === 'f') { e.preventDefault(); setDrawTarget('frame'); }
+    else if (key === 'b') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('background'); }
+    else if (key === 't') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('template'); }
+    else if (key === 'f') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('frame'); }
     else if (key === 'e') { e.preventDefault(); toggleEraser(); }
     else if (key === 'x') { e.preventDefault(); setDrawMode(false); }
     else if (key === 'z') { e.preventDefault(); undoDraw(); }
