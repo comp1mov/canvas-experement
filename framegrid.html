@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.21c STABLE                                    ║
+║      FRAMEGRID v0.21d STABLE                                    ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.21c</title>
+  <title>FRAMEGRID v0.21d</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: pan-x pan-y; }
     html, body {
@@ -593,7 +593,7 @@
   
   <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-      <div class="metadata-logo">FRAMEGRID v0.21c</div>
+      <div class="metadata-logo">FRAMEGRID v0.21</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -1804,8 +1804,14 @@ for (let i = 0; i < times.length; i++) {
       const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       
-      // Zoom
-      if (lastDist) {
+      // Pan first (before zoom adjustment)
+      if (lastTouchCenter) {
+        state.panX += cx - lastTouchCenter.x;
+        state.panY += cy - lastTouchCenter.y;
+      }
+      
+      // Zoom around center point
+      if (lastDist && dist !== lastDist) {
         const newScale = Math.max(0.1, Math.min(10, state.scale * (dist / lastDist)));
         const sc = newScale / state.scale;
         const px = cx - rect.left;
@@ -1813,12 +1819,6 @@ for (let i = 0; i < times.length; i++) {
         state.panX = px - (px - state.panX) * sc;
         state.panY = py - (py - state.panY) * sc;
         state.scale = newScale;
-      }
-      
-      // Pan
-      if (lastTouchCenter) {
-        state.panX += cx - lastTouchCenter.x;
-        state.panY += cy - lastTouchCenter.y;
       }
       
       lastDist = dist;
@@ -1843,12 +1843,19 @@ for (let i = 0; i < times.length; i++) {
     if (!Number.isFinite(state.panX)) state.panX = 0;
     if (!Number.isFinite(state.panY)) state.panY = 0;
     
-    // Clamp pan so content stays mostly visible
+    // Clamp pan - allow more movement when zoomed in
     const areaRect = canvasArea.getBoundingClientRect();
+    const innerRect = canvasInner.getBoundingClientRect();
+    
     if (areaRect.width > 0 && areaRect.height > 0) {
-      // Allow panning up to 80% of viewport in each direction
-      const maxPanX = areaRect.width * 0.8;
-      const maxPanY = areaRect.height * 0.8;
+      // Calculate content size at current scale
+      const contentW = (innerRect.width / state.scale) * state.scale;
+      const contentH = (innerRect.height / state.scale) * state.scale;
+      
+      // Allow panning so at least 20% of content stays visible
+      const maxPanX = Math.max(areaRect.width * 0.5, contentW * 0.8);
+      const maxPanY = Math.max(areaRect.height * 0.5, contentH * 0.8);
+      
       state.panX = Math.max(-maxPanX, Math.min(maxPanX, state.panX));
       state.panY = Math.max(-maxPanY, Math.min(maxPanY, state.panY));
     }
