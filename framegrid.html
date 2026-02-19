@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.21e STABLE                                    ║
+║      FRAMEGRID v0.22 STABLE                                    ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.21e</title>
+  <title>FRAMEGRID v0.22</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: pan-x pan-y; }
     html, body {
@@ -170,6 +170,10 @@
     }
     .menu-section-title::after { content: '−'; font-size: 14px; opacity: 0.5; }
     .menu-section.collapsed .menu-section-title::after { content: '+'; }
+    /* Submenu inside Display */
+    .menu-section.menu-subsection { padding: 10px 0 0 0; border-bottom: none; }
+    .menu-section.menu-subsection .menu-section-title { margin-bottom: 10px; }
+    .menu-section.menu-subsection .menu-section-content { padding: 0; }
     .menu-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .menu-row:last-child { margin-bottom: 0; }
     .menu-label { font-size: 11px; color: rgba(255,255,255,0.75); }
@@ -417,6 +421,26 @@
       border-radius: 50%;
       background: #fff;
     }
+        /* Draw palette - make +/- and number controls match main menu */
+    .draw-palette .menu-input-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .draw-palette .menu-input.menu-input-compact {
+      width: 44px;
+      height: 28px;
+      padding: 4px 6px;
+      font-size: 11px;
+    }
+    .draw-value-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.9);
+      min-width: 28px;
+      text-align: right;
+      user-select: none;
+    }
     /* Touch friendly draw controls */
     @media (pointer: coarse) {
       .draw-palette { padding: 12px; border-radius: 16px; }
@@ -553,57 +577,47 @@
       opacity: 0.3;
     }
     
-    /* Debug console (inside Info panel) */
+    /* Debug console (shown inside Info panel) */
     .debug-console {
-      max-height: 160px;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.55);
-      color: rgba(180,255,210,0.95);
-      border: 1px solid rgba(255,255,255,0.14);
-      padding: 6px 8px;
-      border-radius: 4px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      position: relative;
+      left: auto;
+      right: auto;
+      bottom: auto;
+      max-height: 180px;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      font-family: monospace;
       font-size: 10px;
-      line-height: 1.4;
+      padding: 8px;
+      border-radius: 4px;
+      overflow-y: auto;
+      z-index: 1;
       display: none;
+      border: 1px solid rgba(255,255,255,0.25);
       margin-top: 8px;
       white-space: pre-wrap;
       word-break: break-word;
     }
     .debug-console.visible { display: block; }
-    .info-debug {
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(255,255,255,0.12);
-    }
-    .info-debug-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .info-debug-title {
+    .debug-toggle {
+      position: relative;
+      bottom: auto;
+      left: auto;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 4px 8px;
       font-size: 10px;
-      color: rgba(255,255,255,0.7);
-    }
-    .info-debug-btn {
-      height: 22px;
-      padding: 0 8px;
-      font-size: 10px;
-      letter-spacing: 0.04em;
-      background: rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.92);
-      border: 1px solid rgba(255,255,255,0.20);
-      border-radius: 2px;
+      z-index: 1;
+      border-radius: 4px;
       cursor: pointer;
     }
-    .info-debug-btn:active { transform: translateY(1px); }
-  </style>
+</style>
 </head>
 <body>
 <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-      <div class="metadata-logo">FRAMEGRID v0.21e</div>
+      <div class="metadata-logo">FRAMEGRID v0.22</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -639,18 +653,18 @@
 
         <!-- Row 3: Size slider -->
         <div class="draw-palette-row draw-slider-row" style="gap:4px;">
-          <button class="draw-btn" id="drawSizeMinus" style="width:24px;height:24px;">−</button>
+          <button class="menu-input-btn" id="drawSizeMinus">−</button>
           <input type="range" class="draw-size-slider" id="drawSizeSlider" min="1" max="120" value="4" style="flex:1;">
-          <button class="draw-btn" id="drawSizePlus" style="width:24px;height:24px;">+</button>
-          <span style="font-size:9px;color:#666;min-width:20px;" id="drawSizeLabel">4</span>
+          <button class="menu-input-btn" id="drawSizePlus">+</button>
+          <span class="draw-value-label" id="drawSizeLabel">4</span>
         </div>
 
         <!-- Row 4: Opacity slider with +/- -->
         <div class="draw-palette-row draw-slider-row" style="gap:4px;">
-          <button class="draw-btn" id="drawOpacityMinus" style="width:24px;height:24px;">−</button>
+          <button class="menu-input-btn" id="drawOpacityMinus">−</button>
           <input type="range" class="draw-size-slider" id="drawOpacitySlider" min="5" max="100" value="100" style="flex:1;">
-          <button class="draw-btn" id="drawOpacityPlus" style="width:24px;height:24px;">+</button>
-          <span style="font-size:9px;color:#666;min-width:28px;" id="drawOpacityLabel">100%</span>
+          <button class="menu-input-btn" id="drawOpacityPlus">+</button>
+          <span class="draw-value-label" id="drawOpacityLabel">100%</span>
         </div>
 
         <!-- Row 5: Target buttons -->
@@ -662,13 +676,13 @@
 
         <!-- Row 6: Actions + Long Stroke with +/- -->
         <div class="draw-palette-row" style="gap:3px;align-items:center;">
-          <button class="draw-btn" id="drawUndo" title="Undo (Z, Ctrl+Z)">↶</button>
+          <button class="draw-btn" id="drawUndo" title="Undo (Z)">↶</button>
           <button class="draw-btn" id="drawClear" title="Clear (C)">✕</button>
           <div class="draw-row-sep"></div>
           <button class="draw-btn" id="drawLongStroke" title="Long Stroke (L)">⟿</button>
-          <button class="draw-btn" id="trailMinus" style="width:20px;height:20px;font-size:10px;">−</button>
-          <input type="number" class="menu-input" id="longStrokeFade" value="8" min="0" max="50" style="width:28px;height:20px;font-size:10px;padding:1px 2px;text-align:center;" title="Trail frames">
-          <button class="draw-btn" id="trailPlus" style="width:20px;height:20px;font-size:10px;">+</button>
+          <button class="menu-input-btn" id="trailMinus">−</button>
+          <input type="number" class="menu-input menu-input-compact" id="longStrokeFade" value="8" min="0" max="50" title="Trail frames">
+          <button class="menu-input-btn" id="trailPlus">+</button>
         </div>
       </div>
 
@@ -723,7 +737,9 @@
           <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">Esc</kbd> Close</div>
           <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">D</kbd> Draw</div>
           <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">[ ]</kbd> Brush</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">B/T/R</kbd> Target</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">←/→</kbd> Frame</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">Home/End</kbd> Start/End</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">B/T/F</kbd> Target</div>
         </div>
       </div>
     </div>
@@ -872,7 +888,7 @@
       </div>
 
       <div class="menu-section collapsed">
-        <div class="menu-section-title">Display & Style</div>
+        <div class="menu-section-title">Display</div>
         <div class="menu-section-content">
           <div class="menu-row">
             <span class="menu-label">TC: Index #</span>
@@ -897,7 +913,11 @@
               <span class="menu-slider-value" id="fontSizeValue">10px</span>
             </div>
           </div>
-          <div class="menu-row">
+          
+          <div class="menu-section collapsed menu-subsection">
+            <div class="menu-section-title">Style</div>
+            <div class="menu-section-content">
+<div class="menu-row">
             <span class="menu-label">Background</span>
             <input type="color" class="menu-color-input" id="bgColor" value="#0a0a0a">
           </div>
@@ -946,10 +966,38 @@
               <option value="bottom">Bottom</option>
             </select>
           </div>
+        
+            </div>
+          </div>
+</div>
+      </div>
+
+      
+      <div class="menu-section collapsed">
+        <div class="menu-section-title">Draw</div>
+        <div class="menu-section-content">
+
+
+
+          <div class="menu-row">
+            <span class="menu-label">Spray Spread (Разброс)</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="sprayScatterSlider" min="5" max="300" value="100">
+              <span class="menu-slider-value" id="sprayScatterValue">100%</span>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Spray Dot (Размер)</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="sprayDotScaleSlider" min="5" max="300" value="100">
+              <span class="menu-slider-value" id="sprayDotScaleValue">100%</span>
+            </div>
+          </div>
+            
         </div>
       </div>
 
-      <div class="menu-section collapsed">
+<div class="menu-section collapsed">
         <div class="menu-section-title">Animation Preview</div>
         <div class="menu-section-content">
           <div class="menu-row">
@@ -1036,15 +1084,12 @@
               <div>Upscale: <span id="infoUpscale">—</span></div>
               <div>Zoom: <span id="infoZoom">—</span></div>
               <div>Draw scale: <span id="infoDrawScale">—</span></div>
-          
-              <div class="info-debug">
-                <div class="info-debug-row">
-                  <div class="info-debug-title">Debug</div>
-                  <button class="info-debug-btn" id="debugToggle" title="Toggle debug console">DBG</button>
-                </div>
-                <div class="debug-console" id="debugConsole"></div>
-              </div>
           </div>
+
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+              <button class="debug-toggle" id="debugToggle" title="Toggle debug" style="position:relative;bottom:auto;left:auto;">DBG</button>
+</div>
+            <div class="debug-console" id="debugConsole"></div>
         </div>
       </div>
 
@@ -1054,20 +1099,19 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version 21</div>
+          <div class="about-version">Version 22</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
           <div class="about-hotkeys">
             <div class="about-subtitle">Keyboard Shortcuts</div>
             <div class="hotkey-row"><span class="hotkey">Space</span> Play / Stop</div>
             <div class="hotkey-row"><span class="hotkey">F</span> Fit to Screen</div>
-            <div class="hotkey-row"><span class="hotkey">← / →</span> Prev / Next Frame</div>
-            <div class="hotkey-row"><span class="hotkey">Home</span> Reset to Start</div>
-            <div class="hotkey-row"><span class="hotkey">End</span> Jump to End</div>
             <div class="hotkey-row"><span class="hotkey">M</span> Toggle Menu</div>
             <div class="hotkey-row"><span class="hotkey">D</span> Draw Mode</div>
             <div class="hotkey-row"><span class="hotkey">[ ]</span> Brush Size</div>
-            <div class="hotkey-row"><span class="hotkey">B / T / F</span> Draw Target</div>
+            <div class="hotkey-row"><span class="hotkey">←/→</span> Step Frame</div>
+            <div class="hotkey-row"><span class="hotkey">Home/End</span> Jump Start/End</div>
+            <div class="hotkey-row"><span class="hotkey">B/T/F</span> Draw Target</div>
             <div class="hotkey-row"><span class="hotkey">Esc</span> Close / Stop</div>
           </div>
           
@@ -1156,6 +1200,9 @@ exportQuality: 'hd', // low, medium, high, max
     drawLongStroke: false,
     longStrokeFade: 8,
     brushType: 'round',
+    // Spray brush tuning (multipliers). 1.0 keeps the current look.
+    sprayScatter: 1.0,
+    sprayDotScale: 1.0,
     drawOpacity: 1.0,
     recentColors: [],
     videoPalette: [],
@@ -1241,6 +1288,10 @@ exportQuality: 'hd', // low, medium, high, max
   const tcTextColorInput = $('tcTextColor'), tcBgColorInput = $('tcBgColor');
   const tcOpacitySlider = $('tcOpacitySlider'), tcOpacityValue = $('tcOpacityValue');
   const tcAlignSelect = $('tcAlign'), tcPositionSelect = $('tcPosition');
+
+  // Draw (spray) tuning inside Display & Style
+  const sprayScatterSlider = $('sprayScatterSlider'), sprayScatterValue = $('sprayScatterValue');
+  const sprayDotScaleSlider = $('sprayDotScaleSlider'), sprayDotScaleValue = $('sprayDotScaleValue');
 
   // MENU
   function openMenu() {
@@ -1906,6 +1957,7 @@ for (let i = 0; i < times.length; i++) {
     }
 
     canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.scale})`;
+    if (templateFrame && templateFrame.classList.contains('visible')) updateTemplateFrameFollow();
     scheduleInfoUpdate();
   }
 
@@ -2174,6 +2226,28 @@ function fitToSingleFrame() {
   fontSizeSlider.oninput = () => { state.fontSize = parseInt(fontSizeSlider.value); fontSizeValue.textContent = `${state.fontSize}px`; framesGrid.style.setProperty('--meta-font-size', `${state.fontSize}px`); };
   spacingSlider.oninput = () => { state.spacing = parseInt(spacingSlider.value); spacingValue.textContent = `${state.spacing}px`; framesGrid.style.setProperty('--grid-gap', `${state.spacing}px`); if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); } };
   bgColorInput.oninput = () => { state.bgColor = bgColorInput.value; app.style.setProperty('--bg-color', state.bgColor); };
+
+  // Spray brush tuning (multipliers). 100% keeps the current look.
+  if (sprayScatterSlider && sprayScatterValue) {
+    const init = Math.round((typeof state.sprayScatter === 'number' ? state.sprayScatter : 1) * 100);
+    sprayScatterSlider.value = String(init);
+    sprayScatterValue.textContent = `${init}%`;
+    sprayScatterSlider.oninput = () => {
+      const v = parseInt(sprayScatterSlider.value) || 100;
+      state.sprayScatter = v / 100;
+      sprayScatterValue.textContent = `${v}%`;
+    };
+  }
+  if (sprayDotScaleSlider && sprayDotScaleValue) {
+    const init = Math.round((typeof state.sprayDotScale === 'number' ? state.sprayDotScale : 1) * 100);
+    sprayDotScaleSlider.value = String(init);
+    sprayDotScaleValue.textContent = `${init}%`;
+    sprayDotScaleSlider.oninput = () => {
+      const v = parseInt(sprayDotScaleSlider.value) || 100;
+      state.sprayDotScale = v / 100;
+      sprayDotScaleValue.textContent = `${v}%`;
+    };
+  }
 
   // Timecode style controls
   tcTextColorInput.oninput = () => { state.tcTextColor = tcTextColorInput.value; updateTimecodeStyles(); };
@@ -2591,13 +2665,6 @@ function updateAllCells() {
     updateAllCells();
   }
 
-  function resetToEnd() {
-    if (state.isPlaying) stopAnimation();
-    const total = (state.frameCount || (state.frames ? state.frames.length : 0));
-    state.currentTick = Math.max(0, total - 1);
-    updateAllCells();
-  }
-
   // ==================== DRAWING SYSTEM ====================
   // Layer architecture (bottom to top):
   // 1. bgDrawing - background canvas (around frames)
@@ -2690,6 +2757,9 @@ function updateAllCells() {
   const templateFrameCanvas = $('templateFrameCanvas');
   const templateFrameCtx = templateFrameCanvas ? templateFrameCanvas.getContext('2d') : null;
 
+  // Template follow offset in GRID space (world units). Keeps manual moves stable across pan/zoom.
+  let tplFollow = { dxWorld: 0, dyWorld: 0 };
+
   // Create separate canvases for each layer
   const bgCanvas = document.createElement('canvas');
   const bgCtx = bgCanvas.getContext('2d', { willReadFrequently: true });
@@ -2700,6 +2770,7 @@ function updateAllCells() {
   const frameSheetCanvas = document.createElement('canvas'); // per-frame sheet layer
   const frameSheetCtx = frameSheetCanvas.getContext('2d', { willReadFrequently: true });
 let isDrawing = false;
+  let suppressDrawTouchUntilRelease = false; // multi-touch gesture guard (iPad)
   let skipNextSegment = false; // used when pointer leaves drawable area or misses frame hit
 
   let lastPoint = null;
@@ -2906,32 +2977,64 @@ function resizeDrawCanvas() {
     templateFrame.classList.toggle('visible', !!show);
     if (show) {
       ensureTplCanvasSized();
-      
-      // Position over first frame
-      const items = framesGrid.querySelectorAll('.frame-item');
-      const offset = state.showInfoCard ? 1 : 0;
-      const firstFrame = items[offset];
-      
-      if (firstFrame) {
-        const frameRect = firstFrame.getBoundingClientRect();
-        const headerH = 24;
-        templateFrame.style.left = frameRect.left + 'px';
-        templateFrame.style.top = frameRect.top + 'px';
-        templateFrame.style.width = frameRect.width + 'px';
-        templateFrame.style.height = (frameRect.height + headerH) + 'px';
-      } else {
-        // Fallback - set size based on aspect ratio
-        const aspect = state.videoWidth / state.videoHeight || 16/9;
-        const baseW = Math.min(400, window.innerWidth * 0.4);
-        const baseH = baseW / aspect;
-        const headerH = 24;
-        templateFrame.style.width = baseW + 'px';
-        templateFrame.style.height = (baseH + headerH) + 'px';
-      }
-      
+      syncTemplateFrameToFirstFrame();
       renderTemplateFramePreview();
     }
   }
+
+
+
+  function getTemplateBaseRect() {
+    const items = framesGrid.querySelectorAll('.frame-item');
+    const offset = state.showInfoCard ? 1 : 0;
+    const firstFrame = items[offset];
+    const headerH = 24;
+    if (!firstFrame) return { ok: false, headerH };
+    return { ok: true, headerH, frameRect: firstFrame.getBoundingClientRect() };
+  }
+
+  // Reset to first frame (used when user re-activates Template).
+  function syncTemplateFrameToFirstFrame() {
+    tplFollow.dxWorld = 0;
+    tplFollow.dyWorld = 0;
+    updateTemplateFrameFollow();
+  }
+
+  // Keep Template window moving with pan/zoom, while preserving manual offsets.
+  function updateTemplateFrameFollow() {
+    if (!templateFrame || !templateFrame.classList.contains('visible')) return;
+
+    const base = getTemplateBaseRect();
+    const headerH = base.headerH || 24;
+    const scale = Number.isFinite(state.scale) ? state.scale : 1;
+
+    if (base.ok) {
+      const frameRect = base.frameRect;
+
+      const baseLeft = frameRect.left;
+      const baseTop = frameRect.top - headerH;
+
+      templateFrame.style.left = (baseLeft + (tplFollow.dxWorld * scale)) + 'px';
+      templateFrame.style.top = (baseTop + (tplFollow.dyWorld * scale)) + 'px';
+      templateFrame.style.width = frameRect.width + 'px';
+      templateFrame.style.height = (frameRect.height + headerH) + 'px';
+      // Allow the follow-size to go smaller than the default CSS min-size (important when zooming out).
+      templateFrame.style.minWidth = '0px';
+      templateFrame.style.minHeight = '0px';
+      return;
+    }
+
+    // Fallback: keep existing placement, ensure sane size (header included).
+    const aspect = state.videoWidth / state.videoHeight || 16 / 9;
+    const baseW = Math.min(400, window.innerWidth * 0.4);
+    const baseH = baseW / aspect;
+    templateFrame.style.width = baseW + 'px';
+    templateFrame.style.height = (baseH + headerH) + 'px';
+    templateFrame.style.minWidth = '0px';
+    templateFrame.style.minHeight = '0px';
+  }
+
+
 
   function getCurrentCellDrawSize() {
     const items = framesGrid.querySelectorAll('.frame-item');
@@ -3380,30 +3483,57 @@ function compositeAllLayers() {
       ctx.lineWidth = Math.max(1, size * 0.65);
       if (!eraser) ctx.globalAlpha *= 0.75;
     } else if (brush === 'spray') {
-      // Light spray: stamp small dots along the segment
+      // Spray brush: density and dot size scale with brush size (so it looks consistent on low/high resolutions)
       const dx = to.x - from.x;
       const dy = to.y - from.y;
       const dist = Math.hypot(dx, dy) || 0;
-      const step = Math.max(2, size * 0.55);
+
+      const scatter = Math.min(10, Math.max(0.05, (typeof state.sprayScatter === 'number' ? state.sprayScatter : 1)));
+      const dotScale = Math.min(10, Math.max(0.05, (typeof state.sprayDotScale === 'number' ? state.sprayDotScale : 1)));
+
+      // Spacing between spray "stamps" along the segment
+      const step = Math.max(1.0, size * 0.22);
       const steps = Math.max(1, Math.ceil(dist / step));
-      const count = Math.min(10, Math.max(4, Math.round(size * 0.8)));
-      const radius = Math.max(2, size * 0.9);
+
+      // Spray cloud radius around the stroke centerline
+      const sprayRadius = Math.max(2, size * 0.95 * scatter);
+
+      // Dot radius scales with size, with small random variation for a more organic look
+      const baseDotR = Math.max(0.9 * dotScale, size * 0.10 * dotScale);
+
+      // Dots per stamp. Scales with size but capped for performance.
+      let count = Math.round(size * 1.6);
+      count = Math.min(90, Math.max(10, count));
+
+      // Performance guard: cap total dots per segment
+      const maxDots = 900;
+      const totalDots = (steps + 1) * count;
+      if (totalDots > maxDots) {
+        const k = maxDots / totalDots;
+        count = Math.max(3, Math.floor(count * k));
+      }
+
       if (!eraser) ctx.globalAlpha *= 0.35;
 
       for (let i = 0; i <= steps; i++) {
         const t = steps === 0 ? 0 : (i / steps);
         const cx = from.x + dx * t;
         const cy = from.y + dy * t;
+
         for (let j = 0; j < count; j++) {
           const a = Math.random() * Math.PI * 2;
-          const r = Math.random() * radius;
+          // sqrt gives more uniform distribution over the area of the disk
+          const r = Math.sqrt(Math.random()) * sprayRadius;
           const px = cx + Math.cos(a) * r;
           const py = cy + Math.sin(a) * r;
+
+          const dotR = baseDotR * (0.55 + Math.random() * 0.45);
           ctx.beginPath();
-          ctx.arc(px, py, 1.1, 0, Math.PI * 2);
+          ctx.arc(px, py, dotR, 0, Math.PI * 2);
           ctx.fill();
         }
       }
+
       ctx.restore();
       return;
     } else if (brush === 'calligraphy') {
@@ -3462,8 +3592,10 @@ ctx.beginPath();
     const brush = state.brushType || 'round';
 
     if (brush === 'spray') {
+      const scatter = Math.min(10, Math.max(0.05, (typeof state.sprayScatter === 'number' ? state.sprayScatter : 1)));
+      const dotScale = Math.min(10, Math.max(0.05, (typeof state.sprayDotScale === 'number' ? state.sprayDotScale : 1)));
       const count = Math.min(14, Math.max(6, Math.round(size * 1.2)));
-      const radius = Math.max(2, size * 1.0);
+      const radius = Math.max(2, size * 1.0 * scatter);
       if (!eraser) ctx.globalAlpha *= 0.35;
       for (let j = 0; j < count; j++) {
         const a = Math.random() * Math.PI * 2;
@@ -3471,7 +3603,7 @@ ctx.beginPath();
         const px = point.x + Math.cos(a) * r;
         const py = point.y + Math.sin(a) * r;
         ctx.beginPath();
-        ctx.arc(px, py, 1.1, 0, Math.PI * 2);
+        ctx.arc(px, py, 1.1 * dotScale, 0, Math.PI * 2);
         ctx.fill();
       }
     } else if (brush === 'calligraphy') {
@@ -4027,10 +4159,13 @@ const nowTick = getLongStrokeTick();
 
   // Touch end/cancel should also finalize stroke
   drawCanvas.ontouchend = e => {
+    // When a multi-touch gesture ends, require a full release before drawing again.
+    if (!e.touches || e.touches.length === 0) suppressDrawTouchUntilRelease = false;
     if (state.drawMode) e.preventDefault();
     endStroke();
   };
   drawCanvas.ontouchcancel = e => {
+    if (!e.touches || e.touches.length === 0) suppressDrawTouchUntilRelease = false;
     if (state.drawMode) e.preventDefault();
     endStroke();
   };
@@ -4051,6 +4186,15 @@ const nowTick = getLongStrokeTick();
   // Touch support
   drawCanvas.ontouchstart = e => {
     if (!state.drawMode) return;
+
+    // Multi-touch gestures (2-finger zoom / 3-finger brush size) must NOT draw.
+    if (!e.touches || e.touches.length !== 1) {
+      suppressDrawTouchUntilRelease = true;
+      if (isDrawing) endStroke();
+      return; // let canvasArea gesture handlers do their job
+    }
+    if (suppressDrawTouchUntilRelease) return;
+
     if (typeof dbg === 'function') dbg(`Touch start: ${e.touches.length} touches, target=${state.drawTarget}`);
     e.preventDefault();
 
@@ -4123,7 +4267,15 @@ const nowTick = getLongStrokeTick();
   };
   
   drawCanvas.ontouchmove = e => {
+    if (!state.drawMode) return;
+
+    // If this becomes a multi-touch gesture mid-stroke, stop drawing immediately.
+    if (suppressDrawTouchUntilRelease || !e.touches || e.touches.length !== 1) {
+      if (isDrawing) endStroke();
+      return;
+    }
     if (!isDrawing || !lastPoint) return;
+
     e.preventDefault();
     const currentPoint = getCanvasPoint(e);
     lastPointerPos = currentPoint;
@@ -4532,7 +4684,7 @@ const nowTick = getLongStrokeTick();
   if (templateFrameClose) templateFrameClose.onclick = () => showTemplateFrame(false);
 
   // Drag template frame by header
-  let tplDrag = { active: false, ox: 0, oy: 0 };
+  let tplDrag = { active: false, ox: 0, oy: 0, baseLeft: 0, baseTop: 0, scale: 1 };
   if (templateFrameHeader && templateFrame) {
     templateFrameHeader.onmousedown = e => {
       if (e.button !== 0) return;
@@ -4540,12 +4692,30 @@ const nowTick = getLongStrokeTick();
       const rect = templateFrame.getBoundingClientRect();
       tplDrag.ox = e.clientX - rect.left;
       tplDrag.oy = e.clientY - rect.top;
+
+      // Capture current base (first frame) so manual moves become a stable GRID-space offset.
+      const base = getTemplateBaseRect();
+      const headerH = (base && base.headerH) ? base.headerH : 24;
+      if (base && base.ok) {
+        tplDrag.baseLeft = base.frameRect.left;
+        tplDrag.baseTop = base.frameRect.top - headerH;
+      } else {
+        tplDrag.baseLeft = rect.left;
+        tplDrag.baseTop = rect.top;
+      }
+      tplDrag.scale = Number.isFinite(state.scale) ? state.scale : 1;
       e.preventDefault();
     };
     document.addEventListener('mousemove', e => {
       if (!tplDrag.active) return;
-      templateFrame.style.left = (e.clientX - tplDrag.ox) + 'px';
-      templateFrame.style.top = (e.clientY - tplDrag.oy) + 'px';
+      const newLeft = (e.clientX - tplDrag.ox);
+      const newTop = (e.clientY - tplDrag.oy);
+      templateFrame.style.left = newLeft + 'px';
+      templateFrame.style.top = newTop + 'px';
+
+      const s = tplDrag.scale || 1;
+      tplFollow.dxWorld = (newLeft - tplDrag.baseLeft) / s;
+      tplFollow.dyWorld = (newTop - tplDrag.baseTop) / s;
     });
     document.addEventListener('mouseup', () => { tplDrag.active = false; });
   }
@@ -4735,10 +4905,10 @@ const nowTick = getLongStrokeTick();
         ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
         ctx.fillStyle = '#fff';
         ctx.font = `700 ${headerFontSize}px system-ui`;
-        ctx.fillText('FRAMEGRID v0.21e', 22, headerH * 0.65);
+        ctx.fillText('FRAMEGRID v0.22', 22, headerH * 0.65);
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.font = `${headerFontSize}px system-ui`;
-        const logoWidth = ctx.measureText('FRAMEGRID v0.21e').width;
+        const logoWidth = ctx.measureText('FRAMEGRID v0.22').width;
         const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
         const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${dateStr}`;
         ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
@@ -4868,10 +5038,10 @@ const nowTick = getLongStrokeTick();
             ctx.fillRect(10, (headerH - 6) / 2, 6, 6);
             ctx.fillStyle = '#fff';
             ctx.font = `700 ${headerFontSize}px system-ui`;
-            ctx.fillText('FRAMEGRID v0.21e', 22, headerH * 0.65);
+            ctx.fillText('FRAMEGRID v0.22', 22, headerH * 0.65);
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.font = `${headerFontSize}px system-ui`;
-            const logoWidth = ctx.measureText('FRAMEGRID v0.21e').width;
+            const logoWidth = ctx.measureText('FRAMEGRID v0.22').width;
             const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · Frame ${i + 1}/${state.frames.length}`;
             ctx.fillText(info, 22 + logoWidth + 16, headerH * 0.65);
           }
@@ -5144,7 +5314,7 @@ const nowTick = getLongStrokeTick();
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.21e';
+      const logoText = 'FRAMEGRID v0.22';
       const dateStr = state.videoDate ? formatDate(state.videoDate) : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const metaText = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${frameCount}f${cellInfo}${dateStr ? ' · ' + dateStr : ''}`;
@@ -5267,7 +5437,7 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, headerH);
       
-      const logoText = 'FRAMEGRID v0.21e';
+      const logoText = 'FRAMEGRID v0.22';
       const metaText = `${state.videoFile?.name || 'video'} · Frame ${frameIdx + 1}/${frameCount} · ${formatTime(frame.time)}`;
       
       // Auto-fit font size
@@ -5524,11 +5694,11 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
       
       ctx.fillStyle = '#fff';
       ctx.font = `700 ${headerFontSize}px system-ui`;
-      ctx.fillText('FRAMEGRID v0.21e', 22, headerH * 0.65);
+      ctx.fillText('FRAMEGRID v0.22', 22, headerH * 0.65);
       
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.font = `${headerFontSize}px system-ui`;
-      const logoWidth = ctx.measureText('FRAMEGRID v0.21e').width;
+      const logoWidth = ctx.measureText('FRAMEGRID v0.22').width;
       const dateStr = state.videoDate ? ` · ${formatDate(state.videoDate)}` : '';
       const cellInfo = state.cellSize > 1 ? ` · ${cellCount} cells` : '';
       const info = `${state.videoFile?.name || 'video'} · ${state.videoWidth}×${state.videoHeight} · ${formatTime(state.videoDuration)} · ${state.frames.length}f${cellInfo}${dateStr}`;
@@ -5697,6 +5867,15 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
     if (state.isPlaying) stopAnimation();
     else startAnimation();
   }
+  function prevFrame() { stepFrame(-1); }
+  function nextFrame() { stepFrame(1); }
+  function resetToEnd() {
+    if (!state.frames.length) return;
+    if (state.isPlaying) stopAnimation();
+    state.currentTick = Math.max(0, state.frames.length - 1);
+    updateAllCells();
+  }
+
   function setDrawMode(on) {
     const desired = !!on;
     if (!!state.drawMode !== desired) toggleDrawMode();
@@ -5718,16 +5897,17 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
   window.addEventListener('keydown', (e) => {
     const code = e.code; // Physical key (works with any language)
 
-    // Let the browser handle OS/app shortcuts.
-    // Exception: keep Undo on Ctrl/Cmd+Z. Also allow AltGr (Ctrl+Alt) for bracket keys on some layouts.
-    const isAltGr = (e.ctrlKey && e.altKey && !e.metaKey);
-    if (e.metaKey || (e.ctrlKey && !isAltGr) || (e.altKey && !isAltGr)) {
-      if ((e.ctrlKey || e.metaKey) && code === 'KeyZ') { e.preventDefault(); undoDraw(); return; }
+    // Allow Cmd/Ctrl+Z for draw undo. Everything else with modifiers stays with OS/browser.
+    if ((e.metaKey || e.ctrlKey) && !e.altKey) {
+      if (code === 'KeyZ') {
+        e.preventDefault();
+        undoDraw();
+      }
       return;
     }
+    if (e.altKey) return;
 
-
-    // Escape should always work
+// Escape should always work
     if (code === 'Escape') {
       e.preventDefault();
       if (typeof closeAllPopups === 'function') closeAllPopups();
@@ -5775,11 +5955,11 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
         updateDrawSizeUI(); 
       }
     }
-    else if (code === 'ArrowLeft') { e.preventDefault(); stepFrame(-1); }
-    else if (code === 'ArrowRight') { e.preventDefault(); stepFrame(1); }
     else if (code === 'Home') { e.preventDefault(); resetToStart(); }
     else if (code === 'End') { e.preventDefault(); resetToEnd(); }
-  }, true);
+    else if (code === 'ArrowLeft') { e.preventDefault(); prevFrame(); }
+    else if (code === 'ArrowRight') { e.preventDefault(); nextFrame(); }
+}, true);
 
 
   // Viewport changes (resize/orientation) - stabilize layout on iPad/Safari/Chrome
@@ -5848,7 +6028,7 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, drawing
 
   // Touch fallback: update cursor position while drawing
   drawCanvas.addEventListener('touchmove', e => {
-    if (!state.drawMode || !e.touches || !e.touches.length) return;
+    if (!state.drawMode || !e.touches || e.touches.length !== 1) return;
     const t = e.touches[0];
     updateBrushCursor({ clientX: t.clientX, clientY: t.clientY });
   }, { passive: true });
