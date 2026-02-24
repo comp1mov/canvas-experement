@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.22_61                                        ║
+║      FRAMEGRID v0.22_63                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.22_61</title>
+  <title>FRAMEGRID v0.22_63</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: pan-x pan-y; }
     html, body {
@@ -19,6 +19,17 @@
       color: #fff; user-select: none; -webkit-user-select: none;
       touch-action: none; /* Prevent browser zoom gestures */
     }
+
+    :root {
+      --canvas-inner-pad: clamp(520px, 28vw, 1400px);
+    }
+
+    @media (max-width: 640px), (pointer: coarse) {
+      :root {
+        --canvas-inner-pad: clamp(140px, 18vw, 520px);
+      }
+    }
+
     .app { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #282828); }
 
     /* METADATA BAR */
@@ -50,8 +61,8 @@
     /* CANVAS AREA */
     .canvas-area { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
     .canvas-area.panning { cursor: move; }
-    .canvas-area.has-menu { margin-right: 280px; }
-    .canvas-inner { position: absolute; transform-origin: 0 0; padding: clamp(520px, 28vw, 1400px); box-sizing: border-box; }
+    .canvas-area.has-menu { margin-right: 290px; }
+    .canvas-inner { position: absolute; transform-origin: 0 0; padding: var(--canvas-inner-pad, clamp(520px, 28vw, 1400px)); box-sizing: border-box; }
 
     /* GRID */
     .frames-grid { display: grid; gap: var(--grid-gap, 2px); width: max-content; align-content: start; }
@@ -185,7 +196,7 @@
     .side-menu {
       position: absolute; top: 0; right: 0; bottom: 0; width: 290px;
       background: rgba(0,0,0,0.98); border-left: 1px solid rgba(255,255,255,0.15);
-      transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      transform: translateX(100%); transition: transform 0.52s cubic-bezier(0.77, 0, 0.175, 1);
       will-change: transform;
       z-index: 20; display: flex; flex-direction: column; overflow-y: auto;
     }
@@ -449,14 +460,14 @@
     /* Corner markers on the outer export bounds */
     .export-guides-corner {
       position: absolute;
-      width: 14px;
-      height: 14px;
+      width: 22px;
+      height: 22px;
       box-sizing: border-box;
     }
-    .export-guides-corner.tl { top: -1px; left: -1px; border-top: 2px solid rgba(255,255,255,0.65); border-left: 2px solid rgba(255,255,255,0.65); }
-    .export-guides-corner.tr { top: -1px; right: -1px; border-top: 2px solid rgba(255,255,255,0.65); border-right: 2px solid rgba(255,255,255,0.65); }
-    .export-guides-corner.bl { bottom: -1px; left: -1px; border-bottom: 2px solid rgba(255,255,255,0.65); border-left: 2px solid rgba(255,255,255,0.65); }
-    .export-guides-corner.br { bottom: -1px; right: -1px; border-bottom: 2px solid rgba(255,255,255,0.65); border-right: 2px solid rgba(255,255,255,0.65); }
+    .export-guides-corner.tl { top: -1px; left: -1px; border-top: 3px solid rgba(255,255,255,0.75); border-left: 3px solid rgba(255,255,255,0.75); }
+    .export-guides-corner.tr { top: -1px; right: -1px; border-top: 3px solid rgba(255,255,255,0.75); border-right: 3px solid rgba(255,255,255,0.75); }
+    .export-guides-corner.bl { bottom: -1px; left: -1px; border-bottom: 3px solid rgba(255,255,255,0.75); border-left: 3px solid rgba(255,255,255,0.75); }
+    .export-guides-corner.br { bottom: -1px; right: -1px; border-bottom: 3px solid rgba(255,255,255,0.75); border-right: 3px solid rgba(255,255,255,0.75); }
 
     /* Corners-only mode (no bands, no dashed inner box) */
     .export-guides::after { display: none; }
@@ -775,7 +786,7 @@
 <body>
 <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-        <div class="metadata-logo">FRAMEGRID v0.22_61</div>
+        <div class="metadata-logo">FRAMEGRID v0.22_63</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -1128,17 +1139,7 @@
             <span class="menu-label">Text</span>
             <input type="text" class="menu-input" id="tcCustomTextInput" placeholder="Enter label" value="">
           </div>
-
-          <div class="menu-row">
-            <span class="menu-label">Font Size</span>
-            <div class="menu-slider-row">
-              <input type="range" class="menu-slider" id="fontSizeSlider" min="6" max="32" value="10">
-              <span class="menu-slider-value" id="fontSizeValue">10px</span>
-            </div>
-          </div>
-          
-          
-          <div class="menu-row">
+<div class="menu-row">
             <span class="menu-label">Show Export Guides</span>
             <div class="menu-toggle-switch" id="toggleExportGuides"></div>
           </div>
@@ -1169,6 +1170,18 @@
                         <span class="menu-slider-value" id="tcOpacityValue">70%</span>
                       </div>
                     </div>
+
+
+          <div class="menu-row">
+            <span class="menu-label">Font Size</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="fontSizeSlider" min="6" max="32" value="10">
+              <span class="menu-slider-value" id="fontSizeValue">10px</span>
+            </div>
+          </div>
+          
+          
+          
           <div class="menu-row">
                       <span class="menu-label">TC Box Pad</span>
                       <div class="menu-slider-row">
@@ -1388,8 +1401,8 @@
             <div class="menu-toggle-switch" id="toggleExportMetadata"></div>
           </div>
           <div class="menu-subtitle">Grid</div>
-          <button class="menu-btn" id="exportSmallBtn">Export JPEG 2K</button>
-          <button class="menu-btn" id="exportFullBtn">Export PNG Full</button>
+          <button class="menu-btn" id="exportSmallBtn">Export JPEG Grid</button>
+          <button class="menu-btn" id="exportFullBtn">Export PNG Grid</button>
           <button class="menu-btn" id="exportMp4GridBtn">Export MP4 Grid</button>
 
           <div class="menu-subtitle">Single</div>
@@ -1432,7 +1445,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.22_61</div>
+          <div class="about-version">Version v0.22_63</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
           <div class="about-hotkeys">
@@ -1489,7 +1502,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.22_61';
+  const APP_VERSION = 'v0.22_63';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   // Sync document/UI labels
@@ -8306,6 +8319,24 @@ const canvas = document.createElement('canvas');
     else if (code === 'KeyG') { e.preventDefault(); setViewMode(state.viewMode === 'grid' ? 'single' : 'grid'); }
     else if (code === 'KeyF') { e.preventDefault(); state.viewMode === 'single' ? fitToSingleFrame() : fitToScreen(); }
     else if (code === 'KeyM') { e.preventDefault(); toggleMenu(); }
+    else if (code === 'KeyN') {
+      e.preventDefault();
+      // Collapse/expand all sections in the right menu for easier navigation
+      if (sideMenu && sideMenu.classList.contains('open')) {
+        const sections = Array.from(sideMenu.querySelectorAll('.menu-section'));
+        const aboutWrap = $('aboutHeader') ? $('aboutHeader').parentElement : null;
+        const anyOpen = sections.some(s => !s.classList.contains('collapsed')) || (aboutWrap && !aboutWrap.classList.contains('collapsed'));
+        sections.forEach(s => s.classList.toggle('collapsed', anyOpen));
+        if (aboutWrap) aboutWrap.classList.toggle('collapsed', anyOpen);
+      }
+    }
+    else if (code === 'KeyB') {
+      e.preventDefault();
+      // Toggle timecode frame display quickly (TC: Fr)
+      const t = $('toggleTcFrame');
+      if (t) t.click();
+    }
+
     else if (code === 'KeyD') { e.preventDefault(); setDrawMode(!state.drawMode); }
     else if (code === 'KeyQ') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('background'); }
     else if (code === 'KeyW') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('template'); }
