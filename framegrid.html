@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.22_63                                        ║
+║      FRAMEGRID v0.23_00                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,11 +10,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.22_63</title>
+  <title>FRAMEGRID v0.23_00</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: pan-x pan-y; }
     html, body {
-      width: 100%; height: 100%; overflow: hidden; background: #282828;
+      width: 100%; height: 100%; overflow: hidden; background: #000;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #fff; user-select: none; -webkit-user-select: none;
       touch-action: none; /* Prevent browser zoom gestures */
@@ -31,6 +31,13 @@
     }
 
     .app { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #282828); }
+    @supports (height: 100dvh) {
+      .app { height: 100dvh; }
+    }
+    @supports (height: 100svh) {
+      .app { height: 100svh; }
+    }
+
 
     /* METADATA BAR */
     .metadata-bar {
@@ -786,7 +793,7 @@
 <body>
 <div class="app" id="app">
     <div class="metadata-bar" id="metadataBar">
-        <div class="metadata-logo">FRAMEGRID v0.22_63</div>
+        <div class="metadata-logo">FRAMEGRID v0.23_00</div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
       <div class="metadata-item" id="metaDuration"></div>
@@ -929,25 +936,8 @@
           <button class="drop-zone-btn" id="browseImageBtn">IMPORT IMAGE</button>
         </div>
         <div class="drop-zone-formats">Video: MP4, MOV, WebM, AVI, MKV, OGV, M4V | Images: PNG, JPG, WEBP, GIF</div>
-        <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;justify-content:center;">
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">Space</kbd> Play</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">G</kbd> Grid / 1</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">F</kbd> Fit</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">M</kbd> Menu</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">Esc</kbd> Close</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">D</kbd> Draw</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">1</kbd> Brush</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">2</kbd> Spray</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">3</kbd> Eraser</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">4</kbd> Eyedropper</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">X</kbd> Swap Color</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">T</kbd> Template</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">H</kbd> Ref Frame</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">Q/W/E</kbd> Target BG/TMPL/FRM</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">[ ]</kbd> Brush</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">←/→</kbd> Frame</div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.4);"><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:3px;font-family:monospace;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);">Home/End</kbd> Start/End</div>
-        </div>
+        
+        <!-- (Hotkeys list removed from start screen; see Menu > FRAMEGRID) -->
 
         <div class="drop-zone-support">
           <div class="drop-zone-support-text">  FrameGrid is made by one person. Its free and open-souce <br> If it found its way into your work, supporting me helps make the next tool happen <br><br> </div>
@@ -1233,6 +1223,11 @@
             </div>
           </div>
             
+          <div class="menu-row">
+            <span class="menu-label">Brush Panel</span>
+            <div class="menu-toggle-switch" id="toggleBrushPanel"></div>
+          </div>
+
         </div>
       </div>
 
@@ -1445,7 +1440,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.22_63</div>
+          <div class="about-version">Version v0.23_00</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
           <div class="about-hotkeys">
@@ -1454,18 +1449,23 @@
             <div class="hotkey-row"><span class="hotkey">G</span> Grid / Single</div>
             <div class="hotkey-row"><span class="hotkey">F</span> Fit (Grid or Single)</div>
             <div class="hotkey-row"><span class="hotkey">M</span> Toggle Menu</div>
+            <div class="hotkey-row"><span class="hotkey">N</span> Collapse/Expand All Sections</div>
+            <div class="hotkey-row"><span class="hotkey">+ / -</span> FPS Up / Down</div>
+            <div class="hotkey-row"><span class="hotkey">0</span> Export MP4 (Current View)</div>
+            <div class="hotkey-row"><span class="hotkey">9</span> Export JPEG (Current View)</div>
             <div class="hotkey-row"><span class="hotkey">D</span> Draw Mode</div>
+            <div class="hotkey-row"><span class="hotkey">P</span> Toggle Brush Palette</div>
+            <div class="hotkey-row"><span class="hotkey">B</span> Toggle TC Frame Display</div>
             <div class="hotkey-row"><span class="hotkey">1</span> Brush (Round)</div>
             <div class="hotkey-row"><span class="hotkey">2</span> Spray</div>
             <div class="hotkey-row"><span class="hotkey">3</span> Eraser</div>
-            <div class="hotkey-row"><span class="hotkey">4</span> Eyedropper</div> 
+            <div class="hotkey-row"><span class="hotkey">4</span> Eyedropper</div>
             <div class="hotkey-row"><span class="hotkey">X</span> Swap Color</div>
             <div class="hotkey-row"><span class="hotkey">T</span> Toggle Template Visibility</div>
             <div class="hotkey-row"><span class="hotkey">H</span> Toggle Ref Frame Visibility</div>
             <div class="hotkey-row"><span class="hotkey">Q/W/E</span> Target BG / TMPL / FRM</div>
             <div class="hotkey-row"><span class="hotkey">Z</span> Undo (also Ctrl/Cmd+Z)</div>
             <div class="hotkey-row"><span class="hotkey">C</span> Clear Current Target</div>
-            <div class="hotkey-row"><span class="hotkey">P</span> Toggle Brush Palette</div>
             <div class="hotkey-row"><span class="hotkey">L</span> Long Stroke</div>
             <div class="hotkey-row"><span class="hotkey">R</span> Regenerate Grid</div>
             <div class="hotkey-row"><span class="hotkey">[ ]</span> Brush Size</div>
@@ -1502,7 +1502,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.22_63';
+  const APP_VERSION = 'v0.23_00';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   // Sync document/UI labels
@@ -1775,6 +1775,7 @@ exportQuality: 'hd', // low, medium, high, max
   // Draw (spray) tuning inside Display & Style
   const sprayScatterSlider = $('sprayScatterSlider'), sprayScatterValue = $('sprayScatterValue');
   const sprayDotScaleSlider = $('sprayDotScaleSlider'), sprayDotScaleValue = $('sprayDotScaleValue');
+  const toggleBrushPanel = $('toggleBrushPanel');
 
   // MENU
   function openMenu() {
@@ -5958,8 +5959,27 @@ const nowTick = getLongStrokeTick();
     drawPaletteToggleBtn.onclick = () => {
       // Hide the floating palette but keep Draw mode active.
       drawPalette.classList.remove('visible');
+      syncBrushPanelToggleUI();
     };
   }
+
+  // Sync "Brush Panel" toggle in side menu with floating palette visibility
+  function syncBrushPanelToggleUI() {
+    if (!toggleBrushPanel || !drawPalette) return;
+    const isVisible = drawPalette.classList.contains('visible');
+    toggleBrushPanel.classList.toggle('active', isVisible);
+  }
+
+  if (toggleBrushPanel) {
+    toggleBrushPanel.onclick = () => {
+      togglePalette(); // (P) behavior, but available on touch devices
+      syncBrushPanelToggleUI();
+    };
+  }
+
+  // Initial sync
+  syncBrushPanelToggleUI();
+
 
   function updateTemplateVisibilityUI() {
     if (!toggleTemplateVisibilityBtn) return;
@@ -8269,7 +8289,11 @@ const canvas = document.createElement('canvas');
   }
   function togglePalette() {
     // Palette visibility only, does not change draw mode.
-    if (typeof drawPalette !== 'undefined' && drawPalette) drawPalette.classList.toggle('visible');
+    if (typeof drawPalette !== 'undefined' && drawPalette) {
+      drawPalette.classList.toggle('visible');
+      // Keep side menu toggle in sync
+      if (typeof syncBrushPanelToggleUI === 'function') syncBrushPanelToggleUI();
+    }
   }
 
   function swapCurrentAndPreviousColor() {
@@ -8335,6 +8359,19 @@ const canvas = document.createElement('canvas');
       // Toggle timecode frame display quickly (TC: Fr)
       const t = $('toggleTcFrame');
       if (t) t.click();
+    }
+
+    else if (code === 'NumpadAdd' || (code === 'Equal' && (e.shiftKey || e.key === '+'))) {
+      e.preventDefault();
+      // Increase animation FPS
+      if (typeof fpsPlus !== 'undefined' && fpsPlus) fpsPlus.click();
+      else { state.animFps = Math.min(60, (state.animFps || 14) + 1); if (animFpsInput) animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); }
+    }
+    else if (code === 'NumpadSubtract' || code === 'Minus') {
+      e.preventDefault();
+      // Decrease animation FPS
+      if (typeof fpsMinus !== 'undefined' && fpsMinus) fpsMinus.click();
+      else { state.animFps = Math.max(1, (state.animFps || 14) - 1); if (animFpsInput) animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); }
     }
 
     else if (code === 'KeyD') { e.preventDefault(); setDrawMode(!state.drawMode); }
