@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.23.03                                        ║
+║      FRAMEGRID v0.23.04                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.23.03</title>
+  <title>FRAMEGRID v0.23.04</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: pan-x pan-y; }
     html, body {
@@ -145,6 +145,17 @@
     .frame-image-wrap img.onion-prev2 { opacity: 0.25; }
     .frame-image-wrap img.onion-next1 { opacity: 0.50; }
     .frame-image-wrap img.onion-next2 { opacity: 0.25; }
+
+    /* Onion skin canvas overlay (drawings only) */
+    .frame-image-wrap canvas.frame-onion {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: block;
+    }
+    .frames-grid.onion-off canvas.frame-onion { display: none; }
 
     .frame-timecode { z-index: 3; }
     
@@ -830,7 +841,7 @@
           <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
           <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
         </span>
-        <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.23.03</span>
+        <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.23.04</span>
       </div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
@@ -875,6 +886,7 @@
             <div id="recentColorsRow" style="display:flex;gap:2px;"></div>
             <div style="width:1px;height:16px;background:rgba(255,255,255,0.2);margin:0 2px;"></div>
             <div id="videoPaletteRow" style="display:flex;gap:2px;"></div>
+            <button class="draw-btn" id="genVideoPalette" title="Regenerate video palette (Shift+V)">↻</button>
           </div>
 
           <!-- Row 5: Target buttons -->
@@ -917,6 +929,7 @@
 <!-- Row 6: Actions + Long Stroke with +/- -->
           <div class="draw-palette-row" style="gap:3px;align-items:center;">
             <button class="draw-btn" id="drawUndo" title="Undo (Z)">↶</button>
+            <button class="draw-btn" id="drawOnion" title="Onion Skin">◐</button>
             <button class="draw-btn" id="drawClear" title="Clear (C)">✕</button>
             <button class="draw-btn wide" id="applyTemplateToFrames" title="Apply TEMPLATE layer into per-frame drawings">APLY TMPL</button>
             <div class="draw-row-sep"></div>
@@ -930,10 +943,8 @@
 
 <!-- Hidden elements for compatibility -->
       <div style="display:none;">
-        <button id="drawOnion"></button>
         <button id="drawEyedropper"></button>
-        <button id="genVideoPalette"></button>
-        <button id="drawToggle"></button>
+<button id="drawToggle"></button>
         <div id="drawSizePreview"><div id="drawSizeDot"></div></div>
       </div>
 
@@ -1550,7 +1561,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.23.03';
+  const APP_VERSION = 'v0.23.04';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   // Sync document/UI labels
@@ -2756,6 +2767,12 @@ function renderGrid() {
       img.src = frame.dataUrl;
 
       xform.appendChild(img);
+
+      // Onion skin overlay (drawings only)
+      const onionCnv = document.createElement('canvas');
+      onionCnv.className = 'frame-onion';
+      xform.appendChild(onionCnv);
+
       wrap.appendChild(xform);
 const tc = document.createElement('div');
       const showTC = computeShowTimecode();
@@ -3527,28 +3544,57 @@ function fitToSingleFrame() {
   
   // FIX v0.16: updateAllCells uses state.currentTick, updates BOTH img elements
   
-  function updateOnionForItem(item, frameIdx) {
-    if (!state.drawOnion) return;
-    const n = state.frames.length;
-    if (!n) return;
-    const idxPrev1 = (frameIdx - 1 + n) % n;
-    const idxPrev2 = (frameIdx - 2 + n) % n;
-    const idxNext1 = (frameIdx + 1) % n;
-    const idxNext2 = (frameIdx + 2) % n;
+    function updateOnionForItem(item, frameIdx) {
+    const cnv = item.querySelector('canvas.frame-onion');
+    if (!cnv) return;
 
-    const p1 = item.querySelector('img.onion-prev1');
-    const p2 = item.querySelector('img.onion-prev2');
-    const n1 = item.querySelector('img.onion-next1');
-    const n2 = item.querySelector('img.onion-next2');
+    const enabled = !!(state.drawOnion && state.drawMode && state.drawTarget === 'frame');
+    if (!enabled) {
+      cnv.style.display = 'none';
+      return;
+    }
 
-    if (p1) p1.src = state.frames[idxPrev1].dataUrl;
-    if (p2) p2.src = state.frames[idxPrev2].dataUrl;
-    if (n1) n1.src = state.frames[idxNext1].dataUrl;
-    if (n2) n2.src = state.frames[idxNext2].dataUrl;
+    ensureFrameSheet();
+    if (!frameSheetCanvas || !frameSheetCanvas.width || !frameSheetCanvas.height) {
+      cnv.style.display = 'none';
+      return;
+    }
+
+    const n = state.frames.length || 0;
+    const tw = state.frameSheetTileW || 0;
+    const th = state.frameSheetTileH || 0;
+    const cols = state.frameSheetCols || 0;
+
+    if (!(n > 0 && tw > 0 && th > 0 && cols > 0)) {
+      cnv.style.display = 'none';
+      return;
+    }
+
+    if (cnv.width !== tw || cnv.height !== th) {
+      cnv.width = tw;
+      cnv.height = th;
+    }
+
+    const ctx = cnv.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, tw, th);
+
+    const drawNeighbor = (idx, a) => {
+      if (idx < 0 || idx >= n) return;
+      const sx = (idx % cols) * tw;
+      const sy = Math.floor(idx / cols) * th;
+      ctx.globalAlpha = a;
+      ctx.drawImage(frameSheetCanvas, sx, sy, tw, th, 0, 0, tw, th);
+    };
+
+    // Strict neighbors only. No wrap.
+    drawNeighbor(frameIdx - 1, 0.35);
+    drawNeighbor(frameIdx + 1, 0.35);
+
+    ctx.globalAlpha = 1;
+    cnv.style.display = 'block';
   }
-
-
-  // Random preview order, stable until seed changes
+// Random preview order, stable until seed changes
   function mulberry32(seed) {
     let a = (seed >>> 0) || 1;
     return function() {
@@ -3710,6 +3756,7 @@ function updateAllCells() {
         const u = Math.min(1, Math.max(0, hit.localX / Math.max(1, hit.width)));
         const v = Math.min(1, Math.max(0, hit.localY / Math.max(1, hit.height)));
         const sp = sheetPoint(hit.frameIdx, u, v);
+        captureUndoFrameTile(hit.frameIdx);
         drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
         holdStampLastFrame = hit.frameIdx;
         if (activeFrameStroke) {
@@ -4069,6 +4116,186 @@ let isDrawing = false;
     const px = cnv.width * cnv.height;
     const limit = _isCoarsePointer ? 12_000_000 : 40_000_000;
     return px <= limit;
+  }
+
+  // ====================================
+  //  DRAW UNDO v0.23.04 STEP3 (stable)
+  //  - target-only snapshots
+  //  - FRM captures per-tile snapshots
+  //  - undo never clears layers when snapshot is missing
+  // ====================================
+  const DRAW_UNDO_MAX = 8; // keep last 8 actions (roughly 3-4 strokes + safety)
+  let activeUndoEntry = null;
+
+  function _cloneImageDataSafe(img) {
+    try {
+      if (!img) return null;
+      return _isCoarsePointer ? img : new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
+    } catch (e) { return null; }
+  }
+
+  function pushUndoEntry(entry) {
+    if (!entry) return;
+    drawUndoStack.push(entry);
+    if (drawUndoStack.length > DRAW_UNDO_MAX) drawUndoStack.shift();
+  }
+
+  function beginUndoCaptureForDrawTarget(targetOverride) {
+    activeUndoEntry = null;
+    const t = targetOverride || state.drawTarget;
+
+    if (t === 'background') {
+      try {
+        const bgTarget = isSingleView() ? 'single' : 'grid';
+        const cnv = (bgTarget === 'single') ? bgCanvasSingle : bgCanvas;
+        const ctx = (bgTarget === 'single') ? bgCtxSingle : bgCtx;
+        let img = null;
+        if (canSnapshotCanvas(cnv)) {
+          img = ctx.getImageData(0, 0, cnv.width, cnv.height);
+        } else {
+          // fallback: use stored drawing if exists
+          img = _cloneImageDataSafe(getActiveBgDrawing());
+        }
+        if (img) pushUndoEntry({ kind: 'bg', bgTarget, bg: _cloneImageDataSafe(img) });
+      } catch (e) {}
+      return;
+    }
+
+    if (t === 'template') {
+      try {
+        ensureTplCanvasSized();
+        if (tplCanvas && canSnapshotCanvas(tplCanvas)) {
+          const img = tplCtx.getImageData(0, 0, tplCanvas.width, tplCanvas.height);
+          pushUndoEntry({ kind: 'tpl', tpl: _cloneImageDataSafe(img) });
+        } else {
+          const img = _cloneImageDataSafe(state.templateDrawing);
+          if (img) pushUndoEntry({ kind: 'tpl', tpl: img });
+        }
+      } catch (e) {}
+      return;
+    }
+
+    if (t === 'frame') {
+      try {
+        ensureFrameSheet();
+        const tw = state.frameSheetTileW || 1;
+        const th = state.frameSheetTileH || 1;
+        const cols = state.frameSheetCols || 1;
+        const entry = { kind: 'frm', tw, th, cols, tiles: new Map() };
+        pushUndoEntry(entry);
+        activeUndoEntry = entry;
+      } catch (e) {}
+      return;
+    }
+  }
+
+  function captureUndoFrameTile(frameIdx) {
+    if (!activeUndoEntry || activeUndoEntry.kind !== 'frm') return;
+    const idx = frameIdx | 0;
+    if (idx < 0) return;
+    if (activeUndoEntry.tiles.has(idx)) return;
+    try {
+      const tw = activeUndoEntry.tw || state.frameSheetTileW || 1;
+      const th = activeUndoEntry.th || state.frameSheetTileH || 1;
+      const cols = activeUndoEntry.cols || state.frameSheetCols || 1;
+      const sx = (idx % cols) * tw;
+      const sy = Math.floor(idx / cols) * th;
+      if (!canSnapshotCanvas({ width: tw, height: th })) {
+        // canSnapshotCanvas expects canvas, so use a tiny custom check
+        const px = tw * th;
+        const limit = _isCoarsePointer ? 12_000_000 : 40_000_000;
+        if (px > limit) return;
+      }
+      const img = frameSheetCtx.getImageData(sx, sy, tw, th);
+      activeUndoEntry.tiles.set(idx, img);
+    } catch (e) {}
+  }
+
+  function restoreUndoEntry(entry) {
+    if (!entry) return;
+
+    // Backward compatibility: older entries had no kind
+    const kind = entry.kind || 'all';
+
+    if (kind === 'bg') {
+      try {
+        if (!entry.bg) return;
+        const bgTarget = entry.bgTarget || 'grid';
+        const cnv = (bgTarget === 'single') ? bgCanvasSingle : bgCanvas;
+        const ctx = (bgTarget === 'single') ? bgCtxSingle : bgCtx;
+        if (bgTarget === 'single') state.bgDrawingSingle = entry.bg;
+        else state.bgDrawing = entry.bg;
+        ctx.putImageData(entry.bg, 0, 0);
+        requestComposite();
+      } catch (e) {}
+      return;
+    }
+
+    if (kind === 'tpl') {
+      try {
+        if (!entry.tpl) return;
+        ensureTplCanvasSized();
+        state.templateDrawing = entry.tpl;
+        tplCtx.putImageData(entry.tpl, 0, 0);
+        renderTemplateFramePreview();
+        requestComposite();
+      } catch (e) {}
+      return;
+    }
+
+    if (kind === 'frm') {
+      try {
+        ensureFrameSheet();
+        if (!entry.tiles || !(entry.tiles instanceof Map) || entry.tiles.size === 0) return;
+        const tw = entry.tw || state.frameSheetTileW || 1;
+        const th = entry.th || state.frameSheetTileH || 1;
+        const cols = entry.cols || state.frameSheetCols || 1;
+
+        entry.tiles.forEach((img, idx) => {
+          try {
+            const sx = (idx % cols) * tw;
+            const sy = Math.floor(idx / cols) * th;
+            frameSheetCtx.putImageData(img, sx, sy);
+          } catch (e) {}
+        });
+
+        requestComposite();
+      } catch (e) {}
+      return;
+    }
+
+    // kind === 'all' (legacy snapshots used by applyTemplateToFrames)
+    try {
+      if (entry.bg) {
+        const bgTarget = entry.bgTarget || 'grid';
+        const cnv = (bgTarget === 'single') ? bgCanvasSingle : bgCanvas;
+        const ctx = (bgTarget === 'single') ? bgCtxSingle : bgCtx;
+        if (bgTarget === 'single') state.bgDrawingSingle = entry.bg;
+        else state.bgDrawing = entry.bg;
+        try { ctx.putImageData(entry.bg, 0, 0); } catch (e) {}
+      }
+
+      if (entry.tpl) {
+        ensureTplCanvasSized();
+        state.templateDrawing = entry.tpl;
+        try { tplCtx.putImageData(entry.tpl, 0, 0); } catch (e) {}
+        try { renderTemplateFramePreview(); } catch (e) {}
+      }
+
+      if (entry.sheet) {
+        ensureFrameSheet();
+        try {
+          const tmp = document.createElement('canvas');
+          tmp.width = entry.sheet.width;
+          tmp.height = entry.sheet.height;
+          tmp.getContext('2d').putImageData(entry.sheet, 0, 0);
+          frameSheetCtx.clearRect(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
+          frameSheetCtx.drawImage(tmp, 0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
+        } catch (e) {}
+      }
+
+      requestComposite();
+    } catch (e) {}
   }
 
   
@@ -5132,19 +5359,8 @@ ctx.beginPath();
       return;
     }
 
-    // Save undo state
-    drawUndoStack.push({
-      bgTarget: isSingleView() ? 'single' : 'grid',
-      bg: (() => {
-        const _bgC = getActiveBgCanvas();
-        const _bgD = getActiveBgDrawing();
-        if (!_bgD || !canSnapshotCanvas(_bgC)) return null;
-        return _isCoarsePointer ? _bgD : new ImageData(new Uint8ClampedArray(_bgD.data), _bgD.width, _bgD.height);
-      })(),
-      tpl: (state.templateDrawing && canSnapshotCanvas(tplCanvas)) ? (_isCoarsePointer ? state.templateDrawing : new ImageData(new Uint8ClampedArray(state.templateDrawing.data), state.templateDrawing.width, state.templateDrawing.height)) : null,
-      sheet: (!_isCoarsePointer && canSnapshotCanvas(frameSheetCanvas)) ? frameSheetCtx.getImageData(0, 0, frameSheetCanvas.width, frameSheetCanvas.height) : null
-    });
-    if (drawUndoStack.length > 20) drawUndoStack.shift();
+    // Save undo state (stable, target-only)
+    beginUndoCaptureForDrawTarget();
 
     isDrawing = true;
     lastPoint = getCanvasPoint(e);
@@ -5198,6 +5414,7 @@ ctx.beginPath();
         longStrokeEndTick = null;
       }
 
+      captureUndoFrameTile(hit.frameIdx);
       drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
       requestComposite();
       return;
@@ -5250,6 +5467,7 @@ ctx.beginPath();
         activeFrameStroke.frameIdx = hit0.frameIdx;
         holdStampLastFrame = hit0.frameIdx;
         activeFrameStroke.lastSheet = sp0;
+        captureUndoFrameTile(hit0.frameIdx);
         drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser);
         lastPoint = currentPoint;
         requestComposite();
@@ -5313,6 +5531,7 @@ ctx.beginPath();
           drawLongStrokeOnFrame(hit.frameIdx);
           longStrokeLastFrame = hit.frameIdx;
         } else {
+          captureUndoFrameTile(hit.frameIdx);
           drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
         }
         activeFrameStroke.frameIdx = hit.frameIdx;
@@ -5432,6 +5651,8 @@ function getLongStrokeTrailFrames() {
     const sx = (frameIdx % cols) * tw;
     const sy = Math.floor(frameIdx / cols) * th;
 
+    frameSheetCtx.clearRect(sx, sy, tw, th);
+
     frameSheetCtx.drawImage(snap, 0, 0, tw, th, sx, sy, tw, th);
   }
 
@@ -5440,6 +5661,7 @@ function getLongStrokeTrailFrames() {
     if (trailFrames <= 0) return;
     // Snapshot base tile on first touch to avoid full-sheet duplication
     ensureLongStrokeTileSnapshot(frameIdx);
+    captureUndoFrameTile(frameIdx);
 const nowTick = getLongStrokeTick();
     const endTick = (longStrokeEndTick == null) ? nowTick : longStrokeEndTick;
     const windowStart = nowTick - trailFrames + 1;
@@ -5466,8 +5688,10 @@ const nowTick = getLongStrokeTick();
       const brk = !!pt.brk || !started;
       
       if (brk || !prevSp) {
+        captureUndoFrameTile(frameIdx);
         drawDot(frameSheetCtx, sp, state.drawColor, bs, state.drawEraser);
       } else {
+        captureUndoFrameTile(frameIdx);
         drawSmoothLine(frameSheetCtx, prevSp, sp, state.drawColor, bs, state.drawEraser);
       }
       
@@ -5608,6 +5832,7 @@ const nowTick = getLongStrokeTick();
   function drawLongStrokeOnFrame(frameIdx) {
     if (longStrokePath.length < 1) return;
     ensureFrameSheet();
+    captureUndoFrameTile(frameIdx);
 
     const fadeFrames = state.longStrokeFade || 0;
     const pathLen = longStrokePath.length;
@@ -5627,8 +5852,10 @@ const nowTick = getLongStrokeTick();
 
       const brk = !!pt.brk || (i === startIdx);
       if (brk || !prevSp) {
+        captureUndoFrameTile(frameIdx);
         drawDot(frameSheetCtx, sp, state.drawColor, bs, state.drawEraser);
       } else {
+        captureUndoFrameTile(frameIdx);
         drawSmoothLine(frameSheetCtx, prevSp, sp, state.drawColor, bs, state.drawEraser);
       }
       prevSp = sp;
@@ -5742,19 +5969,8 @@ const nowTick = getLongStrokeTick();
 
     if (typeof dbg === 'function') dbg(`Touch start: ${e.touches.length} touches, target=${state.drawTarget}`);
     e.preventDefault();
-
-    drawUndoStack.push({
-      bgTarget: isSingleView() ? 'single' : 'grid',
-      bg: (() => {
-        const _bgC = getActiveBgCanvas();
-        const _bgD = getActiveBgDrawing();
-        if (!_bgD || !canSnapshotCanvas(_bgC)) return null;
-        return _isCoarsePointer ? _bgD : new ImageData(new Uint8ClampedArray(_bgD.data), _bgD.width, _bgD.height);
-      })(),
-      tpl: (state.templateDrawing && canSnapshotCanvas(tplCanvas)) ? (_isCoarsePointer ? state.templateDrawing : new ImageData(new Uint8ClampedArray(state.templateDrawing.data), state.templateDrawing.width, state.templateDrawing.height)) : null,
-      sheet: (!_isCoarsePointer && canSnapshotCanvas(frameSheetCanvas)) ? frameSheetCtx.getImageData(0, 0, frameSheetCanvas.width, frameSheetCanvas.height) : null
-    });
-    if (drawUndoStack.length > 20) drawUndoStack.shift();
+    // Save undo state (stable, target-only)
+    beginUndoCaptureForDrawTarget();
 
     isDrawing = true;
     lastPoint = getCanvasPoint(e);
@@ -5808,6 +6024,7 @@ const nowTick = getLongStrokeTick();
         longStrokeEndTick = null;
       }
       
+      captureUndoFrameTile(hit.frameIdx);
       drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
       requestComposite();
       if (typeof dbg === 'function') dbg(`Touch frame: idx=${hit.frameIdx}`);
@@ -5847,6 +6064,7 @@ const nowTick = getLongStrokeTick();
         activeFrameStroke.frameIdx = hit0.frameIdx;
         holdStampLastFrame = hit0.frameIdx;
         activeFrameStroke.lastSheet = sp0;
+        captureUndoFrameTile(hit0.frameIdx);
         drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser);
         lastPoint = currentPoint;
         requestComposite();
@@ -5910,6 +6128,7 @@ const nowTick = getLongStrokeTick();
           drawLongStrokeOnFrame(hit.frameIdx);
           longStrokeLastFrame = hit.frameIdx;
         } else {
+          captureUndoFrameTile(hit.frameIdx);
           drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
         }
         activeFrameStroke.frameIdx = hit.frameIdx;
@@ -5963,11 +6182,15 @@ const nowTick = getLongStrokeTick();
     });
 
     const norm = next.toLowerCase();
-    state.recentColors = state.recentColors.filter(c => c.toLowerCase() !== norm);
-    state.recentColors.unshift(norm);
-    if (state.recentColors.length > 4) state.recentColors.length = 7;
-    try { localStorage.setItem('fg_recentColors', JSON.stringify(state.recentColors)); } catch(e) {}
-    renderRecentColors();
+    if (!state._skipRecentCapture) {
+      state.recentColors = state.recentColors.filter(c => (c || '').toLowerCase() !== norm);
+      state.recentColors.unshift(norm);
+      if (state.recentColors.length > 5) state.recentColors.length = 5;
+      try { localStorage.setItem('fg_recentColors', JSON.stringify(state.recentColors)); } catch(e) {}
+      renderRecentColors();
+    } else {
+      state._skipRecentCapture = false;
+    }
   }
 
   function hardClearAllDrawingsAndUndo() {
@@ -6007,7 +6230,7 @@ const nowTick = getLongStrokeTick();
   // Load recent colors from localStorage
   try {
     const saved = JSON.parse(localStorage.getItem('fg_recentColors') || '[]');
-    if (Array.isArray(saved)) state.recentColors = saved.slice(0, 4);
+    if (Array.isArray(saved)) state.recentColors = saved.slice(0, 5);
   } catch(e) {}
 
   function renderRecentColors() {
@@ -6089,11 +6312,204 @@ const nowTick = getLongStrokeTick();
         return Math.abs(c.lum - prev.lum) > 15 || Math.abs(c.r - prev.r) + Math.abs(c.g - prev.g) + Math.abs(c.b - prev.b) > 40;
       });
 
-    state.videoPalette = colors.slice(0, 4).map(c => `#${[c.r,c.g,c.b].map(v => v.toString(16).padStart(2,'0')).join('')}`);
+    state.videoPalette = colors.slice(0, 5).map(c => `#${[c.r,c.g,c.b].map(v => v.toString(16).padStart(2,'0')).join('')}`);
     renderVideoPalette();
   }
 
-  function renderVideoPalette() {
+  
+  function generateVideoPaletteFromCurrentFrame() {
+    if (!state.frames.length) return;
+
+    const n = state.frames.length | 0;
+
+    function getPaletteSourceFrameIdx() {
+      try {
+        // Prefer the frame you are actively drawing on
+        if (state.drawMode && state.drawTarget === 'frame') {
+          if (typeof holdStampLastFrame === 'number' && holdStampLastFrame >= 0) return holdStampLastFrame % n;
+          if (activeFrameStroke && typeof activeFrameStroke.frameIdx === 'number' && activeFrameStroke.frameIdx >= 0) return activeFrameStroke.frameIdx % n;
+        }
+      } catch (e) {}
+      const t = Number.isFinite(state.currentTick) ? (state.currentTick | 0) : 0;
+      return ((t % n) + n) % n;
+    }
+
+    const idx = getPaletteSourceFrameIdx();
+    const src = state.frames[idx] && state.frames[idx].dataUrl;
+    if (!src) return;
+
+    const img = new Image();
+    img.src = src;
+
+    const sCanvas = document.createElement('canvas');
+    const sCtx = sCanvas.getContext('2d', { willReadFrequently: true });
+    sCanvas.width = 64; sCanvas.height = 64;
+
+    function rgbToHsv(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const d = max - min;
+      let h = 0;
+      if (d !== 0) {
+        if (max === r) h = ((g - b) / d) % 6;
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h /= 6;
+        if (h < 0) h += 1;
+      }
+      const s = max === 0 ? 0 : d / max;
+      const v = max;
+      return { h, s, v };
+    }
+
+    const run = () => {
+      try {
+        sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+        sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height);
+        const data = sCtx.getImageData(0, 0, sCanvas.width, sCanvas.height).data;
+
+        // Quantize (5 bits/channel) + count
+        const counts = new Map();
+        const step = 4; // bytes per pixel, 4 = every pixel
+        for (let i = 0; i < data.length; i += step) {
+          const r = data[i] >> 3;
+          const g = data[i + 1] >> 3;
+          const b = data[i + 2] >> 3;
+          const key = (r << 10) | (g << 5) | b;
+          counts.set(key, (counts.get(key) || 0) + 1);
+        }
+
+        const bins = [];
+        for (const [key, cnt] of counts.entries()) {
+          const r5 = (key >> 10) & 31;
+          const g5 = (key >> 5) & 31;
+          const b5 = key & 31;
+          const rgb = { r: (r5 << 3) + 4, g: (g5 << 3) + 4, b: (b5 << 3) + 4 };
+          const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+          bins.push({
+            key,
+            cnt,
+            r: rgb.r, g: rgb.g, b: rgb.b,
+            h: hsv.h,
+            s: hsv.s,
+            v: hsv.v,
+            vivid: hsv.s * hsv.v,
+          });
+        }
+
+        // Sort pools
+        const byFreq = bins.slice().sort((a, b) => b.cnt - a.cnt);
+        const byVivid = bins.slice().sort((a, b) => (b.vivid - a.vivid) || (b.v - a.v) || (b.cnt - a.cnt));
+        const byBright = bins.slice().sort((a, b) => (b.v - a.v) || (b.s - a.s) || (b.cnt - a.cnt));
+
+        function hsvDist(a, b) {
+          const dh0 = Math.abs((a.h || 0) - (b.h || 0));
+          const dh = Math.min(dh0, 1 - dh0) * 2; // 0..1
+          const ds = Math.abs((a.s || 0) - (b.s || 0));
+          const dv = Math.abs((a.v || 0) - (b.v || 0));
+          return (dh * 0.62) + (ds * 0.25) + (dv * 0.13);
+        }
+
+        function rgbDist(a, b) {
+          return Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b);
+        }
+
+        function isDistinct(c, chosen) {
+          // Two guards: coarse RGB and perceptual-ish HSV
+          const MIN_RGB = 52;
+          const MIN_HSV = 0.22;
+          for (const p of chosen) {
+            if (c.key === p.key) return false;
+            if (rgbDist(c, p) < MIN_RGB) return false;
+            if (hsvDist(c, p) < MIN_HSV) return false;
+          }
+          return true;
+        }
+
+        // Build candidate pool from multiple rankings to avoid "all the same"
+        const cand = [];
+        const seen = new Set();
+        const addCand = (arr, limit) => {
+          let n = 0;
+          for (const c of arr) {
+            if (n >= limit) break;
+            if (!c || c.cnt < 1) continue;
+            if (seen.has(c.key)) continue;
+            seen.add(c.key);
+            cand.push(c);
+            n++;
+          }
+        };
+        addCand(byFreq, 140);
+        addCand(byVivid, 100);
+        addCand(byBright, 100);
+
+        const out = [];
+
+        const pushIfDistinct = (c) => {
+          if (!c) return false;
+          if (!isDistinct(c, out)) return false;
+          out.push(c);
+          return true;
+        };
+
+        // Seed 1-3: frequency bases
+        for (const c of byFreq) {
+          if (c.cnt < 2) continue;
+          if (pushIfDistinct(c) && out.length >= 3) break;
+        }
+
+        // Seed 4: vivid accent (rare but saturated)
+        for (const c of byVivid) {
+          if (c.vivid < 0.18) continue;
+          if (c.cnt < 1) continue;
+          if (pushIfDistinct(c)) break;
+        }
+
+        // Seed 5: bright accent (rare but bright)
+        for (const c of byBright) {
+          if (c.v < 0.82) continue;
+          if (c.cnt < 1) continue;
+          if (pushIfDistinct(c)) break;
+        }
+
+        // Fill remaining slots using farthest-point selection for diversity
+        while (out.length < 5) {
+          let best = null;
+          let bestScore = -1;
+          for (const c of cand) {
+            if (!isDistinct(c, out)) continue;
+            let minD = 1e9;
+            for (const p of out) minD = Math.min(minD, hsvDist(c, p));
+            // Small relevance bias so we don't pick pure noise
+            const bias = Math.min(0.22, Math.log10(1 + c.cnt) / 10);
+            const score = minD + bias;
+            if (score > bestScore) { bestScore = score; best = c; }
+          }
+          if (!best) break;
+          out.push(best);
+        }
+
+        // Last resort fill (lower distinctness slightly)
+        if (out.length < 5) {
+          for (const c of byFreq) {
+            if (out.length >= 5) break;
+            if (out.some(p => p.key === c.key)) continue;
+            out.push(c);
+          }
+        }
+
+        const hex = (v) => v.toString(16).padStart(2, '0');
+        state.videoPalette = out.slice(0, 5).map(c => `#${hex(c.r)}${hex(c.g)}${hex(c.b)}`);
+        renderVideoPalette();
+      } catch (e) {}
+    };
+
+    if (img.complete) run();
+    else img.onload = run;
+  }
+
+function renderVideoPalette() {
     const row = document.getElementById('videoPaletteRow');
     if (!row) return;
     row.innerHTML = '';
@@ -6110,7 +6526,7 @@ const nowTick = getLongStrokeTick();
   // Video palette auto-generates when frames are loaded
   renderRecentColors();
   const genVideoPaletteBtn = document.getElementById('genVideoPalette');
-  if (genVideoPaletteBtn) genVideoPaletteBtn.onclick = generateVideoPalette;
+  if (genVideoPaletteBtn) genVideoPaletteBtn.onclick = generateVideoPaletteFromCurrentFrame;
   
   function setDrawTarget(target) {
     // Persist current layer before switching
@@ -6496,6 +6912,9 @@ if (refFrameOffXSlider) {
   
   drawClear.onclick = () => {
     cancelLongStrokeTrail(true);
+    // Undo snapshot (best-effort)
+    if (state.drawTarget === 'frame') beginUndoCaptureForDrawTarget({ fullSheet: true });
+    else beginUndoCaptureForDrawTarget();
     // Clear only current target
     if (state.drawTarget === 'background') {
       const cnv = getActiveBgCanvas();
@@ -6531,7 +6950,7 @@ if (refFrameOffXSlider) {
         tpl: (state.templateDrawing && canSnapshotCanvas(tplCanvas)) ? (_isCoarsePointer ? state.templateDrawing : new ImageData(new Uint8ClampedArray(state.templateDrawing.data), state.templateDrawing.width, state.templateDrawing.height)) : null,
         sheet: (!_isCoarsePointer && canSnapshotCanvas(frameSheetCanvas)) ? frameSheetCtx.getImageData(0, 0, frameSheetCanvas.width, frameSheetCanvas.height) : null
       });
-      if (drawUndoStack.length > 20) drawUndoStack.shift();
+      if (drawUndoStack.length > DRAW_UNDO_MAX) drawUndoStack.shift();
     } catch (e) {}
   }
 
@@ -6576,42 +6995,9 @@ if (refFrameOffXSlider) {
   
   drawUndo.onclick = () => {
     cancelLongStrokeTrail(true);
-    if (drawUndoStack.length) {
-      const prev = drawUndoStack.pop();
-      const bgTarget = prev.bgTarget || 'grid';
-      const bgCnv = (bgTarget === 'single') ? bgCanvasSingle : bgCanvas;
-      const bgC = (bgTarget === 'single') ? bgCtxSingle : bgCtx;
-
-      if (prev.bg) {
-        if (bgTarget === 'single') state.bgDrawingSingle = prev.bg;
-        else state.bgDrawing = prev.bg;
-        bgC.putImageData(prev.bg, 0, 0);
-      } else {
-        bgC.clearRect(0, 0, bgCnv.width, bgCnv.height);
-        if (bgTarget === 'single') state.bgDrawingSingle = null;
-        else state.bgDrawing = null;
-      }
-if (prev.tpl) {
-        state.templateDrawing = prev.tpl;
-        tplCtx.putImageData(prev.tpl, 0, 0);
-      } else {
-        tplCtx.clearRect(0, 0, tplCanvas.width, tplCanvas.height);
-        state.templateDrawing = null;
-      }
-      if (prev.sheet) {
-        ensureFrameSheet();
-        // If sheet dims changed, best-effort draw by scaling
-        const tmp = document.createElement('canvas');
-        tmp.width = prev.sheet.width;
-        tmp.height = prev.sheet.height;
-        tmp.getContext('2d').putImageData(prev.sheet, 0, 0);
-        frameSheetCtx.clearRect(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
-        frameSheetCtx.drawImage(tmp, 0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
-      } else {
-        frameSheetCtx.clearRect(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
-      }
-      compositeAllLayers();
-    }
+    if (!drawUndoStack.length) return;
+    const prev = drawUndoStack.pop();
+    restoreUndoEntry(prev);
   };
   
   drawOnionBtn.onclick = toggleOnionSkin;
@@ -6770,13 +7156,25 @@ function updateEdgeSoftness(val) {
       return { x, y };
     }
 
+    function getTemplateFrameBrushSize() {
+      const r = templateFrameCanvas.getBoundingClientRect();
+      const pxPerX = templateFrameCanvas.width / Math.max(1, r.width);
+      const pxPerY = templateFrameCanvas.height / Math.max(1, r.height);
+      const pxPer = (pxPerX + pxPerY) / 2;
+      const sc = Number.isFinite(state.scale) ? state.scale : 1;
+      // Brush cursor is sized in screen px as drawSize * scale.
+      // Convert that into canvas pixels for the template frame.
+      return (state.drawSize * sc) * pxPer;
+    }
+
     templateFrameCanvas.onmousedown = ev => {
       if (!state.drawMode) return;
       state.drawTarget = 'template';
       drawTargetBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === 'template'));
+      beginUndoCaptureForDrawTarget('template');
       tDrawing = true;
       tLast = mapPoint(ev);
-      drawDot(tplCtx, tLast, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
+      drawDot(tplCtx, tLast, state.drawColor, getTemplateFrameBrushSize(), state.drawEraser);
       saveCurrentLayer();
       compositeAllLayers();
       ev.preventDefault();
@@ -6784,7 +7182,7 @@ function updateEdgeSoftness(val) {
     templateFrameCanvas.onmousemove = ev => {
       if (!tDrawing || !tLast) return;
       const p = mapPoint(ev);
-      drawSmoothLine(tplCtx, tLast, p, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
+      drawSmoothLine(tplCtx, tLast, p, state.drawColor, getTemplateFrameBrushSize(), state.drawEraser);
       tLast = p;
       saveCurrentLayer();
       compositeAllLayers();
@@ -6796,9 +7194,10 @@ function updateEdgeSoftness(val) {
       if (!state.drawMode) return;
       state.drawTarget = 'template';
       drawTargetBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === 'template'));
+      beginUndoCaptureForDrawTarget('template');
       tDrawing = true;
       tLast = mapPoint(ev);
-      drawDot(tplCtx, tLast, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
+      drawDot(tplCtx, tLast, state.drawColor, getTemplateFrameBrushSize(), state.drawEraser);
       saveCurrentLayer();
       compositeAllLayers();
       ev.preventDefault();
@@ -6806,7 +7205,7 @@ function updateEdgeSoftness(val) {
     templateFrameCanvas.ontouchmove = ev => {
       if (!tDrawing || !tLast) return;
       const p = mapPoint(ev);
-      drawSmoothLine(tplCtx, tLast, p, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
+      drawSmoothLine(tplCtx, tLast, p, state.drawColor, getTemplateFrameBrushSize(), state.drawEraser);
       tLast = p;
       saveCurrentLayer();
       compositeAllLayers();
@@ -9181,6 +9580,27 @@ const canvas = document.createElement('canvas');
     state.prevDrawColor = cur;
   }
 
+  function cycleRecentColors() {
+    const list = Array.isArray(state.recentColors) ? state.recentColors : [];
+    if (!list.length) return;
+    const cur = (state.drawColor || '').toLowerCase();
+    const idx = list.findIndex(c => (c || '').toLowerCase() === cur);
+    const next = list[(idx + 1 + list.length) % list.length] || list[0];
+    state._skipRecentCapture = true;
+    setDrawColor(next);
+  }
+  function cycleVideoPaletteColors() {
+    const list = Array.isArray(state.videoPalette) ? state.videoPalette : [];
+    if (!list.length) return;
+    const cur = (state.drawColor || '').toLowerCase();
+    const idx = list.findIndex(c => (c || '').toLowerCase() === cur);
+    const next = list[(idx + 1 + list.length) % list.length] || list[0];
+    state._skipRecentCapture = true;
+    setDrawColor(next);
+  }
+
+
+
   window.addEventListener('keydown', (e) => {
     const code = e.code; // Physical key (works with any language)
 
@@ -9298,7 +9718,14 @@ const canvas = document.createElement('canvas');
     else if (code === 'KeyX') {
       e.preventDefault();
       if (!state.drawMode) setDrawMode(true);
-      swapCurrentAndPreviousColor();
+      if (e.shiftKey) swapCurrentAndPreviousColor();
+      else cycleRecentColors();
+    }
+    else if (code === 'KeyV') {
+      e.preventDefault();
+      if (!state.drawMode) setDrawMode(true);
+      if (e.shiftKey) generateVideoPaletteFromCurrentFrame();
+      else cycleVideoPaletteColors();
     }
     else if (code === 'BracketLeft') { 
       e.preventDefault(); 
