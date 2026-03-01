@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.23.50                                        ║
+║      FRAMEGRID v0.23.56                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.23.50</title>
+  <title>FRAMEGRID v0.23.56</title>
   <style>
 
     /* Prevent page scrollbars (keep scrolling inside the side menu only) */
@@ -850,8 +850,7 @@
 
     /* ==================== AUDIO COLLISION SEQ (MVP UI FIX) ==================== */
     .fg-playhead .frame-image-wrap {
-      outline: 2px solid rgba(53, 242, 163, 0.9);
-      outline-offset: -2px;
+      outline: none;
     }
     .fg-playhead-hit .frame-image-wrap {
       box-shadow: 0 0 0 3px rgba(255,255,255,0.8) inset;
@@ -978,6 +977,11 @@
       font-size: 10px;
       margin-left: 6px;
       opacity: 0.85;
+    }
+
+    /* Image FX */
+    .frames-grid.fx-pixelize .frame-main-img {
+      image-rendering: pixelated;
     }
 </style>
 </head>
@@ -1251,6 +1255,38 @@
             <span class="menu-label">Outside BG</span>
             <input class="menu-color" type="color" id="frameBgColor" value="#111111">
           </div>
+
+          <div class="menu-subtitle" style="margin-top:12px;">Image FX</div>
+
+          <div class="menu-row">
+            <span class="menu-label">Enable FX</span>
+            <div class="menu-toggle-switch" id="imgFxEnable"></div>
+          </div>
+
+          <div class="menu-row">
+            <span class="menu-label">Pixelize</span>
+            <div class="menu-toggle-switch" id="imgFxPixelizeEnable"></div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Pixel size</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="imgFxPixelSize" min="1" max="96" step="1" value="12">
+              <input type="number" class="menu-slider-input" id="imgFxPixelSizeNum" min="1" max="96" step="1" value="12" inputmode="numeric">
+            </div>
+          </div>
+
+          <div class="menu-row">
+            <span class="menu-label">Posterize</span>
+            <div class="menu-toggle-switch" id="imgFxPosterizeEnable"></div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Levels</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="imgFxPosterizeLevels" min="2" max="32" step="1" value="8">
+              <input type="number" class="menu-slider-input" id="imgFxPosterizeLevelsNum" min="2" max="32" step="1" value="8" inputmode="numeric">
+            </div>
+          </div>
+
           <button class="menu-btn" id="resetFrameTransformBtn">Reset Transform</button>
         </div>
       </div>
@@ -1862,7 +1898,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.23.50';
+  const APP_VERSION = 'v0.23.56';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   // Sync document/UI labels
@@ -1918,6 +1954,14 @@
     frameImgFill: 'empty', // 'empty' or 'edge'
 
     frameBgColor: '#111111', // background behind scaled-down frame image
+    imgFx: {
+      enabled: false,
+      pixelize: { enabled: false, size: 12 },
+      posterize: { enabled: false, levels: 8 },
+      cache: new Map(),
+      pending: new Map()
+    },
+
     frameTargetAspect: 'auto', // 'auto' (source) or aspect string like '16:9'
     scale: 1, panX: 0, panY: 0, isPanning: false,
     startPanX: 0, startPanY: 0, startMouseX: 0, startMouseY: 0,
@@ -3020,6 +3064,149 @@ function schedulePostGridSync() {
   });
 }
 
+
+  // IMAGE FX
+  function imgFxEnabled() {
+    return !!(state.imgFx && state.imgFx.enabled && ((state.imgFx.pixelize && state.imgFx.pixelize.enabled) || (state.imgFx.posterize && state.imgFx.posterize.enabled)));
+  }
+
+  function imgFxKey(frameIdx) {
+    const fx = state.imgFx;
+    if (!fx) return `off_${frameIdx}`;
+    const pxOn = fx.pixelize && fx.pixelize.enabled ? 1 : 0;
+    const poOn = fx.posterize && fx.posterize.enabled ? 1 : 0;
+    const px = fx.pixelize ? (fx.pixelize.size|0) : 12;
+    const lv = fx.posterize ? (fx.posterize.levels|0) : 8;
+    return `${frameIdx}|px${pxOn}:${px}|po${poOn}:${lv}`;
+  }
+
+  function imgFxClearCache() {
+    const fx = state.imgFx;
+    if (!fx) return;
+    try {
+      if (fx.cache) {
+        for (const v of fx.cache.values()) {
+          if (v && v.url) { try { URL.revokeObjectURL(v.url); } catch (e) {} }
+        }
+        fx.cache.clear();
+      }
+      if (fx.pending) fx.pending.clear();
+    } catch (e) {}
+  }
+
+  function imgFxSyncPixelatedClass() {
+    try {
+      const on = !!(state.imgFx && state.imgFx.enabled && state.imgFx.pixelize && state.imgFx.pixelize.enabled);
+      framesGrid.classList.toggle('fx-pixelize', on);
+    } catch (e) {}
+  }
+
+  function loadImageFromDataUrl(dataUrl) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
+  }
+
+  function posterizeImageData(imgData, levels) {
+    const lv = Math.max(2, Math.min(32, levels|0));
+    const step = 255 / (lv - 1);
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      d[i] = Math.round(d[i] / step) * step;
+      d[i+1] = Math.round(d[i+1] / step) * step;
+      d[i+2] = Math.round(d[i+2] / step) * step;
+      // alpha keep
+    }
+    return imgData;
+  }
+
+  async function imgFxRenderFrameToCanvas(frameIdx) {
+    const frame = state.frames[frameIdx];
+    if (!frame || !frame.dataUrl) return null;
+
+    const fx = state.imgFx;
+    if (!imgFxEnabled() || !fx) return null;
+
+    const srcImg = await loadImageFromDataUrl(frame.dataUrl);
+    if (!srcImg) return null;
+
+    const srcW = Math.max(1, srcImg.naturalWidth || srcImg.width || 1);
+    const srcH = Math.max(1, srcImg.naturalHeight || srcImg.height || 1);
+
+    const pxOn = fx.pixelize && fx.pixelize.enabled;
+    const poOn = fx.posterize && fx.posterize.enabled;
+
+    let outW = srcW;
+    let outH = srcH;
+
+    // For pixelize we intentionally output a smaller image, then rely on pixelated scaling.
+    if (pxOn) {
+      const size = Math.max(1, Math.min(96, fx.pixelize.size|0));
+      outW = Math.max(1, Math.round(srcW / size));
+      outH = Math.max(1, Math.round(srcH / size));
+    }
+
+    const cnv = document.createElement('canvas');
+    cnv.width = outW;
+    cnv.height = outH;
+
+    const cctx = cnv.getContext('2d', { willReadFrequently: poOn });
+    if (!cctx) return null;
+
+    cctx.imageSmoothingEnabled = true;
+    cctx.clearRect(0, 0, outW, outH);
+    cctx.drawImage(srcImg, 0, 0, outW, outH);
+
+    if (poOn) {
+      try {
+        const levels = Math.max(2, Math.min(32, fx.posterize.levels|0));
+        const imgData = cctx.getImageData(0, 0, outW, outH);
+        posterizeImageData(imgData, levels);
+        cctx.putImageData(imgData, 0, 0);
+      } catch (e) {}
+    }
+
+    return cnv;
+  }
+
+  async function imgFxEnsurePreviewUrl(frameIdx) {
+    const fx = state.imgFx;
+    if (!fx || !imgFxEnabled()) return null;
+    const key = imgFxKey(frameIdx);
+
+    if (fx.cache && fx.cache.has(key)) return fx.cache.get(key).url;
+    if (fx.pending && fx.pending.has(key)) return fx.pending.get(key);
+
+    const p = (async () => {
+      const cnv = await imgFxRenderFrameToCanvas(frameIdx);
+      if (!cnv) return null;
+      const blob = await new Promise((resolve) => cnv.toBlob(resolve, 'image/png'));
+      if (!blob) return null;
+      const url = URL.createObjectURL(blob);
+      if (fx.cache) fx.cache.set(key, { url });
+      return url;
+    })();
+
+    if (fx.pending) fx.pending.set(key, p);
+    try { p.finally(() => { try { if (fx.pending) fx.pending.delete(key); } catch (e) {} }); } catch (e) {}
+    return p;
+  }
+
+  function imgFxAttachToDomImage(imgEl, frameIdx) {
+    try { imgEl.dataset.fxFrameIdx = String(frameIdx); } catch (e) {}
+    if (!imgFxEnabled()) return;
+    imgFxEnsurePreviewUrl(frameIdx).then((url) => {
+      if (!url) return;
+      try {
+        if (imgEl.dataset.fxFrameIdx !== String(frameIdx)) return;
+        imgEl.src = url;
+      } catch (e) {}
+    });
+  }
+
 function renderGrid() {
     framesGrid.innerHTML = '';
     framesGrid.classList.toggle('onion-off', !state.drawOnion);
@@ -3068,6 +3255,9 @@ function renderGrid() {
       const img = document.createElement('img');
       img.className = 'frame-main-img';
       img.src = frame.dataUrl;
+      // Image FX (preview)
+      try { imgFxSyncPixelatedClass(); } catch (e) {}
+      try { imgFxAttachToDomImage(img, displayFrameIdx); } catch (e) {}
 
       xform.appendChild(img);
 
@@ -3694,6 +3884,70 @@ function fitToSingleFrame() {
       compositeAllLayers();
     });
   }
+  // Image FX UI
+  function imgFxSyncUI() {
+    if (!state.imgFx) return;
+    if (imgFxEnable) imgFxEnable.classList.toggle('active', !!state.imgFx.enabled);
+    if (imgFxPixelizeEnable) imgFxPixelizeEnable.classList.toggle('active', !!state.imgFx.pixelize.enabled);
+    if (imgFxPosterizeEnable) imgFxPosterizeEnable.classList.toggle('active', !!state.imgFx.posterize.enabled);
+
+    if (imgFxPixelSize) imgFxPixelSize.value = String(state.imgFx.pixelize.size|0);
+    if (imgFxPixelSizeNum) imgFxPixelSizeNum.value = String(state.imgFx.pixelize.size|0);
+    if (imgFxPosterizeLevels) imgFxPosterizeLevels.value = String(state.imgFx.posterize.levels|0);
+    if (imgFxPosterizeLevelsNum) imgFxPosterizeLevelsNum.value = String(state.imgFx.posterize.levels|0);
+  }
+
+  function imgFxApplyAndRerender() {
+    imgFxClearCache();
+    imgFxSyncPixelatedClass();
+    renderGrid();
+    compositeAllLayers();
+  }
+
+  function bindFxSliderPair(sl, num, getVal, setVal) {
+    if (!sl || !num) return;
+    const apply = (v) => {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return;
+      setVal(n);
+      sl.value = String(getVal());
+      num.value = String(getVal());
+      imgFxApplyAndRerender();
+    };
+    sl.addEventListener('input', () => { num.value = sl.value; });
+    sl.addEventListener('change', () => apply(sl.value));
+    num.addEventListener('change', () => apply(num.value));
+  }
+
+  if (imgFxEnable) {
+    imgFxEnable.addEventListener('click', () => {
+      state.imgFx.enabled = !state.imgFx.enabled;
+      imgFxSyncUI();
+      imgFxApplyAndRerender();
+    });
+  }
+  if (imgFxPixelizeEnable) {
+    imgFxPixelizeEnable.addEventListener('click', () => {
+      state.imgFx.pixelize.enabled = !state.imgFx.pixelize.enabled;
+      imgFxSyncUI();
+      imgFxApplyAndRerender();
+    });
+  }
+  if (imgFxPosterizeEnable) {
+    imgFxPosterizeEnable.addEventListener('click', () => {
+      state.imgFx.posterize.enabled = !state.imgFx.posterize.enabled;
+      imgFxSyncUI();
+      imgFxApplyAndRerender();
+    });
+  }
+
+  bindFxSliderPair(imgFxPixelSize, imgFxPixelSizeNum, () => state.imgFx.pixelize.size|0, (v) => { state.imgFx.pixelize.size = Math.max(1, Math.min(96, Math.round(v))); });
+  bindFxSliderPair(imgFxPosterizeLevels, imgFxPosterizeLevelsNum, () => state.imgFx.posterize.levels|0, (v) => { state.imgFx.posterize.levels = Math.max(2, Math.min(32, Math.round(v))); });
+
+  imgFxSyncUI();
+  imgFxSyncPixelatedClass();
+
+
 
   if (frameBgColorInput) {
     frameBgColorInput.oninput = () => {
@@ -7986,7 +8240,69 @@ async function exportResampledVideo() {
     canvasW = Math.floor(canvasW / 2) * 2;
     canvasH = Math.floor(canvasH / 2) * 2;
 
-    // Prepare frames (load images)
+    
+  async function imgFxLoadFrameSourcesForExport() {
+    // Returns an array of CanvasImageSource (Image or Canvas), matching state.frames order.
+    const useFx = imgFxEnabled();
+    const fx = state.imgFx;
+
+    // 1) Load original images first.
+    const imgs = await Promise.all(state.frames.map((f) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = f.dataUrl;
+      });
+    }));
+
+    if (!useFx || !fx) return imgs;
+
+    // 2) Convert each frame to a processed canvas (often smaller when pixelize is enabled).
+    const out = new Array(imgs.length);
+    for (let i = 0; i < imgs.length; i++) {
+      const img = imgs[i];
+      if (!img) { out[i] = null; continue; }
+      // Reuse the same pipeline as preview, but draw from the decoded Image element directly.
+      const srcW = Math.max(1, img.naturalWidth || img.width || 1);
+      const srcH = Math.max(1, img.naturalHeight || img.height || 1);
+
+      const pxOn = fx.pixelize && fx.pixelize.enabled;
+      const poOn = fx.posterize && fx.posterize.enabled;
+
+      let outW = srcW;
+      let outH = srcH;
+      if (pxOn) {
+        const size = Math.max(1, Math.min(96, fx.pixelize.size|0));
+        outW = Math.max(1, Math.round(srcW / size));
+        outH = Math.max(1, Math.round(srcH / size));
+      }
+
+      const cnv = document.createElement('canvas');
+      cnv.width = outW;
+      cnv.height = outH;
+      const cctx = cnv.getContext('2d', { willReadFrequently: poOn });
+      if (!cctx) { out[i] = img; continue; }
+
+      cctx.imageSmoothingEnabled = true;
+      cctx.clearRect(0, 0, outW, outH);
+      cctx.drawImage(img, 0, 0, outW, outH);
+
+      if (poOn) {
+        try {
+          const levels = Math.max(2, Math.min(32, fx.posterize.levels|0));
+          const imgData = cctx.getImageData(0, 0, outW, outH);
+          posterizeImageData(imgData, levels);
+          cctx.putImageData(imgData, 0, 0);
+        } catch (e) {}
+      }
+
+      out[i] = cnv;
+    }
+    return out;
+  }
+
+// Prepare frames (load images)
     loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Preparing resampled export...';
     const frameImages = await Promise.all(state.frames.map(f => {
@@ -8565,6 +8881,7 @@ loadingOverlay.classList.add('visible');
     try { audioExportSimFromCells(_cells, tick); } catch (e) {}
 
     // BG drawing layer (optional) - drawn as overlay above video frames
+    // BG layer is mapped to the visible content area; export padding acts as an outer border.
     drawExportBgLayer(ctx, 0, headerH, w, bodyH, 'grid');
 
     // Overlays
@@ -8587,13 +8904,14 @@ loadingOverlay.classList.add('visible');
   
   
 function computeExportBgCrop(mode = 'grid', dstContentW = 0, dstContentH = 0, padExportPx = 0) {
-  // Converts export padding (in output px) into preview-canvas px so the BG layer keeps correct scale.
-  // When padding is 0, crop matches the visible content bounds.
-  const padOut = Math.max(0, Number(padExportPx) || 0);
-
+  // Compute the BG-canvas crop that corresponds to what you SEE in the viewport (grid or single cell).
+  // Padding is treated as an OUTER border in exports, so the BG crop is NOT expanded by padding.
   try {
     const innerRect = canvasInner.getBoundingClientRect();
     if (!innerRect.width || !innerRect.height) return null;
+
+    const cnv = (mode === 'single') ? bgCanvasSingle : bgCanvas;
+    if (!cnv || !cnv.width || !cnv.height) return null;
 
     let el = null;
     if (mode === 'single') {
@@ -8606,31 +8924,27 @@ function computeExportBgCrop(mode = 'grid', dstContentW = 0, dstContentH = 0, pa
     if (!el) return null;
 
     const r = el.getBoundingClientRect();
-    const scaleX = drawCanvas.width / innerRect.width;
-    const scaleY = drawCanvas.height / innerRect.height;
+    const scaleX = cnv.width / innerRect.width;
+    const scaleY = cnv.height / innerRect.height;
 
-    // Content crop in preview canvas pixels
-    let sx = (r.left - innerRect.left) * scaleX;
-    let sy = (r.top - innerRect.top) * scaleY;
-    let sw = r.width * scaleX;
-    let sh = r.height * scaleY;
+    // Include export padding in the crop (match export guides outer bounds)
+    const padWanted = Math.max(0, Number(padExportPx) || 0);
+    const padClamped = Math.min(padWanted, Math.max(0, Math.floor(Math.min(r.width, r.height) / 2) - 2));
+    const rx = r.left - padClamped;
+    const ry = r.top - padClamped;
+    const rw = r.width + padClamped * 2;
+    const rh = r.height + padClamped * 2;
 
-    // Expand crop by padding (same thickness on all sides, independent of aspect ratio)
-    if (padOut > 0 && dstContentW > 0 && dstContentH > 0 && sw > 1 && sh > 1) {
-      const k = Math.min(sw / dstContentW, sh / dstContentH);
-      const pad = padOut * k;
-
-      sx -= pad;
-      sy -= pad;
-      sw += pad * 2;
-      sh += pad * 2;
-    }
-
-    // Clamp to canvas bounds
-    sx = Math.max(0, Math.min(drawCanvas.width - 1, sx));
-    sy = Math.max(0, Math.min(drawCanvas.height - 1, sy));
-    sw = Math.max(1, Math.min(drawCanvas.width - sx, sw));
-    sh = Math.max(1, Math.min(drawCanvas.height - sy, sh));
+    // Crop in BG-canvas pixels
+    let sx = (rx - innerRect.left) * scaleX;
+    let sy = (ry - innerRect.top) * scaleY;
+    let sw = rw * scaleX;
+    let sh = rh * scaleY;
+// Clamp to canvas bounds
+    sx = Math.max(0, Math.min(cnv.width - 1, sx));
+    sy = Math.max(0, Math.min(cnv.height - 1, sy));
+    sw = Math.max(1, Math.min(cnv.width - sx, sw));
+    sh = Math.max(1, Math.min(cnv.height - sy, sh));
 
     const crop = { sx, sy, sw, sh };
     if (mode === 'single') state._exportBgCropSingle = crop;
@@ -8867,7 +9181,13 @@ const dx = x + (w - dw) / 2 + ox;
     ctx.beginPath();
     ctx.rect(x, y, w, h);
     ctx.clip();
+    const _smPrev = ctx.imageSmoothingEnabled;
+    try {
+      const _px = !!(state.imgFx && state.imgFx.enabled && state.imgFx.pixelize && state.imgFx.pixelize.enabled);
+      ctx.imageSmoothingEnabled = !_px;
+    } catch (e) {}
     ctx.drawImage(img, dx, dy, dw, dh);
+    ctx.imageSmoothingEnabled = _smPrev;
     ctx.restore();
   }
 
@@ -8939,6 +9259,7 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, layout,
     }
     if (!drawingsOnly && img) drawFrameCell(ctx, img, innerX, innerY, innerW, innerH);
     // BG drawing layer (optional) - drawn as overlay above video frames
+    // BG layer is mapped to the visible content area; export padding acts as an outer border.
     drawExportBgLayer(ctx, 0, headerH, w, bodyH, 'single');
     drawExportRefFrame(ctx, innerX, innerY, innerW, innerH);
     // Drawings overlay (optional)
@@ -9059,12 +9380,7 @@ async function recordAudioSeqWebM(mode = 'grid') {
     // Preload frame images (same as exportMp4)
     loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Preparing WebM AV recording...';
-    const frameImages = await Promise.all(state.frames.map(f => new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = f.dataUrl;
-    })));
+    const frameImages = await imgFxLoadFrameSourcesForExport();
 
     const cellOrder = generateCellOrder(cellCount, state.gridCols);
     const r = parseInt(state.tcBgColor.slice(1,3), 16);
@@ -9094,9 +9410,11 @@ async function recordAudioSeqWebM(mode = 'grid') {
     // Rule of thumb: ~0.26 Mbps per (MPx * FPS), with sane caps.
     const fps = state.animFps || 12;
     const mpix = (canvasW * canvasH) / 1e6;
-    let videoBps = Math.round(mpix * fps * 260000);
-    videoBps = Math.max(3000000, Math.min(45000000, videoBps));
-    const audioBps = 256000;
+    let videoBps = Math.round(mpix * fps * 520000);
+    videoBps = Math.max(6000000, Math.min(80000000, videoBps));
+    // Boost WebM quality (2x bitrate) while keeping a sane cap
+    videoBps = Math.max(3000000, Math.min(80000000, videoBps * 2));
+    const audioBps = 320000;
 
     let recorder = null;
     try {
@@ -9899,6 +10217,9 @@ const canvas = document.createElement('canvas');
 
   // Draw frames
   const offset = state.showInfoCard ? 1 : 0;
+  const __exportCells = [];
+
+  // Pass 1: base frames only
   for (let i = 0; i < total; i++) {
     if ((i % 24) === 0) { await new Promise(r => setTimeout(r, 0)); }
     const row = Math.floor(i / state.gridCols);
@@ -9955,25 +10276,37 @@ const canvas = document.createElement('canvas');
       ctx.fillRect(x, y, sFrameW, sFrameH);
     }
 
+        __exportCells.push({ i, x, y, w: sFrameW, h: sFrameH, frameIdx, frame });
+
+  }
+
+  // BG drawing layer (optional) - drawn as overlay above base frames, below drawings/timecode
+  drawExportBgLayer(ctx, 0, sHeaderH, canvasW, canvasH - sHeaderH, 'grid');
+
+  // Pass 2: overlays
+  for (const cell of __exportCells) {
+    const { x, y, w, h, frameIdx, frame } = cell;
+
     // Ref frame + drawings overlays
     if (state.refFrameAboveDrawings) {
-      drawExportDrawings(ctx, x, y, sFrameW, sFrameH, frameIdx);
-      drawExportRefFrame(ctx, x, y, sFrameW, sFrameH);
+      drawExportDrawings(ctx, x, y, w, h, frameIdx);
+      drawExportRefFrame(ctx, x, y, w, h);
     } else {
-      drawExportRefFrame(ctx, x, y, sFrameW, sFrameH);
-      drawExportDrawings(ctx, x, y, sFrameW, sFrameH, frameIdx);
+      drawExportRefFrame(ctx, x, y, w, h);
+      drawExportDrawings(ctx, x, y, w, h, frameIdx);
     }
 
     // Timecode overlay (optional)
     if (computeShowTimecode()) {
-      drawTimecodeOverlay(ctx, x, y, sFrameW, sFrameH, frame, getDerivedIndexFromFrameIdx(frameIdx), cellCount, frameIdx);
+      drawTimecodeOverlay(ctx, x, y, w, h, frame, getDerivedIndexFromFrameIdx(frameIdx), cellCount, frameIdx);
     }
 
     // Optional cell border (visual clarity for exports)
     ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = Math.max(1, Math.round(1 * scale));
-    ctx.strokeRect(x + 0.5, y + 0.5, sFrameW - 1, sFrameH - 1);
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
   }
+
 
   // Encode
   const mime = (format === 'png') ? 'image/png' : 'image/jpeg';
@@ -10019,6 +10352,29 @@ const canvas = document.createElement('canvas');
     const raw = override || state.videoFile?.name || state.imageFiles?.[0]?.name || 'framegrid';
     return makeSafeName(raw);
   }
+
+  // Global frame-source loader used by MP4/WebM/PNG export.
+  // In builds without Image FX, this simply loads original frame images.
+  async function imgFxLoadFrameSourcesForExport() {
+    // If a newer Image FX pipeline exists, prefer it.
+    try {
+      if (typeof imgFxLoadFrameSourcesForExport__impl === 'function') {
+        return await imgFxLoadFrameSourcesForExport__impl();
+      }
+    } catch (e) {}
+
+    const imgs = await Promise.all(state.frames.map((f) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = f.dataUrl;
+      });
+    }));
+    return imgs;
+  }
+
+
 
   // Universal naming:
   // <base>_FG_<mode>[_<extra>]_24f_30fps_W3_2026.<ext>
@@ -10188,7 +10544,7 @@ const canvas = document.createElement('canvas');
     const frame = state.frames[frameIdx];
 
     // BG overlay (optional) - covers full body so your notes in the margin export too
-    drawExportBgLayer(ctx, 0, headerH, canvasW, canvasH - headerH, 'single');
+    drawExportBgLayer(ctx, 0, headerH, canvasW, Math.max(1, canvasH - headerH), 'single');
 
     // Video frame
     const src = getFrameDataUrl(frame);
