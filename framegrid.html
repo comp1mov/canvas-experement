@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.23.75                                        ║
+║      FRAMEGRID v0.23.90                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.23.75</title>
+  <title>FRAMEGRID v0.23.90</title>
   <style>
 
     /* Prevent page scrollbars (keep scrolling inside the side menu only) */
@@ -108,10 +108,15 @@
     .canvas-area { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
     .canvas-area.panning { cursor: move; }
     .canvas-area.has-menu { margin-right: 290px; }
-    .canvas-inner { position: absolute; transform-origin: 0 0; padding: var(--canvas-inner-pad, clamp(520px, 28vw, 1400px)); box-sizing: border-box; }
+    .bg-grid-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; display: none; }
+    .canvas-inner { position: absolute; z-index: 1; transform-origin: 0 0; padding: var(--canvas-inner-pad, clamp(520px, 28vw, 1400px)); box-sizing: border-box; }
 
     /* GRID */
-    .frames-grid { display: grid; gap: var(--grid-gap, 2px); width: max-content; align-content: start; }
+    .frames-grid { display: grid; gap: var(--grid-gap, 2px); width: max-content; align-content: start; position: relative; z-index: 2; }
+    .bg-underlay-canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+    .frames-grid.seamless { gap: 0 !important; }
+    .frames-grid.seamless .frame-item { background: var(--frame-bg, #111); }
+    .frames-grid.seamless .frame-image-wrap { outline: 1px solid var(--frame-bg, #111); outline-offset: -1px; }
     .frame-item { background: #000; position: relative; }
     .frame-item.dimmed { opacity: 0.25; }
     .frame-image-wrap {
@@ -405,6 +410,31 @@
       width: 36px; height: 28px; padding: 2px; background: #111;
       border: 1px solid rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer;
     }
+    .menu-details {
+      margin-top: 8px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 2px;
+      background: rgba(255,255,255,0.02);
+    }
+    .menu-details summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 10px 12px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.78);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .menu-details summary::-webkit-details-marker { display: none; }
+    .menu-details summary::after { content: '+'; color: rgba(255,255,255,0.45); font-size: 14px; }
+    .menu-details[open] summary::after { content: '−'; }
+    .menu-details-content {
+      padding: 0 12px 12px 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
 
     /* ABOUT */
     .about-section { padding: 16px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: auto; }
@@ -532,14 +562,45 @@
     /* Corner markers on the outer export bounds */
     .export-guides-corner {
       position: absolute;
-      width: 22px;
-      height: 22px;
+      width: 128px;
+      height: 128px;
       box-sizing: border-box;
+      background-repeat: no-repeat;
+      filter: none;
+      opacity: 0.96;
     }
-    .export-guides-corner.tl { top: -1px; left: -1px; border-top: 3px solid rgba(255,255,255,0.75); border-left: 3px solid rgba(255,255,255,0.75); }
-    .export-guides-corner.tr { top: -1px; right: -1px; border-top: 3px solid rgba(255,255,255,0.75); border-right: 3px solid rgba(255,255,255,0.75); }
-    .export-guides-corner.bl { bottom: -1px; left: -1px; border-bottom: 3px solid rgba(255,255,255,0.75); border-left: 3px solid rgba(255,255,255,0.75); }
-    .export-guides-corner.br { bottom: -1px; right: -1px; border-bottom: 3px solid rgba(255,255,255,0.75); border-right: 3px solid rgba(255,255,255,0.75); }
+    .export-guides-corner.tl {
+      top: -1px; left: -1px;
+      background-image:
+        linear-gradient(to bottom, rgba(255,255,255,0.98), rgba(0,0,0,0.92)),
+        linear-gradient(to right, rgba(255,255,255,0.98), rgba(0,0,0,0.92));
+      background-size: 3px 128px, 128px 3px;
+      background-position: left top, left top;
+    }
+    .export-guides-corner.tr {
+      top: -1px; right: -1px;
+      background-image:
+        linear-gradient(to bottom, rgba(255,255,255,0.98), rgba(0,0,0,0.92)),
+        linear-gradient(to left, rgba(255,255,255,0.98), rgba(0,0,0,0.92));
+      background-size: 3px 128px, 128px 3px;
+      background-position: right top, right top;
+    }
+    .export-guides-corner.bl {
+      bottom: -1px; left: -1px;
+      background-image:
+        linear-gradient(to top, rgba(255,255,255,0.98), rgba(0,0,0,0.92)),
+        linear-gradient(to right, rgba(255,255,255,0.98), rgba(0,0,0,0.92));
+      background-size: 3px 128px, 128px 3px;
+      background-position: left bottom, left bottom;
+    }
+    .export-guides-corner.br {
+      bottom: -1px; right: -1px;
+      background-image:
+        linear-gradient(to top, rgba(255,255,255,0.98), rgba(0,0,0,0.92)),
+        linear-gradient(to left, rgba(255,255,255,0.98), rgba(0,0,0,0.92));
+      background-size: 3px 128px, 128px 3px;
+      background-position: right bottom, right bottom;
+    }
 
     /* Corners-only mode (no bands, no dashed inner box) */
     .export-guides::after { display: none; }
@@ -996,7 +1057,7 @@
           <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
           <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
         </span>
-        <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.23.75</span>
+        <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.23.90</span>
       </div>
       <div class="metadata-item" id="metaFilename">No file</div>
       <div class="metadata-item hide-mobile" id="metaResolution"></div>
@@ -1009,7 +1070,9 @@
     </div>
 
     <div class="canvas-area" id="canvasArea">
+      <div class="bg-grid-layer" id="bgGridLayer"></div>
       <div class="canvas-inner" id="canvasInner">
+        <canvas class="bg-underlay-canvas" id="bgUnderlayCanvas"></canvas>
         <div class="frames-grid" id="framesGrid"></div>
         <canvas class="draw-canvas" id="drawCanvas"></canvas>
         <div class="export-guides" id="exportGuides" aria-hidden="true">
@@ -1144,6 +1207,7 @@
         <div class="drop-zone-btn-row">
           <button class="drop-zone-btn" id="browseVideoBtn">IMPORT VIDEO</button>
           <button class="drop-zone-btn" id="browseImageBtn">IMPORT IMAGE</button>
+          <button class="drop-zone-btn" id="browseCutBtn">SLICE</button>
         </div>
         <div class="drop-zone-formats">MP4, MOV, WebM, AVI, MKV, OGV, M4V | JPG, WEBP, GIF</div>
 <!-- (Hotkeys list removed from start screen; see Menu > FRAMEGRID) -->
@@ -1201,6 +1265,24 @@
               <button class="menu-input-btn" id="endPlus">+</button>
             </div>
           </div>
+          <details class="menu-details" id="sliceDetails">
+            <summary>Storyboard Slice</summary>
+            <div class="menu-details-content">
+              <div class="menu-row">
+                <span class="menu-label">Cols</span>
+                <input type="number" class="menu-input menu-input-narrow" id="cutCols" value="3" min="1" max="64" inputmode="decimal">
+              </div>
+              <div class="menu-row">
+                <span class="menu-label">Rows</span>
+                <input type="number" class="menu-input menu-input-narrow" id="cutRows" value="3" min="1" max="64" inputmode="decimal">
+              </div>
+              <div class="menu-row">
+                <span class="menu-label">Total</span>
+                <input type="text" class="menu-input menu-input-narrow" id="cutTotal" value="9" readonly>
+              </div>
+              <button class="menu-btn" id="sliceFirstImageBtn">Slice Image</button>
+            </div>
+          </details>
           <div class="menu-row">
             <span class="menu-label">Quality</span>
             <select class="menu-select" id="qualitySelect">
@@ -1316,6 +1398,45 @@
       </div>
 
       <div class="menu-section collapsed">
+        <div class="menu-section-title">BG</div>
+        <div class="menu-section-content">
+          <div class="menu-row">
+            <span class="menu-label">Background Color</span>
+            <input type="color" class="menu-color-input" id="bgColor" value="#0a0a0a">
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Show BG Grid</span>
+            <div class="menu-toggle-switch" id="toggleBgGrid"></div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Type</span>
+            <select class="menu-select" id="bgGridType">
+              <option value="lines">Lines</option>
+              <option value="dots">Dots</option>
+            </select>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Color</span>
+            <input type="color" class="menu-color-input" id="bgGridColor" value="#ffffff">
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Opacity</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="bgGridOpacity" min="0" max="100" value="12">
+              <span class="menu-slider-value" id="bgGridOpacityValue">12%</span>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Size</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="bgGridSize" min="6" max="80" value="24">
+              <span class="menu-slider-value" id="bgGridSizeValue">24px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-section collapsed">
         <div class="menu-section-title">Display</div>
         <div class="menu-section-content">
           <div class="menu-row">
@@ -1338,10 +1459,6 @@
             <span class="menu-label">Text</span>
             <input type="text" class="menu-input" id="tcCustomTextInput" placeholder="Enter label" value="">
           </div>
-<div class="menu-row">
-            <span class="menu-label">Show Export Guides</span>
-            <div class="menu-toggle-switch" id="toggleExportGuides"></div>
-          </div>
 </div>
       </div>
 
@@ -1350,10 +1467,6 @@
             <div class="menu-section collapsed">
         <div class="menu-section-title">Style</div>
         <div class="menu-section-content">
-          <div class="menu-row">
-                      <span class="menu-label">Background</span>
-                      <input type="color" class="menu-color-input" id="bgColor" value="#0a0a0a">
-                    </div>
           <div class="menu-row">
                       <span class="menu-label">TC Text</span>
                       <input type="color" class="menu-color-input" id="tcTextColor" value="#ffffff">
@@ -1435,6 +1548,10 @@
           <div class="menu-row">
             <span class="menu-label">Brush Panel</span>
             <div class="menu-toggle-switch" id="toggleBrushPanel"></div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">BG Draw Order</span>
+            <div class="menu-toggle-switch" id="toggleBgAboveDrawings"></div>
           </div>
 
         </div>
@@ -1757,6 +1874,12 @@
             <div class="menu-toggle-switch" id="toggleExportBg"></div>
           </div>
 
+<div class="menu-row">
+            <span class="menu-label">Show Export Guides</span>
+            <div class="menu-toggle-switch" id="toggleExportGuides"></div>
+          </div>
+
+
 
 
           <div class="menu-row">
@@ -1834,7 +1957,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.23.75</div>
+          <div class="about-version">Version v0.23.90</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
           <div class="about-hotkeys">
@@ -1902,7 +2025,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.23.75';
+  const APP_VERSION = 'v0.23.90';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   // Sync document/UI labels
@@ -1931,6 +2054,10 @@
     videoFile: null, filenameOverride: '', drawCanvasDpr: 1, videoUrl: null, videoDuration: 0,
     // Source type
     isSingleImage: false,
+    imageImportMode: 'loop', // 'loop' or 'cut'
+    pendingImageImportMode: 'loop',
+    cutCols: 3,
+    cutRows: 3,
     imageUrl: null,
     imageUrls: [],
     imageFiles: [],
@@ -1946,6 +2073,7 @@
     tcShowText: false,
     tcCustomText: '',
     autoFit: true, canvasAspect: 'auto', bgColor: '#020202',
+    bgGridShow: false, bgGridType: 'lines', bgGridColor: '#ffffff', bgGridOpacity: 0.12, bgGridSize: 24,
     previewCellW: 240, // preview cell width in CSS px (stabilizes iPad grid sizing)
 
     fontSize: 10, spacing: 2,
@@ -2012,6 +2140,7 @@ exportQuality: 'hd', // low, medium, high, max
     refFrameScale: 1,
     refFrameIncludeInExport: false,
     refFrameAboveDrawings: false, // ref frame layer position relative to drawings
+    bgLayerAboveDrawings: false, // background drawing layer above template/frame overlays
 
 
     refFrameFollowFrameTransform: false,
@@ -2082,7 +2211,7 @@ exportQuality: 'hd', // low, medium, high, max
   // DOM
   const $ = id => document.getElementById(id);
   const app = $('app'), metadataBar = $('metadataBar'), canvasArea = $('canvasArea');
-  const canvasInner = $('canvasInner'), framesGrid = $('framesGrid'), dropZone = $('dropZone');
+  const canvasInner = $('canvasInner'), framesGrid = $('framesGrid'), dropZone = $('dropZone'), bgGridLayer = $('bgGridLayer');
   const sideMenu = $('sideMenu'), menuToggleBtn = $('menuToggleBtn'), menuCloseBtn = $('menuCloseBtn');
   const progressBar = $('progressBar'), progressFill = $('progressFill');
   const loadingOverlay = $('loadingOverlay'), loadingProgress = $('loadingProgress');
@@ -2096,6 +2225,7 @@ exportQuality: 'hd', // low, medium, high, max
   const countMinus = $('countMinus'), countPlus = $('countPlus');
   const intervalValueInput = $('intervalValue'), qualitySelect = $('qualitySelect');
   const startFrameInput = $('startFrame'), endFrameInput = $('endFrame');
+  const cutColsInput = $('cutCols'), cutRowsInput = $('cutRows'), cutTotalInput = $('cutTotal'), sliceFirstImageBtn = $('sliceFirstImageBtn');
   // Frame image transform (preview + export)
   const frameTargetAspectSelect = $('frameTargetAspect');
   const frameImgScaleSlider = $('frameImgScale');
@@ -2114,7 +2244,7 @@ exportQuality: 'hd', // low, medium, high, max
   const toggleAutoFit = $('toggleAutoFit');
   const fontSizeSlider = $('fontSizeSlider'), fontSizeValue = $('fontSizeValue');
   const spacingSlider = $('spacingSlider'), spacingValue = $('spacingValue');
-  const bgColorInput = $('bgColor'), generateBtn = $('generateBtn');
+  const bgColorInput = $('bgColor'), toggleBgGrid = $('toggleBgGrid'), bgGridTypeSelect = $('bgGridType'), bgGridColorInput = $('bgGridColor'), bgGridOpacitySlider = $('bgGridOpacity'), bgGridOpacityValue = $('bgGridOpacityValue'), bgGridSizeSlider = $('bgGridSize'), bgGridSizeValue = $('bgGridSizeValue'), generateBtn = $('generateBtn');
   const exportSmallBtn = $('exportSmallBtn');
   const exportFullBtn = $('exportFullBtn');
   const exportMp4GridBtn = $('exportMp4GridBtn'), exportMp4SingleBtn = $('exportMp4SingleBtn');
@@ -2135,7 +2265,7 @@ exportQuality: 'hd', // low, medium, high, max
   const exportPaddingNum = $('exportPaddingNum');
   const exportQualitySelect = $('exportQuality');
   const loopsInput = $('loopsInput'), loopsMinus = $('loopsMinus'), loopsPlus = $('loopsPlus');
-  const newVideoBtn = $('newVideoBtn'), browseVideoBtn = $('browseVideoBtn'), browseImageBtn = $('browseImageBtn');
+  const newVideoBtn = $('newVideoBtn'), browseVideoBtn = $('browseVideoBtn'), browseImageBtn = $('browseImageBtn'), browseCutBtn = $('browseCutBtn');
   const metaFilename = $('metaFilename'), metaResolution = $('metaResolution');
 
   // Top bar filename: click to rename (affects export base name)
@@ -2263,6 +2393,7 @@ exportQuality: 'hd', // low, medium, high, max
   const sprayScatterSlider = $('sprayScatterSlider'), sprayScatterValue = $('sprayScatterValue');
   const sprayDotScaleSlider = $('sprayDotScaleSlider'), sprayDotScaleValue = $('sprayDotScaleValue');
   const toggleBrushPanel = $('toggleBrushPanel');
+  const toggleBgAboveDrawings = $('toggleBgAboveDrawings');
 
   // MENU
   function openMenu() {
@@ -2270,7 +2401,8 @@ exportQuality: 'hd', // low, medium, high, max
     state.menuOpen = true;
     sideMenu.classList.add('open');
     menuToggleBtn.classList.add('active');
-    // Меню просто выезжает сверху, ничего не пересчитываем
+    canvasArea.classList.add('has-menu');
+    if (state.autoFit && state.frames.length) requestFitToActiveView();
   }
   function closeMenu() {
     if (typeof dbg === 'function') dbg('closeMenu');
@@ -2278,6 +2410,7 @@ exportQuality: 'hd', // low, medium, high, max
     sideMenu.classList.remove('open');
     menuToggleBtn.classList.remove('active');
     canvasArea.classList.remove('has-menu');
+    if (state.autoFit && state.frames.length) requestFitToActiveView();
   }
   function toggleMenu() { state.menuOpen ? closeMenu() : openMenu(); }
 
@@ -2336,6 +2469,8 @@ exportQuality: 'hd', // low, medium, high, max
 
     // VIDEO
     state.isSingleImage = false;
+    state.imageImportMode = 'loop';
+    state.pendingImageImportMode = 'loop';
     revokeImageUrls();
 
     state.videoFile = file;
@@ -2372,9 +2507,8 @@ exportQuality: 'hd', // low, medium, high, max
 
     // Set frame range
     state.startFrame = 0;
-    state.endFrame = Math.floor(state.videoDuration * state.videoFps);
-    startFrameInput.value = state.startFrame;
-    endFrameInput.value = state.endFrame;
+    state.endFrame = getMaxFrameIndex();
+    syncFrameRangeInputs();
 
     applyFrameTargetAspect();
     updateMetaDisplay();
@@ -2390,11 +2524,12 @@ exportQuality: 'hd', // low, medium, high, max
     alert('Error loading video. This format may not be supported by your browser.\n\nTry converting to MP4 or WebM.');
   };
 
-function handleImageFiles(files) {
+function handleImageFiles(files, importMode = "loop") {
     if (!files || !files.length) return;
 
     // IMAGE MODE: treat imported images as sources for the frame sequence.
     state.isSingleImage = true;
+    state.imageImportMode = (importMode === 'cut') ? 'cut' : 'loop';
 
     // Force "Fixed Count" UI for image mode, since interval-based selection doesn't apply here.
     state.selectionMode = 'count';
@@ -2411,14 +2546,17 @@ function handleImageFiles(files) {
 
     // Replace images
     revokeImageUrls();
-    state.imageFiles = files.slice(0, 3000); // user cap: 3000 (power users may overload memory)
+    const normalizedFiles = Array.from(files || []).filter(Boolean);
+    state.imageFiles = (state.imageImportMode === 'cut' ? normalizedFiles.slice(0, 1) : normalizedFiles.slice(0, 3000));
     // Auto frame count for image mode:
     // - Single image: default 24 frames (loop)
     // - Multiple images: match image count for 1:1 sequence preview
+    // - Cut mode: rows * cols
     const imgCount = state.imageFiles.length;
-    const autoCount = (imgCount > 1) ? imgCount : 24;
+    const autoCount = (state.imageImportMode === 'cut') ? getCutTotal() : ((imgCount > 1) ? imgCount : 24);
     state.frameCount = Math.max(1, Math.min(3000, autoCount));
     frameCountInput.value = state.frameCount;
+    updateCutUI();
     updateGridHint();
 
     // Power-user auto-settings for big image sequences
@@ -2456,8 +2594,7 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
       state.videoDuration = Math.max(1, n / state.videoFps);
       state.startFrame = 0;
       state.endFrame = Math.max(0, n - 1);
-      startFrameInput.value = state.startFrame;
-      endFrameInput.value = state.endFrame;
+      syncFrameRangeInputs();
 
       applyFrameTargetAspect();
       updateMetaDisplay();
@@ -2514,6 +2651,72 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
 
   updateLogoFromTick();
 
+  function clampCutValue(value, fallback = 3) {
+    return Math.max(1, Math.min(64, parseInt(value, 10) || fallback));
+  }
+
+  function getCutTotal() {
+    return Math.max(1, clampCutValue(state.cutCols, 3) * clampCutValue(state.cutRows, 3));
+  }
+
+  function updateCutUI() {
+    state.cutCols = clampCutValue(state.cutCols, 3);
+    state.cutRows = clampCutValue(state.cutRows, 3);
+    if (cutColsInput) cutColsInput.value = state.cutCols;
+    if (cutRowsInput) cutRowsInput.value = state.cutRows;
+    if (cutTotalInput) cutTotalInput.value = String(getCutTotal());
+  }
+
+  function saveCutSettings() {
+    try {
+      localStorage.setItem('fg_cut_settings', JSON.stringify({ cols: state.cutCols, rows: state.cutRows }));
+    } catch (e) {}
+  }
+
+  function loadCutSettings() {
+    try {
+      const raw = JSON.parse(localStorage.getItem('fg_cut_settings') || '{}');
+      if (raw && typeof raw === 'object') {
+        if (raw.cols != null) state.cutCols = clampCutValue(raw.cols, state.cutCols);
+        if (raw.rows != null) state.cutRows = clampCutValue(raw.rows, state.cutRows);
+      }
+    } catch (e) {}
+    updateCutUI();
+  }
+
+  function loadImageElement(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  function getMaxFrameIndex() {
+    const approx = Math.max(1, Math.floor((state.videoDuration || 0) * (state.videoFps || 1)));
+    return Math.max(0, approx - 1);
+  }
+
+  function syncFrameRangeInputs() {
+    if (startFrameInput) startFrameInput.value = String(Math.max(1, (Number(state.startFrame) || 0) + 1));
+    if (endFrameInput) endFrameInput.value = String(Math.max(1, (Number(state.endFrame) || 0) + 1));
+  }
+
+  function isFullVideoRange() {
+    if (state.isSingleImage) return false;
+    const maxFrame = getMaxFrameIndex();
+    return state.startFrame <= 0 && state.endFrame >= maxFrame;
+  }
+
+  function requestImageImport(mode) {
+    state.pendingImageImportMode = (mode === 'cut') ? 'cut' : 'loop';
+    imageInput.multiple = state.pendingImageImportMode === 'cut' ? false : true;
+    imageInput.click();
+  }
+
+  loadCutSettings();
+
   // Drag & Drop
   dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('drag-over'); };
   dropZone.ondragleave = () => dropZone.classList.remove('drag-over');
@@ -2521,7 +2724,17 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
   dropZone.onclick = e => { if (!e.target.closest('.drop-zone-btn')) videoInput.click(); };
 
   browseVideoBtn.onclick = () => videoInput.click();
-  browseImageBtn.onclick = () => imageInput.click();
+  browseImageBtn.onclick = () => requestImageImport('loop');
+  browseCutBtn.onclick = () => requestImageImport('cut');
+  browseCutBtn.ondragover = e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag-over'); };
+  browseCutBtn.ondragleave = e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over'); };
+  browseCutBtn.ondrop = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove('drag-over');
+    const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []).filter(isImageFile);
+    if (files.length) handleImageFiles(files.slice(0, 1), 'cut');
+  };
   newVideoBtn.onclick = () => videoInput.click();
 
   videoInput.onchange = e => {
@@ -2530,7 +2743,13 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
   };
 
   imageInput.onchange = e => {
-    if (e.target.files && e.target.files.length) handleImageFiles(Array.from(e.target.files));
+    if (e.target.files && e.target.files.length) {
+      const mode = state.pendingImageImportMode || 'loop';
+      const files = Array.from(e.target.files);
+      handleImageFiles(mode === 'cut' ? files.slice(0, 1) : files, mode);
+    }
+    state.pendingImageImportMode = 'loop';
+    imageInput.multiple = true;
     e.target.value = '';
   };
 
@@ -2540,37 +2759,83 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
     hardClearAllDrawingsAndUndo();
 
 
-    // SINGLE IMAGE MODE: fill the frame list by repeating the imported image.
+    // SINGLE IMAGE MODE: either loop images or slice the first image into a grid.
     if (state.isSingleImage) {
-      const n = Math.max(1, Math.min(state.frameCount || 1, 3000));
-
       state.frames = [];
       progressBar.classList.add('visible');
       loadingOverlay.classList.add('visible');
 
-      // Match captured resolution logic (used by drawings + export tiling)
+      const urls = (state.imageUrls && state.imageUrls.length) ? state.imageUrls : (state.imageUrl ? [state.imageUrl] : ['']);
+
+      if (state.imageImportMode === 'cut') {
+        const src = urls[0] || '';
+        const cols = clampCutValue(state.cutCols, 3);
+        const rows = clampCutValue(state.cutRows, 3);
+        const total = Math.max(1, Math.min(cols * rows, 3000));
+        state.frameCount = total;
+        frameCountInput.value = state.frameCount;
+        updateCutUI();
+
+        if (src) {
+          const img = await loadImageElement(src);
+          const srcW = img.naturalWidth || img.width || state.videoWidth || 1;
+          const srcH = img.naturalHeight || img.height || state.videoHeight || 1;
+          const tileCanvas = document.createElement('canvas');
+          const tileCtx = tileCanvas.getContext('2d');
+          let idx = 0;
+          let firstTileW = Math.max(1, Math.round(srcW / cols));
+          let firstTileH = Math.max(1, Math.round(srcH / rows));
+
+          for (let row = 0; row < rows; row++) {
+            const sy = Math.round((row * srcH) / rows);
+            const ey = Math.round(((row + 1) * srcH) / rows);
+            const sh = Math.max(1, ey - sy);
+            for (let col = 0; col < cols; col++) {
+              const sx = Math.round((col * srcW) / cols);
+              const ex = Math.round(((col + 1) * srcW) / cols);
+              const sw = Math.max(1, ex - sx);
+              tileCanvas.width = sw;
+              tileCanvas.height = sh;
+              tileCtx.clearRect(0, 0, sw, sh);
+              tileCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+              state.frames.push({ time: idx / state.videoFps, frameNumber: idx, dataUrl: tileCanvas.toDataURL('image/png') });
+              if (idx === 0) {
+                firstTileW = sw;
+                firstTileH = sh;
+              }
+              idx++;
+              progressFill.style.width = `${(idx / total) * 100}%`;
+              loadingProgress.textContent = `${idx} / ${total}`;
+            }
+          }
+
+          state.videoWidth = firstTileW;
+          state.videoHeight = firstTileH;
+        }
+      } else {
+        const n = Math.max(1, Math.min(state.frameCount || 1, 3000));
+        const k = urls.length;
+        for (let i = 0; i < n; i++) {
+          const time = i / state.videoFps;
+          const idx = Math.min(k - 1, Math.floor((i * k) / n));
+          state.frames.push({ time, frameNumber: i, dataUrl: urls[idx] || '' });
+          progressFill.style.width = `${((i + 1) / n) * 100}%`;
+          loadingProgress.textContent = `${i + 1} / ${n}`;
+        }
+      }
+
+      const n = Math.max(1, state.frames.length || 1);
       state.captureW = Math.round((state.videoWidth || 1) * (state.quality || 1));
       state.captureH = Math.round((state.videoHeight || 1) * (state.quality || 1));
       captureCanvas.width = Math.max(1, state.captureW);
       captureCanvas.height = Math.max(1, state.captureH);
       state._frameTileDims = null;
 
-      for (let i = 0; i < n; i++) {
-        const time = i / state.videoFps;
-        const urls = (state.imageUrls && state.imageUrls.length) ? state.imageUrls : (state.imageUrl ? [state.imageUrl] : ['']);
-        const k = urls.length;
-        const idx = Math.min(k - 1, Math.floor((i * k) / n));
-        state.frames.push({ time, frameNumber: i, dataUrl: urls[idx] || '' });
-        progressFill.style.width = `${((i + 1) / n) * 100}%`;
-        loadingProgress.textContent = `${i + 1} / ${n}`;
-      }
-
-      // Synthetic duration/range for display only
       state.videoDuration = Math.max(1, n / state.videoFps);
       state.startFrame = 0;
       state.endFrame = Math.max(0, n - 1);
-      startFrameInput.value = state.startFrame;
-      endFrameInput.value = state.endFrame;
+      syncFrameRangeInputs();
+      applyFrameTargetAspect();
       updateMetaDisplay();
 
       progressBar.classList.remove('visible');
@@ -2581,15 +2846,14 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
 
       if (state.autoFit) {
         const cellCount = Math.ceil(state.frames.length / state.cellSize);
-      state.gridCols = calculateOptimalColumns(cellCount);
-      gridColsInput.value = state.gridCols;
+        state.gridCols = calculateOptimalColumns(cellCount);
+        gridColsInput.value = state.gridCols;
       }
 
       renderGrid();
-      // Apply current view mode after DOM rebuild
       setViewMode(state.viewMode);
       updateGridHint();
-      if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); }
+      if (state.autoFit) { requestFitToActiveView(); }
       return;
     }
 
@@ -2634,7 +2898,7 @@ for (let i = 0; i < times.length; i++) {
     renderGrid();
     setViewMode(state.viewMode);
       updateGridHint();
-    if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); }
+    if (state.autoFit) { requestFitToActiveView(); }
     if (!state.isSingleImage) setTimeout(generateVideoPalette, 100); // auto-generate palette from video
   }
   function regenerateGrid() {
@@ -2644,25 +2908,58 @@ for (let i = 0; i < times.length; i++) {
 
   function calculateFrameTimes() {
     const times = [], max = 2000;
-    const startTime = state.startFrame / state.videoFps;
-    const endTime = state.endFrame / state.videoFps;
+    const fps = Math.max(1, state.videoFps || 1);
+    const startTime = state.startFrame / fps;
+    const endTime = state.endFrame / fps;
     const rangeDuration = endTime - startTime;
-    
+    const includeEdges = !isFullVideoRange();
+    const maxSeekTime = Math.max(0, (state.videoDuration || endTime || 0) - (0.5 / fps));
+    const clampTime = (t) => Math.max(0, Math.min(t, maxSeekTime));
+    const pushUnique = (t) => {
+      const ct = clampTime(t);
+      if (!times.length || Math.abs(times[times.length - 1] - ct) > (0.25 / fps)) times.push(ct);
+    };
+
+    if (!includeEdges) {
+      if (state.selectionMode === 'count') {
+        const n = Math.min(state.frameCount, max);
+        for (let i = 0; i < n; i++) {
+          const t = startTime + (rangeDuration / (n + 1)) * (i + 1);
+          times.push(Math.min(t, endTime - 0.01));
+        }
+      } else if (state.selectionMode === 'seconds') {
+        for (let t = startTime; t < endTime && times.length < max; t += state.intervalValue) {
+          times.push(Math.min(t, endTime - 0.01));
+        }
+      } else {
+        for (let f = state.startFrame; f < state.endFrame && times.length < max; f += state.intervalValue) {
+          times.push(Math.min(f / fps, endTime - 0.01));
+        }
+      }
+      return times;
+    }
+
     if (state.selectionMode === 'count') {
       const n = Math.min(state.frameCount, max);
-      for (let i = 0; i < n; i++) {
-        const t = startTime + (rangeDuration / (n + 1)) * (i + 1);
-        times.push(Math.min(t, endTime - 0.01));
+      if (n <= 1) {
+        pushUnique(startTime);
+      } else {
+        for (let i = 0; i < n; i++) {
+          const t = startTime + (rangeDuration / Math.max(1, n - 1)) * i;
+          pushUnique(t);
+        }
       }
     } else if (state.selectionMode === 'seconds') {
-      for (let t = startTime; t < endTime && times.length < max; t += state.intervalValue) {
-        times.push(Math.min(t, endTime - 0.01));
+      pushUnique(startTime);
+      for (let t = startTime + state.intervalValue; t < endTime && times.length < max; t += state.intervalValue) {
+        pushUnique(t);
       }
+      if (times.length < max) pushUnique(endTime);
     } else {
-      // Every N frames within range
-      for (let f = state.startFrame; f < state.endFrame && times.length < max; f += state.intervalValue) {
-        times.push(Math.min(f / state.videoFps, endTime - 0.01));
+      for (let f = state.startFrame; f <= state.endFrame && times.length < max; f += state.intervalValue) {
+        pushUnique(f / fps);
       }
+      if (times.length < max) pushUnique(endTime);
     }
     return times;
   }
@@ -2982,11 +3279,290 @@ for (let i = 0; i < times.length; i++) {
 // Post-grid rebuild: sync frame sheet + template canvas sizes AFTER layout settles.
 // This avoids transient 0×0 measurements during rapid resizes (for example when opening DevTools).
 
+function getViewportExportPadForElement(el, mode = 'grid') {
+  const pad = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
+  if (!el || !pad) return { padX: 0, padY: 0, pad };
+
+  let dstContentW = 0;
+  let dstContentH = 0;
+  try {
+    if (mode === 'single') {
+      const dims = getTargetFrameOutputDims();
+      dstContentW = Math.max(1, Math.round(dims.w));
+      dstContentH = Math.max(1, Math.round(dims.h));
+    } else {
+      const dims = getTargetFrameOutputDims();
+      const baseFrameW = Math.max(1, Math.round(dims.w));
+      const baseFrameH = Math.max(1, Math.round(dims.h));
+      const cellCount = Math.ceil(state.frames.length / state.cellSize);
+      const total = cellCount + (state.showInfoCard ? 1 : 0);
+      const rows = Math.ceil(total / state.gridCols);
+      const gap = Math.max(0, Number(state.spacing) || 0);
+      dstContentW = state.gridCols * baseFrameW + Math.max(0, state.gridCols - 1) * gap;
+      dstContentH = rows * baseFrameH + Math.max(0, rows - 1) * gap;
+    }
+  } catch (e) {}
+
+  const elW = Math.max(1, el.offsetWidth || el.clientWidth || 0);
+  const elH = Math.max(1, el.offsetHeight || el.clientHeight || 0);
+  const padX = dstContentW > 0 ? (pad * elW / dstContentW) : pad;
+  const padY = dstContentH > 0 ? (pad * elH / dstContentH) : pad;
+  return { padX, padY, pad };
+}
+
+function getPreviewExportGeometry(mode = 'grid') {
+  try {
+    const innerLayoutW = Math.max(1, canvasInner.scrollWidth || canvasInner.offsetWidth || 0);
+    const innerLayoutH = Math.max(1, canvasInner.scrollHeight || canvasInner.offsetHeight || 0);
+    if (!innerLayoutW || !innerLayoutH) return null;
+
+    let el = null;
+    if (mode === 'single') {
+      const items = framesGrid.querySelectorAll('.frame-item');
+      const offset = state.showInfoCard ? 1 : 0;
+      el = items[offset] || null;
+    } else {
+      el = framesGrid;
+    }
+    if (!el) return null;
+
+    const contentW = el.offsetWidth || 0;
+    const contentH = el.offsetHeight || 0;
+    if (contentW <= 0 || contentH <= 0) return null;
+
+    const off = getOffsetWithin(el, canvasInner);
+    const vp = getViewportExportPadForElement(el, mode);
+    const outerX = (off.x || 0) - vp.padX;
+    const outerY = (off.y || 0) - vp.padY;
+    const outerW = contentW + vp.padX * 2;
+    const outerH = contentH + vp.padY * 2;
+    if (outerW <= 0 || outerH <= 0) return null;
+
+    return {
+      mode,
+      el,
+      innerLayoutW,
+      innerLayoutH,
+      contentX: off.x || 0,
+      contentY: off.y || 0,
+      contentW,
+      contentH,
+      outerX,
+      outerY,
+      outerW,
+      outerH,
+      padX: vp.padX,
+      padY: vp.padY,
+      pad: vp.pad
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function computeExportBgCrop(mode = 'grid') {
+  try {
+    const data = getPreviewExportGeometry(mode);
+    if (!data) return null;
+    const cnv = (mode === 'single') ? bgCanvasSingle : bgCanvas;
+    if (!cnv || !cnv.width || !cnv.height) return null;
+
+    const scaleX = cnv.width / Math.max(1, data.innerLayoutW);
+    const scaleY = cnv.height / Math.max(1, data.innerLayoutH);
+
+    let sx = data.outerX * scaleX;
+    let sy = data.outerY * scaleY;
+    let sw = data.outerW * scaleX;
+    let sh = data.outerH * scaleY;
+
+    sx = Math.max(0, Math.min(cnv.width - 1, sx));
+    sy = Math.max(0, Math.min(cnv.height - 1, sy));
+    sw = Math.max(1, Math.min(cnv.width - sx, sw));
+    sh = Math.max(1, Math.min(cnv.height - sy, sh));
+
+    const crop = { sx, sy, sw, sh };
+    if (mode === 'single') state._exportBgCropSingle = crop;
+    else state._exportBgCropGrid = crop;
+    return crop;
+  } catch (e) {
+    if (mode === 'single') state._exportBgCropSingle = null;
+    else state._exportBgCropGrid = null;
+    return null;
+  }
+}
+
+function getStillExportPlacement(mode, contentW, contentH, headerH = 0, fallbackPad = 0) {
+  const pad = Math.max(0, Math.round(fallbackPad || 0));
+  const bodyW = Math.max(1, Math.round(contentW + pad * 2));
+  const bodyH = Math.max(1, Math.round(contentH + pad * 2));
+  return {
+    canvasW: bodyW,
+    canvasH: Math.max(1, Math.round(headerH + bodyH)),
+    bodyW,
+    bodyH,
+    dx: pad,
+    dy: pad
+  };
+}
+
+
+function getDeterministicVideoExportLayout(mode, rows) {
+  const gapBase = Math.max(0, Number(state.spacing) || 0);
+  const padPx = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
+  const qualityMap = { low: 540, medium: 720, hd: 1080, high: 2160, max: Infinity };
+  const qualityCap = qualityMap[state.exportQuality] || 1080;
+
+  let logicalCanvasW = 0;
+  let logicalCanvasH = 0;
+  let layout = {
+    mode,
+    padPx,
+    headerH: 0,
+    baseHeaderH: 0,
+    gap: gapBase,
+    frameW: 0,
+    frameH: 0,
+    gridW: 0,
+    gridH: 0,
+    dx: 0,
+    dy: 0,
+    logicalW: 0,
+    logicalH: 0,
+    scaleX: 1,
+    scaleY: 1,
+  };
+
+  if (mode === 'grid') {
+    const baseHeaderH = state.exportShowMetadata ? 48 : 0;
+    let headerH = baseHeaderH;
+    const dims = getTargetFrameOutputDims();
+    const frameW = Math.max(2, Math.round(dims.w));
+    const frameH = Math.max(2, Math.round(dims.h));
+    const gridW = state.gridCols * frameW + Math.max(0, state.gridCols - 1) * gapBase;
+    const gridH = rows * frameH + Math.max(0, rows - 1) * gapBase;
+    const placement = getStillExportPlacement('grid', gridW, gridH, headerH, padPx);
+    logicalCanvasW = placement.canvasW;
+    logicalCanvasH = placement.canvasH;
+
+    if (state.exportShowMetadata && baseHeaderH > 0) {
+      const measureCanvas = document.createElement('canvas');
+      const mctx = measureCanvas.getContext('2d');
+      const metaTextLocal = buildExportMetaText({
+        mode: 'grid',
+        cols: state.gridCols,
+        frameW,
+        frameH,
+        frames: state.frames.length,
+        fps: state.animFps,
+        srcW: state.videoWidth,
+        srcH: state.videoHeight,
+        duration: state.videoDuration,
+        date: state.videoDate
+      });
+      const newHeaderH = computeExportMetadataHeaderH(mctx, logicalCanvasW, baseHeaderH, metaTextLocal);
+      if (newHeaderH > headerH) {
+        logicalCanvasH += (newHeaderH - headerH);
+        headerH = newHeaderH;
+      }
+    }
+
+    layout = {
+      mode,
+      padPx,
+      headerH,
+      baseHeaderH,
+      gap: gapBase,
+      frameW,
+      frameH,
+      gridW,
+      gridH,
+      dx: placement.dx,
+      dy: placement.dy,
+      logicalW: logicalCanvasW,
+      logicalH: logicalCanvasH,
+      scaleX: 1,
+      scaleY: 1,
+    };
+    computeExportBgCrop('grid');
+  } else {
+    const baseHeaderH = state.exportShowMetadata ? 36 : 0;
+    let headerH = baseHeaderH;
+    const dims = getTargetFrameOutputDims();
+    const frameW = Math.max(2, Math.round(dims.w));
+    const frameH = Math.max(2, Math.round(dims.h));
+    const placement = getStillExportPlacement('single', frameW, frameH, headerH, padPx);
+    logicalCanvasW = placement.canvasW;
+    logicalCanvasH = placement.canvasH;
+
+    if (state.exportShowMetadata && baseHeaderH > 0) {
+      const measureCanvas = document.createElement('canvas');
+      const mctx = measureCanvas.getContext('2d');
+      const idx = getPrimaryPreviewFrameIndex();
+      const fr = state.frames[idx];
+      const metaTextLocal = buildExportMetaText({
+        mode: 'single',
+        frameW,
+        frameH,
+        frames: state.frames.length,
+        fps: state.animFps,
+        frameIdx: idx,
+        time: fr?.time || 0,
+        srcW: state.videoWidth,
+        srcH: state.videoHeight,
+        duration: state.videoDuration,
+        date: state.videoDate
+      });
+      const newHeaderH = computeExportMetadataHeaderH(mctx, logicalCanvasW, baseHeaderH, metaTextLocal);
+      if (newHeaderH > headerH) {
+        logicalCanvasH += (newHeaderH - headerH);
+        headerH = newHeaderH;
+      }
+    }
+
+    layout = {
+      mode,
+      padPx,
+      headerH,
+      baseHeaderH,
+      gap: 0,
+      frameW,
+      frameH,
+      gridW: frameW,
+      gridH: frameH,
+      dx: placement.dx,
+      dy: placement.dy,
+      logicalW: logicalCanvasW,
+      logicalH: logicalCanvasH,
+      scaleX: 1,
+      scaleY: 1,
+    };
+    computeExportBgCrop('single');
+  }
+
+  const even = (n) => Math.max(2, Math.floor(n / 2) * 2);
+  let canvasW = logicalCanvasW;
+  let canvasH = logicalCanvasH;
+  if (Number.isFinite(qualityCap) && qualityCap > 0) {
+    const qScale = Math.min(1, qualityCap / Math.max(logicalCanvasW, logicalCanvasH));
+    canvasW = Math.max(2, Math.round(logicalCanvasW * qScale));
+    canvasH = Math.max(2, Math.round(logicalCanvasH * qScale));
+  }
+  canvasW = even(canvasW);
+  canvasH = even(canvasH);
+
+  layout.scaleX = canvasW / Math.max(1, logicalCanvasW);
+  layout.scaleY = canvasH / Math.max(1, logicalCanvasH);
+  layout.logicalW = logicalCanvasW;
+  layout.logicalH = logicalCanvasH;
+
+  return { canvasW, canvasH, layout, logicalCanvasW, logicalCanvasH, qualityCap };
+}
+
 function updateExportGuidesOverlay() {
   if (!exportGuides) return;
 
-  const pad = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
-  const shouldShow = !!state.showExportGuides && pad > 0;
+  const rawPad = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
+  const shouldShow = !!state.showExportGuides && rawPad > 0;
 
   if (!shouldShow) {
     exportGuides.classList.remove('visible');
@@ -2998,32 +3574,15 @@ function updateExportGuidesOverlay() {
     return;
   }
 
-  // Pick the same target as export mode: grid bounds in grid view, single frame bounds in single view.
-  let el = null;
-  if (state.viewMode === 'single') {
-    const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
-    el = items[offset] || null;
-  } else {
-    el = framesGrid;
-  }
-  if (!el) return;
+  const mode = state.viewMode === 'single' ? 'single' : 'grid';
+  const data = getPreviewExportGeometry(mode);
+  if (!data) return;
 
-  const w0 = el.offsetWidth || 0;
-  const h0 = el.offsetHeight || 0;
-  if (w0 <= 0 || h0 <= 0) return;
-
-  const off = getOffsetWithin(el, canvasInner);
-  const left = (off.x || 0) - pad;
-  const top = (off.y || 0) - pad;
-  const w = w0 + pad * 2;
-  const h = h0 + pad * 2;
-
-  exportGuides.style.left = `${left}px`;
-  exportGuides.style.top = `${top}px`;
-  exportGuides.style.width = `${w}px`;
-  exportGuides.style.height = `${h}px`;
-  exportGuides.style.setProperty('--pad', `${pad}px`);
+  exportGuides.style.left = `${data.outerX}px`;
+  exportGuides.style.top = `${data.outerY}px`;
+  exportGuides.style.width = `${data.outerW}px`;
+  exportGuides.style.height = `${data.outerH}px`;
+  exportGuides.style.setProperty('--pad', `${Math.max(data.padX, data.padY)}px`);
   exportGuides.classList.add('visible');
 }
 
@@ -3077,6 +3636,7 @@ function schedulePostGridSync() {
     framesGrid.style.gridTemplateColumns = `repeat(${state.gridCols}, var(--cell-w))`;
     framesGrid.style.gridAutoRows = 'auto';
     framesGrid.style.setProperty('--grid-gap', `${state.spacing}px`);
+    framesGrid.classList.toggle('seamless', Number(state.spacing) === 0);
     framesGrid.style.setProperty('--meta-font-size', `${state.fontSize}px`);
     applyFrameImgTransform();
     updateTimecodeStyles();
@@ -3329,6 +3889,11 @@ canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale
     return { x, y };
   }
 
+  function getFitPad(rect) {
+    const base = Math.round(Math.min(rect.width, rect.height) * 0.10);
+    return Math.max(20, base);
+  }
+
   function fitToScreen() {
     if (typeof dbg === 'function') dbg('fitToScreen SAFE');
     if (!state.frames.length) return;
@@ -3343,7 +3908,7 @@ canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale
       tries++;
 
       const rect = canvasArea.getBoundingClientRect();
-      const pad = 20;
+      const pad = getFitPad(rect);
       const availW = rect.width - pad * 2;
       const availH = rect.height - pad * 2;
 
@@ -3416,7 +3981,7 @@ function fitToSingleFrame() {
     if (!state.frames.length) return;
 
     const rect = canvasArea.getBoundingClientRect();
-    const pad = 40;
+    const pad = getFitPad(rect);
 
     // Find first frame item (skip info card if present)
     const items = framesGrid.querySelectorAll('.frame-item');
@@ -3451,6 +4016,15 @@ function fitToSingleFrame() {
     updateTransform();
   }
 
+  function fitActiveView() {
+    if (state.viewMode === 'single') fitToSingleFrame();
+    else fitToScreen();
+  }
+
+  function requestFitToActiveView() {
+    requestAnimationFrame(() => requestAnimationFrame(() => fitActiveView()));
+  }
+
   function setViewMode(mode) {
     state.viewMode = mode;
     qMode.textContent = mode === 'grid' ? 'GRID' : '1';
@@ -3466,8 +4040,7 @@ function fitToSingleFrame() {
       }
       item.classList.remove('dimmed');
     });
-    if (mode === 'single') fitToSingleFrame();
-    else fitToScreen();
+    fitActiveView();
     requestComposite();
   }
 
@@ -3477,7 +4050,7 @@ function fitToSingleFrame() {
     gridColsInput.value = state.gridCols;
     state.autoFit = false;
     toggleAutoFit.classList.remove('active');
-    if (state.frames.length) { renderGrid(); updateGridHint(); fitToScreen(); }
+    if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
   };
 
   canvasAspectSelect.onchange = () => {
@@ -3494,7 +4067,7 @@ function fitToSingleFrame() {
       updateGridHint();
 
       // AutoFit controls whether we also re-fit the view after layout changes.
-      if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); }
+      if (state.autoFit) { requestFitToActiveView(); }
     } else {
       updateGridHint();
     }
@@ -3511,19 +4084,45 @@ function fitToSingleFrame() {
   
   // Start/End frame inputs
   const frameStep = 10;
-  startMinus.onclick = () => { state.startFrame = Math.max(0, state.startFrame - frameStep); startFrameInput.value = state.startFrame; };
-  startPlus.onclick = () => { state.startFrame = Math.min(state.endFrame - 1, state.startFrame + frameStep); startFrameInput.value = state.startFrame; };
-  endMinus.onclick = () => { state.endFrame = Math.max(state.startFrame + 1, state.endFrame - frameStep); endFrameInput.value = state.endFrame; };
-  endPlus.onclick = () => { const maxFrame = Math.floor(state.videoDuration * state.videoFps); state.endFrame = Math.min(maxFrame, state.endFrame + frameStep); endFrameInput.value = state.endFrame; };
+  if (startFrameInput) startFrameInput.min = '1';
+  if (endFrameInput) endFrameInput.min = '1';
+  startMinus.onclick = () => { state.startFrame = Math.max(0, state.startFrame - frameStep); syncFrameRangeInputs(); };
+  startPlus.onclick = () => { state.startFrame = Math.min(state.endFrame - 1, state.startFrame + frameStep); syncFrameRangeInputs(); };
+  endMinus.onclick = () => { state.endFrame = Math.max(state.startFrame + 1, state.endFrame - frameStep); syncFrameRangeInputs(); };
+  endPlus.onclick = () => { const maxFrame = getMaxFrameIndex(); state.endFrame = Math.min(maxFrame, state.endFrame + frameStep); syncFrameRangeInputs(); };
   startFrameInput.onchange = () => {
-    const maxFrame = Math.floor(state.videoDuration * state.videoFps);
-    state.startFrame = Math.max(0, Math.min(state.endFrame - 1, parseInt(startFrameInput.value) || 0));
-    startFrameInput.value = state.startFrame;
+    state.startFrame = Math.max(0, Math.min(state.endFrame - 1, (parseInt(startFrameInput.value, 10) || 1) - 1));
+    syncFrameRangeInputs();
   };
   endFrameInput.onchange = () => {
-    const maxFrame = Math.floor(state.videoDuration * state.videoFps);
-    state.endFrame = Math.max(state.startFrame + 1, Math.min(maxFrame, parseInt(endFrameInput.value) || maxFrame));
-    endFrameInput.value = state.endFrame;
+    const maxFrame = getMaxFrameIndex();
+    state.endFrame = Math.max(state.startFrame + 1, Math.min(maxFrame, (parseInt(endFrameInput.value, 10) || (maxFrame + 1)) - 1));
+    syncFrameRangeInputs();
+  };
+
+  cutColsInput.onchange = () => {
+    state.cutCols = clampCutValue(cutColsInput.value, state.cutCols);
+    updateCutUI();
+    saveCutSettings();
+  };
+  cutRowsInput.onchange = () => {
+    state.cutRows = clampCutValue(cutRowsInput.value, state.cutRows);
+    updateCutUI();
+    saveCutSettings();
+  };
+  sliceFirstImageBtn.onclick = () => {
+    state.cutCols = clampCutValue(cutColsInput.value, state.cutCols);
+    state.cutRows = clampCutValue(cutRowsInput.value, state.cutRows);
+    updateCutUI();
+    saveCutSettings();
+    if (!state.imageFiles || !state.imageFiles.length) {
+      requestImageImport('cut');
+      return;
+    }
+    state.imageImportMode = 'cut';
+    state.frameCount = Math.min(3000, getCutTotal());
+    frameCountInput.value = state.frameCount;
+    generateFrames();
   };
   
   qualitySelect.onchange = () => { state.quality = parseFloat(qualitySelect.value); };
@@ -3592,18 +4191,93 @@ function fitToSingleFrame() {
       gridColsInput.value = state.gridCols;
       renderGrid();
       updateGridHint();
-      fitToScreen();
+      fitActiveView();
     }
   };
+
+
+  function rgbaFromHex(hex, a) {
+    const h = String(hex || '#ffffff').replace('#', '');
+    const full = h.length === 3 ? h.split('').map(ch => ch + ch).join('') : h.padEnd(6, '0').slice(0, 6);
+    const r = parseInt(full.slice(0, 2), 16) || 0;
+    const g = parseInt(full.slice(2, 4), 16) || 0;
+    const b = parseInt(full.slice(4, 6), 16) || 0;
+    const alpha = Math.max(0, Math.min(1, Number.isFinite(a) ? a : 0));
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function updateBgAppearance() {
+    const bg = String(state.bgColor || '#020202');
+    app.style.setProperty('--bg-color', bg);
+    canvasArea.style.backgroundColor = bg;
+    if (!bgGridLayer) return;
+    const show = !!state.bgGridShow;
+    bgGridLayer.style.display = show ? 'block' : 'none';
+    if (!show) {
+      bgGridLayer.style.backgroundImage = 'none';
+      return;
+    }
+    const size = Math.max(6, parseInt(state.bgGridSize, 10) || 24);
+    const opacity = Math.max(0, Math.min(1, Number(state.bgGridOpacity) || 0));
+    const color = rgbaFromHex(state.bgGridColor || '#ffffff', opacity);
+    if ((state.bgGridType || 'lines') === 'dots') {
+      const dot = Math.max(1, Math.min(3, Math.round(size * 0.08)));
+      bgGridLayer.style.backgroundImage = `radial-gradient(circle at ${dot}px ${dot}px, ${color} ${dot}px, transparent ${dot + 0.5}px)`;
+    } else {
+      bgGridLayer.style.backgroundImage = `linear-gradient(to right, ${color} 1px, transparent 1px), linear-gradient(to bottom, ${color} 1px, transparent 1px)`;
+    }
+    bgGridLayer.style.backgroundSize = `${size}px ${size}px`;
+    bgGridLayer.style.backgroundPosition = '0 0';
+  }
 
   fontSizeSlider.oninput = () => { state.fontSize = parseInt(fontSizeSlider.value); fontSizeValue.textContent = `${state.fontSize}px`; framesGrid.style.setProperty('--meta-font-size', `${state.fontSize}px`); };
   spacingSlider.oninput = () => {
     state.spacing = parseInt(spacingSlider.value);
     spacingValue.textContent = `${state.spacing}px`;
     framesGrid.style.setProperty('--grid-gap', `${state.spacing}px`);
+    framesGrid.classList.toggle('seamless', Number(state.spacing) === 0);
     // Spacing should not trigger auto-centering/auto-fit (prevents flicker while dragging).
   };
-  bgColorInput.oninput = () => { state.bgColor = bgColorInput.value; app.style.setProperty('--bg-color', state.bgColor); };
+  bgColorInput.oninput = () => { state.bgColor = bgColorInput.value; updateBgAppearance(); };
+  if (toggleBgGrid) {
+    toggleBgGrid.onclick = () => {
+      state.bgGridShow = !state.bgGridShow;
+      toggleBgGrid.classList.toggle('active', !!state.bgGridShow);
+      updateBgAppearance();
+    };
+  }
+  if (bgGridTypeSelect) {
+    bgGridTypeSelect.onchange = () => {
+      state.bgGridType = bgGridTypeSelect.value || 'lines';
+      updateBgAppearance();
+    };
+  }
+  if (bgGridColorInput) {
+    bgGridColorInput.oninput = () => {
+      state.bgGridColor = bgGridColorInput.value || '#ffffff';
+      updateBgAppearance();
+    };
+  }
+  if (bgGridOpacitySlider) {
+    bgGridOpacitySlider.oninput = () => {
+      state.bgGridOpacity = Math.max(0, Math.min(1, (parseInt(bgGridOpacitySlider.value, 10) || 0) / 100));
+      if (bgGridOpacityValue) bgGridOpacityValue.textContent = `${Math.round(state.bgGridOpacity * 100)}%`;
+      updateBgAppearance();
+    };
+  }
+  if (bgGridSizeSlider) {
+    bgGridSizeSlider.oninput = () => {
+      state.bgGridSize = Math.max(6, parseInt(bgGridSizeSlider.value, 10) || 24);
+      if (bgGridSizeValue) bgGridSizeValue.textContent = `${state.bgGridSize}px`;
+      updateBgAppearance();
+    };
+  }
+  if (frameBgColorInput) {
+    frameBgColorInput.oninput = () => {
+      state.frameBgColor = frameBgColorInput.value || '#111111';
+      applyFrameImgTransform();
+    };
+  }
 
   // Spray brush tuning (multipliers). 100% keeps the current look.
   if (sprayScatterSlider && sprayScatterValue) {
@@ -3631,8 +4305,8 @@ function fitToSingleFrame() {
   tcTextColorInput.oninput = () => { state.tcTextColor = tcTextColorInput.value; updateTimecodeStyles(); };
   tcBgColorInput.oninput = () => { state.tcBgColor = tcBgColorInput.value; updateTimecodeStyles(); };
   tcOpacitySlider.oninput = () => { state.tcOpacity = parseInt(tcOpacitySlider.value) / 100; tcOpacityValue.textContent = `${tcOpacitySlider.value}%`; updateTimecodeStyles(); };
-  tcAlignSelect.onchange = () => { state.tcAlign = tcAlignSelect.value; renderGrid(); if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); } };
-  tcPositionSelect.onchange = () => { state.tcPosition = tcPositionSelect.value; renderGrid(); if (state.autoFit) { requestAnimationFrame(() => fitToScreen()); } };
+  tcAlignSelect.onchange = () => { state.tcAlign = tcAlignSelect.value; renderGrid(); if (state.autoFit) { requestFitToActiveView(); } };
+  tcPositionSelect.onchange = () => { state.tcPosition = tcPositionSelect.value; renderGrid(); if (state.autoFit) { requestFitToActiveView(); } };
   const tcPaddingSlider = $('tcPaddingSlider'), tcPaddingValue = $('tcPaddingValue');
   if (tcPaddingSlider) tcPaddingSlider.oninput = () => { state.tcPadding = parseInt(tcPaddingSlider.value); tcPaddingValue.textContent = `${state.tcPadding}px`; updateTimecodeStyles(); };
   const tcMarginSlider = $('tcMarginSlider'), tcMarginValue = $('tcMarginValue');
@@ -3664,7 +4338,7 @@ function fitToSingleFrame() {
       updateGridHint();
       resizeDrawCanvas();
       requestComposite();
-      if (state.autoFit) fitToScreen();
+      if (state.autoFit) requestFitToActiveView();
     };
   }
 
@@ -3766,7 +4440,7 @@ function fitToSingleFrame() {
       gridColsInput.value = state.gridCols;
       state.autoFit = false;
       toggleAutoFit.classList.remove('active');
-      if (state.frames.length) { renderGrid(); updateGridHint(); fitToScreen(); }
+      if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
     }
   };
   colsPlus.onclick = () => {
@@ -3775,7 +4449,7 @@ function fitToSingleFrame() {
       gridColsInput.value = state.gridCols;
       state.autoFit = false;
       toggleAutoFit.classList.remove('active');
-      if (state.frames.length) { renderGrid(); updateGridHint(); fitToScreen(); }
+      if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
     }
   };
   
@@ -3788,7 +4462,7 @@ function fitToSingleFrame() {
       const cellCount = Math.ceil(state.frames.length / state.cellSize);
       state.gridCols = calculateOptimalColumns(cellCount);
       gridColsInput.value = state.gridCols;
-      if (state.frames.length) { renderGrid(); updateGridHint(); fitToScreen(); }
+      if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
     }
   };
   cellPlus.onclick = () => {
@@ -3800,7 +4474,7 @@ function fitToSingleFrame() {
       const cellCount = Math.ceil(state.frames.length / state.cellSize);
       state.gridCols = calculateOptimalColumns(cellCount);
       gridColsInput.value = state.gridCols;
-      if (state.frames.length) { renderGrid(); updateGridHint(); fitToScreen(); }
+      if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
     }
   };
   
@@ -3831,7 +4505,7 @@ function fitToSingleFrame() {
   qPrev.onclick = () => stepFrame(-1);
   qNext.onclick = () => stepFrame(1);
   qPlay.onclick = () => { state.isPlaying ? stopAnimation() : startAnimation(); };
-  qFit.onclick = () => { state.viewMode === 'single' ? fitToSingleFrame() : fitToScreen(); };
+  qFit.onclick = () => { fitActiveView(); };
   qOne.onclick = () => { zoomTo100(); };
   // qRegen and qExport removed from toolbar
   qMenu.onclick = toggleMenu;
@@ -4321,6 +4995,8 @@ function updateAllCells() {
   
   const drawCanvas = $('drawCanvas');
   const drawCtx = drawCanvas.getContext('2d', { willReadFrequently: true });
+  const bgUnderlayCanvas = $('bgUnderlayCanvas');
+  const bgUnderlayCtx = bgUnderlayCanvas.getContext('2d', { willReadFrequently: true });
   const drawPalette = $('drawPalette');
   const drawToggle = $('drawToggle');
   const drawEraserBtn = $('drawEraser');
@@ -4430,6 +5106,18 @@ function updateAllCells() {
   function isSingleView() { return state.viewMode === 'single'; }
   function getActiveBgCanvas() { return isSingleView() ? bgCanvasSingle : bgCanvas; }
   function getActiveBgCtx() { return isSingleView() ? bgCtxSingle : bgCtx; }
+  function syncBgUnderlayPreview() {
+    if (!bgUnderlayCanvas || !bgUnderlayCtx) return;
+    bgUnderlayCtx.clearRect(0, 0, bgUnderlayCanvas.width, bgUnderlayCanvas.height);
+    if (state.bgLayerAboveDrawings) return;
+    const src = getActiveBgCanvas();
+    if (!src || !src.width || !src.height) return;
+    bgUnderlayCtx.drawImage(src, 0, 0);
+  }
+  function clearBgUnderlayPreview() {
+    if (!bgUnderlayCanvas || !bgUnderlayCtx) return;
+    bgUnderlayCtx.clearRect(0, 0, bgUnderlayCanvas.width, bgUnderlayCanvas.height);
+  }
   function getActiveBgDrawing() { return isSingleView() ? state.bgDrawingSingle : state.bgDrawing; }
   function setActiveBgDrawing(d) { if (isSingleView()) state.bgDrawingSingle = d; else state.bgDrawing = d; }
   const tplCanvas = document.createElement('canvas'); // template layer
@@ -4470,7 +5158,7 @@ let isDrawing = false;
   }
 
   // ====================================
-  //  DRAW UNDO v0.23.75 STEP3 (stable)
+  //  DRAW UNDO v0.23.90 STEP3 (stable)
   //  - target-only snapshots
   //  - FRM captures per-tile snapshots
   //  - undo never clears layers when snapshot is missing
@@ -4788,6 +5476,8 @@ function resizeDrawCanvas() {
     // Resize overlay canvases (clears content)
     drawCanvas.width = newW;
     drawCanvas.height = newH;
+    bgUnderlayCanvas.width = newW;
+    bgUnderlayCanvas.height = newH;
     bgCanvas.width = newW;
     bgCanvas.height = newH;
     bgCanvasSingle.width = newW;
@@ -4819,6 +5509,8 @@ function resizeDrawCanvas() {
     } catch (e) {
       state.bgDrawingSingle = null;
     }
+
+    syncBgUnderlayPreview();
 
     // Template is per-frame overlay, keep it sized to one frame cell
     ensureTplCanvasSized();
@@ -5117,22 +5809,34 @@ function compositeAllLayers() {
     try {
       drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
 
-      // Layer 1: Background (full space including around frames)
-      drawCtx.drawImage(getActiveBgCanvas(), 0, 0);
+      const drawBgLayer = () => {
+        drawCtx.drawImage(getActiveBgCanvas(), 0, 0);
+      };
 
-      // Layer 2/5: Ref Frame overlay (position relative to drawings is configurable)
+      if (!state.bgLayerAboveDrawings) {
+        syncBgUnderlayPreview();
+      } else {
+        clearBgUnderlayPreview();
+        drawBgLayer();
+      }
+
+      // Ref Frame overlay (position relative to drawings is configurable)
       if (!state.refFrameAboveDrawings) {
         renderRefFrameOnFramesOnCanvas();
       }
 
-      // Layer 3: Template (per-frame projection, repeated onto every visible frame)
+      // Template (per-frame projection, repeated onto every visible frame)
       renderTemplateOnFramesOnCanvas();
 
       // Update template preview window (if visible)
       if (templateFrame && templateFrame.classList.contains('visible')) renderTemplateFramePreview();
 
-      // Layer 4: Per-frame drawings (should follow the frame as it animates)
+      // Per-frame drawings (should follow the frame as it animates)
       renderFrameDrawingsOnCanvas();
+
+      if (state.bgLayerAboveDrawings) {
+        drawBgLayer();
+      }
 
       // If requested, draw ref frame after drawings so blend modes affect drawings too
       if (state.refFrameAboveDrawings) {
@@ -7074,8 +7778,23 @@ function renderVideoPalette() {
     };
   }
 
+  function syncBgAboveDrawingsUI() {
+    if (!toggleBgAboveDrawings) return;
+    toggleBgAboveDrawings.classList.toggle('active', !!state.bgLayerAboveDrawings);
+  }
+
+  if (toggleBgAboveDrawings) {
+    toggleBgAboveDrawings.onclick = () => {
+      state.bgLayerAboveDrawings = !state.bgLayerAboveDrawings;
+      syncBgAboveDrawingsUI();
+      compositeAllLayers();
+      requestAnimationFrame(() => compositeAllLayers());
+    };
+  }
+
   // Initial sync
   syncBrushPanelToggleUI();
+  syncBgAboveDrawingsUI();
 
 
   function updateTemplateVisibilityUI() {
@@ -7899,7 +8618,6 @@ async function exportResampledVideo(forceMode = null) {
     const mode = (forceMode === 'grid' || forceMode === 'single') ? forceMode : ((state.viewMode === 'grid') ? 'grid' : 'single');
     const drawingsOnly = false;
 
-    // Snapshot current state that we will restore
     const saved = {
       t: videoElement.currentTime,
       paused: videoElement.paused,
@@ -7907,149 +8625,30 @@ async function exportResampledVideo(forceMode = null) {
       loop: videoElement.loop,
     };
 
-    // Ensure audio graph is ready (in user gesture handler)
     const audioPack = getOrCreateAudioStreamForRecorder(videoElement);
     if (audioPack && audioPack.ac && audioPack.ac.state === 'suspended') {
       try { await audioPack.ac.resume(); } catch (e) {}
     }
 
-    // Prepare layout similar to MP4 export (but we record via MediaRecorder)
     const frameAspect = getEffectiveFrameAspect();
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
     const total = cellCount + (state.showInfoCard ? 1 : 0);
     const rows = Math.ceil(total / state.gridCols);
-    const gapBase = state.spacing;
 
-    const padPx = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
+    const videoLayout = getDeterministicVideoExportLayout(mode, rows);
+    const canvasW = videoLayout.canvasW;
+    const canvasH = videoLayout.canvasH;
+    const layout = videoLayout.layout;
 
-    const qualityMap = { low: 540, medium: 720, hd: 1080, high: 2160, max: Math.max(state.videoWidth, state.videoHeight) };
-    const maxSize = qualityMap[state.exportQuality] || 1080;
-
-    let canvasW, canvasH;
-    let layout = { mode, padPx, headerH: 0, gap: gapBase, frameW: 0, frameH: 0, gridW: 0, gridH: 0, baseHeaderH: 0 };
-
-    if (mode === 'grid') {
-      const baseHeaderH = state.exportShowMetadata ? 48 : 0;
-      let headerH = baseHeaderH;
-
-      const dims = getTargetFrameOutputDims();
-      const baseFrameW = Math.max(2, Math.round(dims.w));
-      const baseFrameH = Math.max(2, Math.round(dims.h));
-
-      const gridW0 = state.gridCols * baseFrameW + (state.gridCols + 1) * gapBase;
-      const gridH0 = rows * baseFrameH + (rows + 1) * gapBase;
-
-      const allowedW = Math.max(2, maxSize - padPx * 2);
-      const allowedH = Math.max(2, maxSize - headerH - padPx * 2);
-
-      let scale = 1;
-      if (allowedW > 2 && allowedH > 2) {
-        scale = Math.min(1, allowedW / gridW0, allowedH / gridH0);
-      }
-
-      const gap = Math.max(0, Math.round(gapBase * scale));
-      const frameW = Math.max(2, Math.round(baseFrameW * scale));
-      const frameH = Math.max(2, Math.round(baseFrameH * scale));
-      const gridW = state.gridCols * frameW + (state.gridCols + 1) * gap;
-      const gridH = rows * frameH + (rows + 1) * gap;
-
-      canvasW = gridW + padPx * 2;
-      canvasH = headerH + gridH + padPx * 2;
-
-      if (state.exportShowMetadata && baseHeaderH > 0) {
-        const measureCanvas = document.createElement('canvas');
-        const mctx = measureCanvas.getContext('2d');
-        const metaTextLocal = buildExportMetaText({
-          mode: 'grid',
-          cols: state.gridCols,
-          frameW,
-          frameH,
-          frames: state.frames.length,
-          fps: state.animFps,
-          srcW: state.videoWidth,
-          srcH: state.videoHeight,
-          duration: state.videoDuration,
-          date: state.videoDate
-        });
-        const newHeaderH = computeExportMetadataHeaderH(mctx, canvasW, baseHeaderH, metaTextLocal);
-        if (newHeaderH > headerH) {
-          const dH = newHeaderH - headerH;
-          headerH = newHeaderH;
-          canvasH += dH;
-        }
-      }
-
-      layout = { mode, padPx, headerH, baseHeaderH, gap, frameW, frameH, gridW, gridH };
-      computeExportBgCrop('grid', gridW, gridH, padPx);
-    } else {
-      const baseHeaderH = state.exportShowMetadata ? 36 : 0;
-      let headerH = baseHeaderH;
-
-      const outDims = getTargetFrameOutputDims();
-      const baseW = Math.max(2, Math.round(outDims.w));
-      const baseH = Math.max(2, Math.round(outDims.h));
-
-      const allowedW = Math.max(2, maxSize - padPx * 2);
-      const allowedH = Math.max(2, maxSize - headerH - padPx * 2);
-
-      let scale = 1;
-      if (allowedW > 2 && allowedH > 2) {
-        scale = Math.min(1, allowedW / baseW, allowedH / baseH);
-      }
-
-      const frameW = Math.max(2, Math.round(baseW * scale));
-      const frameH = Math.max(2, Math.round(baseH * scale));
-
-      canvasW = frameW + padPx * 2;
-      canvasH = headerH + frameH + padPx * 2;
-
-      if (state.exportShowMetadata && baseHeaderH > 0) {
-        const measureCanvas = document.createElement('canvas');
-        const mctx = measureCanvas.getContext('2d');
-        const idx = getPrimaryPreviewFrameIndex();
-        const fr = state.frames[idx];
-        const metaTextLocal = buildExportMetaText({
-          mode: 'single',
-          frameW,
-          frameH,
-          frames: state.frames.length,
-          fps: state.animFps,
-          frameIdx: idx,
-          time: fr?.time || 0,
-          srcW: state.videoWidth,
-          srcH: state.videoHeight,
-          duration: state.videoDuration,
-          date: state.videoDate
-        });
-        const newHeaderH = computeExportMetadataHeaderH(mctx, canvasW, baseHeaderH, metaTextLocal);
-        if (newHeaderH > headerH) {
-          const dH = newHeaderH - headerH;
-          headerH = newHeaderH;
-          canvasH += dH;
-        }
-      }
-
-      layout = { mode, padPx, headerH, baseHeaderH, gap: 0, frameW, frameH, gridW: frameW, gridH: frameH };
-      computeExportBgCrop('single', layout.frameW, layout.frameH, padPx);
-    }
-
-    canvasW = Math.floor(canvasW / 2) * 2;
-    canvasH = Math.floor(canvasH / 2) * 2;
-
-    
-  // Prepare frames (load images)
     loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Preparing resampled export...';
-    const frameImages = await Promise.all(state.frames.map(f => {
-      return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null);
-        img.src = f.dataUrl;
-      });
-    }));
+    const frameImages = await Promise.all(state.frames.map(f => new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = f.dataUrl;
+    })));
 
-    // Build animation sequence (same as MP4 export)
     let sequence = [];
     const frameCount = state.frames.length;
     if (state.animDirection === 'forward') {
@@ -8062,12 +8661,10 @@ async function exportResampledVideo(forceMode = null) {
     }
 
     const cellOrder = (mode === 'grid') ? generateCellOrder(cellCount, state.gridCols) : null;
-
     const r = parseInt(state.tcBgColor.slice(1,3), 16);
     const g = parseInt(state.tcBgColor.slice(3,5), 16);
     const b = parseInt(state.tcBgColor.slice(5,7), 16);
 
-    // Recorder stream
     const exportFps = Math.max(1, Number(state.animFps) || 14);
     const exportCanvas = document.createElement('canvas');
     exportCanvas.width = canvasW;
@@ -8078,10 +8675,8 @@ async function exportResampledVideo(forceMode = null) {
     const tracks = [];
     const vTrack = vStream.getVideoTracks()[0];
     if (vTrack) tracks.push(vTrack);
-
     const aTrack = audioPack && audioPack.track ? audioPack.track : null;
     if (aTrack) tracks.push(aTrack);
-
     const stream = new MediaStream(tracks);
 
     const requestedMime = pickBestMediaRecorderMime();
@@ -8097,13 +8692,10 @@ async function exportResampledVideo(forceMode = null) {
 
     const mimeType = (recorder && recorder.mimeType) ? recorder.mimeType : (requestedMime || '');
     const ext = (mimeType && mimeType.includes('mp4')) ? 'mp4' : 'webm';
-
     const chunks = [];
     recorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
 
     const T = videoElement.duration;
-
-    // Draw loop synced to the source video's currentTime
     let stopping = false;
     const drawFrame = () => {
       if (stopping) return;
@@ -8111,16 +8703,12 @@ async function exportResampledVideo(forceMode = null) {
       const p = (T > 0) ? (t / T) : 0;
       const tick = Math.max(0, Math.min(sequence.length - 1, Math.floor(p * sequence.length)));
 
-      // Progress
       try {
         const pct = Math.max(0, Math.min(100, Math.round(p * 100)));
         loadingProgress.textContent = (aTrack ? 'Recording resampled video (with audio)... ' : 'Recording resampled video (no audio track)... ') + pct + '%';
       } catch (e) {}
 
-      // Generative export logo index (matches UI logic, but uses export tick)
       exportLogoIdx = getLogoActiveIndexForTick(tick);
-
-      // Clear background
       ectx.save();
       ectx.globalAlpha = 1;
       ectx.globalCompositeOperation = 'source-over';
@@ -8128,9 +8716,8 @@ async function exportResampledVideo(forceMode = null) {
       ectx.fillRect(0, 0, canvasW, canvasH);
       ectx.restore();
 
-      if (mode === 'grid') {
-        renderMp4GridFrame(ectx, canvasW, canvasH, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly);
-      } else {
+      if (mode === 'grid') renderMp4GridFrame(ectx, canvasW, canvasH, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly);
+      else {
         const frameIdx = sequence[tick] ?? 0;
         renderMp4SingleFrame(ectx, canvasW, canvasH, frameImages, frameIdx, r, g, b, layout, drawingsOnly);
       }
@@ -8138,26 +8725,17 @@ async function exportResampledVideo(forceMode = null) {
       requestAnimationFrame(drawFrame);
     };
 
-    // Start recording + playback
     loadingProgress.textContent = aTrack ? 'Recording resampled video (with audio)...' : 'Recording resampled video (no audio track)...';
     recorder.start(1000);
-
-    // Play from start for full duration
     videoElement.loop = false;
     videoElement.playbackRate = 1;
     videoElement.currentTime = 0;
-
-    try { await videoElement.play(); } catch (e) {
-      // If play is blocked, still attempt to record visuals (silent)
-    }
-
+    try { await videoElement.play(); } catch (e) {}
     drawFrame();
 
-    // Wait until video ends, then finalize
     await new Promise(resolve => {
       const onEnd = () => resolve();
       videoElement.addEventListener('ended', onEnd, { once: true });
-      // Safety timeout in case 'ended' doesn't fire
       setTimeout(onEnd, Math.ceil((T + 1) * 1000));
     });
 
@@ -8175,7 +8753,6 @@ async function exportResampledVideo(forceMode = null) {
     loadingOverlay.classList.remove('visible');
     await saveBlob(blob, filename, blob.type);
 
-    // Restore video element state
     try {
       videoElement.loop = saved.loop;
       videoElement.playbackRate = saved.playbackRate;
@@ -8191,166 +8768,91 @@ async function exportResampledVideo(forceMode = null) {
 
 
   // MP4 Export using mp4-muxer for true MP4 (H.264)
+
   async function exportMp4(mode, opts = {}) {
     const drawingsOnly = !!(opts && opts.drawingsOnly);
-
     if (!state.frames.length) return;
-    
-    
 
-  const exportLogoIdx = getLogoActiveIndexForTick(state.currentTick);
-loadingOverlay.classList.add('visible');
+    const exportLogoIdx = getLogoActiveIndexForTick(state.currentTick);
+    loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Loading MP4 encoder...';
-    
-    // Load mp4-muxer library
+
     if (!window.Mp4Muxer) {
       await loadScript('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js');
     }
-    
+
     const frameAspect = getEffectiveFrameAspect();
-    // With cellSize, we have fewer cells
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
     const total = cellCount + (state.showInfoCard ? 1 : 0);
     const rows = Math.ceil(total / state.gridCols);
-    const gapBase = state.spacing;
-
-    // Export padding (px) only applies when BG layer export is enabled
+    const gapBase = Math.max(0, Number(state.spacing) || 0);
     const padPx = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
+    const qualityMap = { low: 540, medium: 720, hd: 1080, high: 2160, max: Infinity };
+    const qualityCap = qualityMap[state.exportQuality] || 1080;
 
-    // Quality settings - max long side in pixels
-    const qualityMap = { low: 540, medium: 720, hd: 1080, high: 2160, max: Math.max(state.videoWidth, state.videoHeight) };
-    const maxSize = qualityMap[state.exportQuality] || 1080;
-
-    let canvasW, canvasH;
-    let layout = { mode, padPx, headerH: 0, gap: gapBase, frameW: 0, frameH: 0, gridW: 0, gridH: 0 };
+    let logicalCanvasW = 0;
+    let logicalCanvasH = 0;
+    let layout = { mode, padPx, headerH: 0, baseHeaderH: 0, gap: gapBase, frameW: 0, frameH: 0, gridW: 0, gridH: 0, dx: 0, dy: 0, logicalW: 0, logicalH: 0, scaleX: 1, scaleY: 1 };
 
     if (mode === 'grid') {
       const baseHeaderH = state.exportShowMetadata ? 48 : 0;
-  let headerH = baseHeaderH;
-  let metaText = '';
-
-
+      let headerH = baseHeaderH;
       const dims = getTargetFrameOutputDims();
-      const baseFrameW = Math.max(2, Math.round(dims.w));
-      const baseFrameH = Math.max(2, Math.round(dims.h));
+      const frameW = Math.max(2, Math.round(dims.w));
+      const frameH = Math.max(2, Math.round(dims.h));
+      const gridW = state.gridCols * frameW + Math.max(0, state.gridCols - 1) * gapBase;
+      const gridH = rows * frameH + Math.max(0, rows - 1) * gapBase;
+      const placement = getStillExportPlacement('grid', gridW, gridH, headerH, padPx);
+      logicalCanvasW = placement.canvasW;
+      logicalCanvasH = placement.canvasH;
 
-      const gridW0 = state.gridCols * baseFrameW + (state.gridCols + 1) * gapBase;
-      const gridH0 = rows * baseFrameH + (rows + 1) * gapBase;
-
-      const allowedW = Math.max(2, maxSize - padPx * 2);
-      const allowedH = Math.max(2, maxSize - headerH - padPx * 2);
-
-      let scale = 1;
-      if (allowedW > 2 && allowedH > 2) {
-        scale = Math.min(1, allowedW / gridW0, allowedH / gridH0);
-      }
-
-      const gap = Math.max(0, Math.round(gapBase * scale));
-      const frameW = Math.max(2, Math.round(baseFrameW * scale));
-      const frameH = Math.max(2, Math.round(baseFrameH * scale));
-      const gridW = state.gridCols * frameW + (state.gridCols + 1) * gap;
-      const gridH = rows * frameH + (rows + 1) * gap;
-
-      canvasW = gridW + padPx * 2;
-      canvasH = headerH + gridH + padPx * 2;
-
-      // Auto-expand metadata header (no ellipsis: 1 line if fits, otherwise 2 lines + grow header)
       if (state.exportShowMetadata && baseHeaderH > 0) {
         const measureCanvas = document.createElement('canvas');
         const mctx = measureCanvas.getContext('2d');
-        const metaTextLocal = buildExportMetaText({
-          mode: 'grid',
-          cols: state.gridCols,
-          frameW,
-          frameH,
-          frames: state.frames.length,
-          fps: state.animFps,
-          srcW: state.videoWidth,
-          srcH: state.videoHeight,
-          duration: state.videoDuration,
-          date: state.videoDate
-        });
-
-        const newHeaderH = computeExportMetadataHeaderH(mctx, canvasW, baseHeaderH, metaTextLocal);
+        const metaTextLocal = buildExportMetaText({ mode: 'grid', cols: state.gridCols, frameW, frameH, frames: state.frames.length, fps: state.animFps, srcW: state.videoWidth, srcH: state.videoHeight, duration: state.videoDuration, date: state.videoDate });
+        const newHeaderH = computeExportMetadataHeaderH(mctx, logicalCanvasW, baseHeaderH, metaTextLocal);
         if (newHeaderH > headerH) {
-          const dH = newHeaderH - headerH;
+          logicalCanvasH += (newHeaderH - headerH);
           headerH = newHeaderH;
-          canvasH += dH;
         }
       }
 
-      layout = { mode, padPx, headerH, baseHeaderH, gap, frameW, frameH, gridW, gridH };
-      // Prepare BG crop regions so MP4 export matches what you see (including padding)
-      computeExportBgCrop('grid', gridW, gridH, padPx);
+      layout = { mode, padPx, headerH, baseHeaderH, gap: gapBase, frameW, frameH, gridW, gridH, dx: placement.dx, dy: placement.dy, logicalW: logicalCanvasW, logicalH: logicalCanvasH, scaleX: 1, scaleY: 1 };
+      computeExportBgCrop('grid');
     } else {
       const baseHeaderH = state.exportShowMetadata ? 36 : 0;
       let headerH = baseHeaderH;
+      const dims = getTargetFrameOutputDims();
+      const frameW = Math.max(2, Math.round(dims.w));
+      const frameH = Math.max(2, Math.round(dims.h));
+      const placement = getStillExportPlacement('single', frameW, frameH, headerH, padPx);
+      logicalCanvasW = placement.canvasW;
+      logicalCanvasH = placement.canvasH;
 
-      const outDims = getTargetFrameOutputDims();
-      const baseW = Math.max(2, Math.round(outDims.w));
-      const baseH = Math.max(2, Math.round(outDims.h));
-
-      const allowedW = Math.max(2, maxSize - padPx * 2);
-      const allowedH = Math.max(2, maxSize - headerH - padPx * 2);
-
-      let scale = 1;
-      if (allowedW > 2 && allowedH > 2) {
-        scale = Math.min(1, allowedW / baseW, allowedH / baseH);
-      }
-
-      const frameW = Math.max(2, Math.round(baseW * scale));
-      const frameH = Math.max(2, Math.round(baseH * scale));
-
-      canvasW = frameW + padPx * 2;
-      canvasH = headerH + frameH + padPx * 2;
-
-      // Auto-expand metadata header (no ellipsis: 1 line if fits, otherwise 2 lines + grow header)
       if (state.exportShowMetadata && baseHeaderH > 0) {
         const measureCanvas = document.createElement('canvas');
         const mctx = measureCanvas.getContext('2d');
         const idx = getPrimaryPreviewFrameIndex();
         const fr = state.frames[idx];
-        const metaTextLocal = buildExportMetaText({
-          mode: 'single',
-          frameW,
-          frameH,
-          frames: state.frames.length,
-          fps: state.animFps,
-          frameIdx: idx,
-          time: fr?.time || 0,
-          srcW: state.videoWidth,
-          srcH: state.videoHeight,
-          duration: state.videoDuration,
-          date: state.videoDate
-        });
-
-        const newHeaderH = computeExportMetadataHeaderH(mctx, canvasW, baseHeaderH, metaTextLocal);
+        const metaTextLocal = buildExportMetaText({ mode: 'single', frameW, frameH, frames: state.frames.length, fps: state.animFps, frameIdx: idx, time: fr?.time || 0, srcW: state.videoWidth, srcH: state.videoHeight, duration: state.videoDuration, date: state.videoDate });
+        const newHeaderH = computeExportMetadataHeaderH(mctx, logicalCanvasW, baseHeaderH, metaTextLocal);
         if (newHeaderH > headerH) {
-          const dH = newHeaderH - headerH;
+          logicalCanvasH += (newHeaderH - headerH);
           headerH = newHeaderH;
-          canvasH += dH;
         }
       }
 
-      layout = { mode, padPx, headerH, baseHeaderH, gap: 0, frameW, frameH, gridW: frameW, gridH: frameH };
-      // Prepare BG crop regions so MP4 export matches what you see (including padding)
-      computeExportBgCrop('single', frameW, frameH, padPx);
+      layout = { mode, padPx, headerH, baseHeaderH, gap: 0, frameW, frameH, gridW: frameW, gridH: frameH, dx: placement.dx, dy: placement.dy, logicalW: logicalCanvasW, logicalH: logicalCanvasH, scaleX: 1, scaleY: 1 };
+      computeExportBgCrop('single');
     }
 
-    // Dimensions must be even for H.264
-    canvasW = Math.floor(canvasW / 2) * 2;
-    canvasH = Math.floor(canvasH / 2) * 2;
-    
     loadingProgress.textContent = drawingsOnly ? 'Preparing drawings export...' : 'Loading frames...';
-    const frameImages = drawingsOnly ? null : await Promise.all(state.frames.map(f => {
-      return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.src = f.dataUrl;
-      });
-    }));
+    const frameImages = drawingsOnly ? null : await Promise.all(state.frames.map(f => new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.src = f.dataUrl;
+    })));
 
-// Generate animation sequence
     let sequence = [];
     const frameCount = state.frames.length;
     if (state.animDirection === 'forward') {
@@ -8361,76 +8863,67 @@ loadingOverlay.classList.add('visible');
       for (let i = 0; i < frameCount; i++) sequence.push(i);
       for (let i = frameCount - 2; i > 0; i--) sequence.push(i);
     }
-    
-    // Apply loops
     const singleLoop = [...sequence];
-    for (let loop = 1; loop < state.exportLoops; loop++) {
-      sequence = sequence.concat(singleLoop);
-    }
-    
-    // Cell order based on cellCount, not frame count
+    for (let loop = 1; loop < state.exportLoops; loop++) sequence = sequence.concat(singleLoop);
+
     const cellOrder = generateCellOrder(cellCount, state.gridCols);
     const r = parseInt(state.tcBgColor.slice(1,3), 16);
     const g = parseInt(state.tcBgColor.slice(3,5), 16);
     const b = parseInt(state.tcBgColor.slice(5,7), 16);
-    
-    // Check for VideoEncoder support
+
     if (typeof VideoEncoder === 'undefined') {
       loadingOverlay.classList.remove('visible');
-      alert('MP4 export requires a modern browser with VideoEncoder support.\n\nTry Chrome 94+, Edge 94+, or Safari 16.4+.\n\nAlternatively, use PNG sequence export.');
+      alert(`MP4 export requires a modern browser with VideoEncoder support.
+
+Try Chrome 94+, Edge 94+, or Safari 16.4+.
+
+Alternatively, use PNG sequence export.`);
       return;
     }
-    
+
     loadingProgress.textContent = 'Initializing encoder...';
-    // Pick an encoder config (codec + optional downscale for device limits)
-    const desiredW = canvasW;
-    const desiredH = canvasH;
+    const even = (n) => Math.max(2, Math.floor(n / 2) * 2);
+    let desiredW = logicalCanvasW;
+    let desiredH = logicalCanvasH;
+    if (Number.isFinite(qualityCap) && qualityCap > 0) {
+      const qScale = Math.min(1, qualityCap / Math.max(logicalCanvasW, logicalCanvasH));
+      desiredW = Math.max(2, Math.round(logicalCanvasW * qScale));
+      desiredH = Math.max(2, Math.round(logicalCanvasH * qScale));
+    }
+    desiredW = even(desiredW);
+    desiredH = even(desiredH);
 
-    const sizeFactors = [1, 0.9, 0.8, 0.75, 0.67, 0.5];
-
-    // Bitrate strategy:
-    // - scales with resolution (so "Max" does not end up with a tiny bitrate)
-    // - clamps per Export Quality (so we don't explode low/medium files)
+    const sizeFactors = [1, 0.9, 0.8, 0.75, 0.67, 0.5, 0.4, 0.33, 0.25];
     const bitrateCaps = { low: 8000000, medium: 12000000, hd: 18000000, high: 25000000, max: 30000000 };
     const bitrateMins = { low: 6000000, medium: 8000000, hd: 10000000, high: 15000000, max: 20000000 };
     const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
     const calcBitrate = (w, h) => {
       const fps = Math.max(1, Number(state.animFps) || Number(state.videoFps) || 14);
-      const bpp = 0.25; // bits per pixel per frame (empirical)
-      const raw = w * h * fps * bpp;
+      const raw = w * h * fps * 0.25;
       const cap = bitrateCaps[state.exportQuality] ?? 18000000;
       const min = bitrateMins[state.exportQuality] ?? 8000000;
       return Math.round(clamp(raw, min, cap));
     };
-
-    // Codec fallbacks. If a higher profile is unsupported on a device, we step down.
     const codecTemplates = [
-      { codec: 'avc1.640033', scale: 1.00 }, // High L5.1
-      { codec: 'avc1.640028', scale: 0.92 }, // High L4.0
-      { codec: 'avc1.4d0033', scale: 0.86 }, // Main L5.1
-      { codec: 'avc1.4d001f', scale: 0.80 }, // Main L3.1
-      { codec: 'avc1.42001f', scale: 0.75 }, // Baseline
+      { codec: 'avc1.640033', scale: 1.00 },
+      { codec: 'avc1.640028', scale: 0.92 },
+      { codec: 'avc1.64001f', scale: 0.90 },
+      { codec: 'avc1.4d0033', scale: 0.86 },
+      { codec: 'avc1.4d001f', scale: 0.80 },
+      { codec: 'avc1.4D401E', scale: 0.78 },
+      { codec: 'avc1.42E01E', scale: 0.76 },
+      { codec: 'avc1.42001f', scale: 0.75 },
+      { codec: 'avc1.42001e', scale: 0.72 },
     ];
-
-    const even = (n) => Math.max(2, Math.floor(n / 2) * 2);
 
     let chosenConfig = null;
     let chosenW = desiredW;
     let chosenH = desiredH;
-
     for (const sf of sizeFactors) {
       const testW = even(Math.round(desiredW * sf));
       const testH = even(Math.round(desiredH * sf));
-
       for (const tmpl of codecTemplates) {
-        const config = {
-          codec: tmpl.codec,
-          width: testW,
-          height: testH,
-          bitrate: Math.round(calcBitrate(testW, testH) * (tmpl.scale || 1)),
-          framerate: state.animFps
-        };
-
+        const config = { codec: tmpl.codec, width: testW, height: testH, bitrate: Math.round(calcBitrate(testW, testH) * (tmpl.scale || 1)), framerate: state.animFps };
         try {
           const support = await VideoEncoder.isConfigSupported(config);
           if (support.supported) {
@@ -8452,51 +8945,28 @@ loadingOverlay.classList.add('visible');
       return;
     }
 
-    if (chosenW !== desiredW || chosenH !== desiredH) {
-      console.warn('MP4 encoder limits: downscaling export to', chosenW, 'x', chosenH);
-    }
+    layout.scaleX = chosenW / Math.max(1, logicalCanvasW);
+    layout.scaleY = chosenH / Math.max(1, logicalCanvasH);
+    layout.logicalW = logicalCanvasW;
+    layout.logicalH = logicalCanvasH;
 
-    try {
-      const mbps = (chosenConfig.bitrate / 1000000).toFixed(1);
-      if (typeof dbg === 'function') dbg(`MP4 encoder: ${chosenW}×${chosenH} | ${chosenConfig.codec} | ${mbps} Mbps`);
-    } catch(e) {}
-
-    canvasW = chosenW;
-    canvasH = chosenH;
-
-    // Create export canvas with final dimensions
+    const canvasW = chosenW;
+    const canvasH = chosenH;
     const canvas = document.createElement('canvas');
     canvas.width = canvasW;
     canvas.height = canvasH;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-    // Setup mp4-muxer with final dimensions
-    const muxer = new Mp4Muxer.Muxer({
-      target: new Mp4Muxer.ArrayBufferTarget(),
-      video: {
-        codec: 'avc',
-        width: canvasW,
-        height: canvasH
-      },
-      fastStart: 'in-memory'
-    });
-
-    // Setup VideoEncoder
-    const frameDuration = 1000000 / state.animFps; // microseconds
-    let encodedFrames = 0;
-
+    const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: 'avc', width: canvasW, height: canvasH }, fastStart: 'in-memory' });
+    const frameDuration = 1000000 / state.animFps;
     const encoder = new VideoEncoder({
-      output: (chunk, meta) => {
-        muxer.addVideoChunk(chunk, meta);
-      },
+      output: (chunk, meta) => { muxer.addVideoChunk(chunk, meta); },
       error: (e) => {
         console.error('Encoder error:', e);
         loadingOverlay.classList.remove('visible');
         alert('Encoding error: ' + e.message);
       }
     });
-
-    loadingProgress.textContent = 'Initializing encoder...';
 
     try {
       await encoder.configure(chosenConfig);
@@ -8505,199 +8975,161 @@ loadingOverlay.classList.add('visible');
       alert('Failed to configure encoder. Try a lower quality setting.');
       return;
     }
-    
-    // Reset export audio sim state
+
     try { audioExportReset(); } catch (e) {}
     state._audioExportDoTrigger = false;
 
-    // Render and encode frames
     for (let tick = 0; tick < sequence.length; tick++) {
       loadingProgress.textContent = `Encoding ${tick + 1}/${sequence.length}`;
-      
-      // Render frame to canvas
       ctx.fillStyle = state.bgColor;
       ctx.fillRect(0, 0, canvasW, canvasH);
-      
-      if (mode === 'grid') {
-        renderMp4GridFrame(ctx, canvasW, canvasH, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly);
-      } else {
-        renderMp4SingleFrame(ctx, canvasW, canvasH, frameImages, sequence[tick], r, g, b, layout, drawingsOnly);
-      }
-      
-      // Create VideoFrame and encode
-      const videoFrame = new VideoFrame(canvas, {
-        timestamp: tick * frameDuration,
-        duration: frameDuration
-      });
-      
-      const keyFrame = tick % 30 === 0; // Keyframe every 30 frames
-      encoder.encode(videoFrame, { keyFrame });
+      if (mode === 'grid') renderMp4GridFrame(ctx, canvasW, canvasH, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly);
+      else renderMp4SingleFrame(ctx, canvasW, canvasH, frameImages, sequence[tick], r, g, b, layout, drawingsOnly);
+      const videoFrame = new VideoFrame(canvas, { timestamp: tick * frameDuration, duration: frameDuration });
+      encoder.encode(videoFrame, { keyFrame: tick % 30 === 0 });
       videoFrame.close();
-      
-      // Small delay to prevent UI freeze
-      if (tick % 5 === 0) {
-        await new Promise(r => setTimeout(r, 0));
-      }
+      if (tick % 5 === 0) await new Promise(r => setTimeout(r, 0));
     }
-    
+
     loadingProgress.textContent = 'Finalizing MP4...';
-    
     await encoder.flush();
     muxer.finalize();
-    
+
     const mp4Data = muxer.target.buffer;
     const blob = new Blob([mp4Data], { type: 'video/mp4' });
-    
     loadingOverlay.classList.remove('visible');
-    
     const link = document.createElement('a');
-    const name = (state.videoFile?.name || 'export').replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 20);
-    const now = new Date();
-    const date = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}${String(now.getFullYear()).slice(-2)}`;
     link.download = makeExportFilename({ mode, ext: 'mp4', frames: state.frames.length, fps: state.animFps, extra: (drawingsOnly ? 'drawings' : '') });
     link.href = URL.createObjectURL(blob);
     link.click();
     URL.revokeObjectURL(link.href);
   }
-  
-  function renderMp4GridFrame(ctx, w, h, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly = false) {
-    const headerH = (layout && Number.isFinite(layout.headerH)) ? layout.headerH : (state.exportShowMetadata ? 48 : 0);
-    const padPx = (layout && Number.isFinite(layout.padPx)) ? layout.padPx : (state.exportBgLayer ? Math.max(0, Math.round(Number(state.exportPaddingPx) || 0)) : 0);
 
-    const bodyH = h - headerH;
+function renderMp4GridFrame(ctx, w, h, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly = false) {
+    const headerHLogical = (layout && Number.isFinite(layout.headerH)) ? layout.headerH : (state.exportShowMetadata ? 48 : 0);
+    const sx = (layout && Number.isFinite(layout.scaleX)) ? layout.scaleX : 1;
+    const sy = (layout && Number.isFinite(layout.scaleY)) ? layout.scaleY : 1;
     const gap = (layout && Number.isFinite(layout.gap)) ? layout.gap : state.spacing;
-
+    const frameWLogical = (layout && Number.isFinite(layout.frameW) && layout.frameW > 1) ? layout.frameW : 100;
+    const frameHLogical = (layout && Number.isFinite(layout.frameH) && layout.frameH > 1) ? layout.frameH : Math.max(2, frameWLogical / Math.max(0.01, frameAspect));
+    const dxLogical = (layout && Number.isFinite(layout.dx)) ? layout.dx : 0;
+    const dyLogical = (layout && Number.isFinite(layout.dy)) ? layout.dy : 0;
+    const outHeaderH = Math.round(headerHLogical * sy);
+    const bodyH = Math.max(0, h - outHeaderH);
+    const offsetX = dxLogical * sx;
+    const offsetY = outHeaderH + dyLogical * sy;
+    const frameW = frameWLogical * sx;
+    const frameH = frameHLogical * sy;
+    const gapX = gap * sx;
+    const gapY = gap * sy;
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
-    const innerW = Math.max(2, w - padPx * 2);
-    const innerH = Math.max(2, bodyH - padPx * 2);
-
-    // Use layout frame sizes when available, otherwise derive from inner area
-    const frameH = (layout && Number.isFinite(layout.frameH) && layout.frameH > 1) ? layout.frameH : ((innerH - (rows + 1) * gap) / rows);
-    const frameW = (layout && Number.isFinite(layout.frameW) && layout.frameW > 1) ? layout.frameW : (frameH * frameAspect);
-
-    const gridW = state.gridCols * frameW + (state.gridCols + 1) * gap;
-    const offsetX = padPx + (innerW - gridW) / 2;
-
-    const fontScale = frameW / 150;
-    const tcFontSize = Math.max(Math.round(state.fontSize * fontScale), 8);
     const frameCount = state.frames.length;
-    
-    // Header - unified export metadata bar
-    if (state.exportShowMetadata && headerH > 0) {
-      const metaText = buildExportMetaText({
-        mode: 'grid',
-        cols: state.gridCols,
-        frameW: frameW,
-        frameH: frameH,
-        frames: frameCount,
-        fps: state.animFps,
-        srcW: state.videoWidth,
-        srcH: state.videoHeight,
-        duration: state.videoDuration,
-        date: state.videoDate
-      });
-      drawExportMetadataBar(ctx, w, headerH, metaText, { activeIndex: exportLogoIdx, baseHeaderH: layout.baseHeaderH || headerH });
+
+    if (state.exportShowMetadata && outHeaderH > 0) {
+      const metaText = buildExportMetaText({ mode: 'grid', cols: state.gridCols, frameW: frameWLogical, frameH: frameHLogical, frames: frameCount, fps: state.animFps, srcW: state.videoWidth, srcH: state.videoHeight, duration: state.videoDuration, date: state.videoDate });
+      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndex: exportLogoIdx, baseHeaderH: Math.round((layout.baseHeaderH || headerHLogical) * sy) });
     }
-    
-    // Draw video frames first (with cellSize)
+
+    if (!state.bgLayerAboveDrawings) drawExportBgLayer(ctx, 0, outHeaderH, w, bodyH, 'grid');
+    drawExportBgPattern(ctx, 0, outHeaderH, w, bodyH, 'grid');
+
     const _cells = [];
     for (let c = 0; c < cellCount; c++) {
       const col = c % state.gridCols;
       const row = Math.floor(c / state.gridCols);
-      const x = offsetX + gap + col * (frameW + gap);
-      const y = headerH + padPx + gap + row * (frameH + gap);
-
+      const x = offsetX + col * (frameW + gapX);
+      const y = offsetY + row * (frameH + gapY);
       const uiC = c + (state.showInfoCard ? 1 : 0);
       const cellOrderIdx = cellOrder.indexOf(c);
-      // Loop phases: same formula as updateAllCells
       const phaseCount = Math.max(1, state.gridLoops || 1);
       const cellOffset = Math.floor(cellOrderIdx * frameCount * phaseCount / Math.max(1, cellCount)) % frameCount;
       const animFrameIdx = (sequence[tick % sequence.length] + cellOffset) % frameCount;
       const frame = state.frames[animFrameIdx];
       const img = frameImages ? frameImages[animFrameIdx] : null;
-
       if (!drawingsOnly && img) drawFrameCell(ctx, img, x, y, frameW, frameH);
       _cells.push({ c, uiC, x, y, frameW, frameH, animFrameIdx, frame });
     }
 
-    // Export audio sim (for visual pulses, and optional audio trigger in WebM recording)
     try { audioExportSimFromCells(_cells, tick); } catch (e) {}
 
-    // BG drawing layer (optional) - drawn as overlay above video frames
-    // BG layer is mapped to the visible content area; export padding acts as an outer border.
-    drawExportBgLayer(ctx, 0, headerH, w, bodyH, 'grid');
-
-    // Overlays
     for (const cell of _cells) {
-      const { c, x, y, frameW, frameH, animFrameIdx, frame } = cell;
-
-      drawExportRefFrame(ctx, x, y, frameW, frameH);
-      // Drawings overlay (optional)
-      drawExportDrawings(ctx, x, y, frameW, frameH, animFrameIdx);
-
-      if (computeShowTimecode() && frame) {
-        drawTimecodeOverlay(ctx, x, y, frameW, frameH, frame, getDerivedIndexFromFrameIdx(animFrameIdx), cellCount, animFrameIdx);
+      const { x, y, frameW, frameH, animFrameIdx } = cell;
+      if (state.refFrameAboveDrawings) {
+        drawExportDrawings(ctx, x, y, frameW, frameH, animFrameIdx);
+        drawExportRefFrame(ctx, x, y, frameW, frameH);
+      } else {
+        drawExportRefFrame(ctx, x, y, frameW, frameH);
+        drawExportDrawings(ctx, x, y, frameW, frameH, animFrameIdx);
       }
+    }
 
-      // Audio layer overlay (export)
+    if (state.bgLayerAboveDrawings) drawExportBgLayer(ctx, 0, outHeaderH, w, bodyH, 'grid');
+
+    for (const cell of _cells) {
+      const { x, y, frameW, frameH, animFrameIdx, frame } = cell;
+      if (computeShowTimecode() && frame) drawTimecodeOverlay(ctx, x, y, frameW, frameH, frame, getDerivedIndexFromFrameIdx(animFrameIdx), cellCount, animFrameIdx);
       try { drawExportAudioLayerCell(ctx, cell, tick, state.animFps); } catch (e) {}
     }
   }
-  
-  
-  
-function computeExportBgCrop(mode = 'grid', dstContentW = 0, dstContentH = 0, padExportPx = 0) {
-  // Compute the BG-canvas crop that corresponds to what you SEE in the viewport (grid or single cell).
-  // Padding is included in the crop, to match the on-screen export guides and the exported output bounds.
-  try {
-    const innerRect = canvasInner.getBoundingClientRect();
-    if (!innerRect.width || !innerRect.height) return null;
 
+function drawExportBgPattern(ctx, dstX, dstY, dstW, dstH, mode = 'grid') {
+    if (!state.bgGridShow || dstW <= 0 || dstH <= 0) return;
     const cnv = (mode === 'single') ? bgCanvasSingle : bgCanvas;
-    if (!cnv || !cnv.width || !cnv.height) return null;
+    if (!cnv || !cnv.width || !cnv.height) return;
 
-    let el = null;
-    if (mode === 'single') {
-      const items = framesGrid.querySelectorAll('.frame-item');
-      const offset = state.showInfoCard ? 1 : 0;
-      el = items[offset] || null;
+    const crop = (mode === 'single') ? state._exportBgCropSingle : state._exportBgCropGrid;
+    const sx = crop && Number.isFinite(crop.sx) ? crop.sx : 0;
+    const sy = crop && Number.isFinite(crop.sy) ? crop.sy : 0;
+    const sw = crop && Number.isFinite(crop.sw) ? crop.sw : cnv.width;
+    const sh = crop && Number.isFinite(crop.sh) ? crop.sh : cnv.height;
+    if (sw <= 0 || sh <= 0) return;
+
+    const innerLayoutW = Math.max(1, canvasInner.scrollWidth || canvasInner.offsetWidth || 0);
+    const innerLayoutH = Math.max(1, canvasInner.scrollHeight || canvasInner.offsetHeight || 0);
+    if (!innerLayoutW || !innerLayoutH) return;
+
+    const stepSrcX = Math.max(1, (Number(state.bgGridSize) || 24) * (cnv.width / innerLayoutW));
+    const stepSrcY = Math.max(1, (Number(state.bgGridSize) || 24) * (cnv.height / innerLayoutH));
+    const stepDstX = dstW * (stepSrcX / sw);
+    const stepDstY = dstH * (stepSrcY / sh);
+    if (stepDstX <= 0 || stepDstY <= 0) return;
+
+    const color = rgbaFromHex(state.bgGridColor || '#ffffff', Math.max(0, Math.min(1, Number(state.bgGridOpacity) || 0)));
+    const offSrcX = ((sx % stepSrcX) + stepSrcX) % stepSrcX;
+    const offSrcY = ((sy % stepSrcY) + stepSrcY) % stepSrcY;
+    const startX = dstX - (offSrcX * dstW / sw);
+    const startY = dstY - (offSrcY * dstH / sh);
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 1;
+
+    if ((state.bgGridType || 'lines') === 'dots') {
+      const radius = Math.max(0.75, Math.min(stepDstX, stepDstY) * 0.08);
+      for (let y = startY + stepDstY * 0.5; y <= dstY + dstH + stepDstY; y += stepDstY) {
+        for (let x = startX + stepDstX * 0.5; x <= dstX + dstW + stepDstX; x += stepDstX) {
+          if (x < dstX - radius || y < dstY - radius) continue;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     } else {
-      el = framesGrid;
+      ctx.beginPath();
+      for (let x = startX; x <= dstX + dstW + stepDstX; x += stepDstX) {
+        ctx.moveTo(Math.round(x) + 0.5, dstY);
+        ctx.lineTo(Math.round(x) + 0.5, dstY + dstH);
+      }
+      for (let y = startY; y <= dstY + dstH + stepDstY; y += stepDstY) {
+        ctx.moveTo(dstX, Math.round(y) + 0.5);
+        ctx.lineTo(dstX + dstW, Math.round(y) + 0.5);
+      }
+      ctx.stroke();
     }
-    if (!el) return null;
 
-    const r = el.getBoundingClientRect();
-    const scaleX = cnv.width / innerRect.width;
-    const scaleY = cnv.height / innerRect.height;
-
-    // Include export padding in the crop (match export guides outer bounds)
-    const pad = Math.max(0, clampExportPaddingPx(padExportPx || 0));
-    const rx = r.left - pad;
-    const ry = r.top - pad;
-    const rw = r.width + pad * 2;
-    const rh = r.height + pad * 2;
-
-    // Crop in BG-canvas pixels
-    let sx = (rx - innerRect.left) * scaleX;
-    let sy = (ry - innerRect.top) * scaleY;
-    let sw = rw * scaleX;
-    let sh = rh * scaleY;
-// Clamp to canvas bounds
-    sx = Math.max(0, Math.min(cnv.width - 1, sx));
-    sy = Math.max(0, Math.min(cnv.height - 1, sy));
-    sw = Math.max(1, Math.min(cnv.width - sx, sw));
-    sh = Math.max(1, Math.min(cnv.height - sy, sh));
-
-    const crop = { sx, sy, sw, sh };
-    if (mode === 'single') state._exportBgCropSingle = crop;
-    else state._exportBgCropGrid = crop;
-    return crop;
-  } catch (e) {
-    if (mode === 'single') state._exportBgCropSingle = null;
-    else state._exportBgCropGrid = null;
-    return null;
+    ctx.restore();
   }
-}
 
 function drawExportBgLayer(ctx, dstX, dstY, dstW, dstH, mode = 'grid') {
     if (!state.exportBgLayer) return;
@@ -8964,51 +9396,44 @@ const dx = x + (w - dw) / 2 + ox;
 
 
 function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, layout, drawingsOnly = false) {
-    const headerH = (layout && Number.isFinite(layout.headerH)) ? layout.headerH : (state.exportShowMetadata ? 36 : 0);
-    const padPx = (layout && Number.isFinite(layout.padPx)) ? layout.padPx : (state.exportBgLayer ? Math.max(0, Math.round(Number(state.exportPaddingPx) || 0)) : 0);
-
-    const bodyH = h - headerH;
-    const innerX = padPx;
-    const innerY = headerH + padPx;
-    const innerW = Math.max(2, w - padPx * 2);
-    const innerH = Math.max(2, bodyH - padPx * 2);
+    const headerHLogical = (layout && Number.isFinite(layout.headerH)) ? layout.headerH : (state.exportShowMetadata ? 36 : 0);
+    const sx = (layout && Number.isFinite(layout.scaleX)) ? layout.scaleX : 1;
+    const sy = (layout && Number.isFinite(layout.scaleY)) ? layout.scaleY : 1;
+    const dxLogical = (layout && Number.isFinite(layout.dx)) ? layout.dx : 0;
+    const dyLogical = (layout && Number.isFinite(layout.dy)) ? layout.dy : 0;
+    const frameWLogical = (layout && Number.isFinite(layout.frameW)) ? layout.frameW : Math.max(2, w);
+    const frameHLogical = (layout && Number.isFinite(layout.frameH)) ? layout.frameH : Math.max(2, h - headerHLogical);
+    const outHeaderH = Math.round(headerHLogical * sy);
+    const bodyH = Math.max(0, h - outHeaderH);
+    const innerX = dxLogical * sx;
+    const innerY = outHeaderH + dyLogical * sy;
+    const innerW = frameWLogical * sx;
+    const innerH = frameHLogical * sy;
 
     const frame = state.frames[frameIdx];
     const img = frameImages ? frameImages[frameIdx] : null;
-    const tcFontSize = Math.max(8, Math.round(innerW * 0.025));
     const frameCount = state.frames.length;
-    
-    // Header - unified export metadata bar
-    if (state.exportShowMetadata && headerH > 0) {
-      const metaText = buildExportMetaText({
-        mode: 'single',
-        frameW: innerW,
-        frameH: innerH,
-        frames: frameCount,
-        fps: state.animFps,
-        frameIdx: frameIdx,
-        time: frame?.time || 0,
-        srcW: state.videoWidth,
-        srcH: state.videoHeight,
-        duration: state.videoDuration,
-        date: state.videoDate
-      });
-      drawExportMetadataBar(ctx, w, headerH, metaText, { activeIndex: exportLogoIdx, baseHeaderH: layout.baseHeaderH || headerH });
+
+    if (state.exportShowMetadata && outHeaderH > 0) {
+      const metaText = buildExportMetaText({ mode: 'single', frameW: frameWLogical, frameH: frameHLogical, frames: frameCount, fps: state.animFps, frameIdx, time: frame?.time || 0, srcW: state.videoWidth, srcH: state.videoHeight, duration: state.videoDuration, date: state.videoDate });
+      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndex: exportLogoIdx, baseHeaderH: Math.round((layout.baseHeaderH || headerHLogical) * sy) });
     }
+    if (!state.bgLayerAboveDrawings) drawExportBgLayer(ctx, 0, outHeaderH, w, bodyH, 'single');
+    drawExportBgPattern(ctx, 0, outHeaderH, w, bodyH, 'single');
     if (!drawingsOnly && img) drawFrameCell(ctx, img, innerX, innerY, innerW, innerH);
-    // BG drawing layer (optional) - drawn as overlay above video frames
-    // BG layer is mapped to the visible content area; export padding acts as an outer border.
-    drawExportBgLayer(ctx, 0, headerH, w, bodyH, 'single');
-    drawExportRefFrame(ctx, innerX, innerY, innerW, innerH);
-    // Drawings overlay (optional)
-    drawExportDrawings(ctx, innerX, innerY, innerW, innerH, frameIdx);
-    
-    if (computeShowTimecode() && frame) {
-      drawTimecodeOverlay(ctx, innerX, innerY, innerW, innerH, frame, getDerivedIndexFromFrameIdx(frameIdx), Math.ceil(state.frames.length / Math.max(1, Number(state.cellSize) || 1)), frameIdx);
+
+    if (state.refFrameAboveDrawings) {
+      drawExportDrawings(ctx, innerX, innerY, innerW, innerH, frameIdx);
+      drawExportRefFrame(ctx, innerX, innerY, innerW, innerH);
+    } else {
+      drawExportRefFrame(ctx, innerX, innerY, innerW, innerH);
+      drawExportDrawings(ctx, innerX, innerY, innerW, innerH, frameIdx);
     }
+
+    if (state.bgLayerAboveDrawings) drawExportBgLayer(ctx, 0, outHeaderH, w, bodyH, 'single');
+    if (computeShowTimecode() && frame) drawTimecodeOverlay(ctx, innerX, innerY, innerW, innerH, frame, getDerivedIndexFromFrameIdx(frameIdx), Math.ceil(state.frames.length / Math.max(1, Number(state.cellSize) || 1)), frameIdx);
   }
 
-  
   // EXPORT
   // Export PNG sequence at original resolution.
   // If "Drawings in Export" is ON, PNGs are composited (video/image + drawings).
@@ -9021,27 +9446,22 @@ async function recordAudioSeqAV(mode = 'grid') {
       return;
     }
 
-    // Stop live playback to avoid double-trigger
     const wasPlaying = !!state.isPlaying;
     if (wasPlaying) { try { togglePlay(); } catch (e) {} }
 
-    // Ensure audio context exists
     audioEnsureCtx();
     if (!state._audioCtx) {
       alert('AudioContext not available.');
       return;
     }
 
-    // Prepare recording destination (mix)
     if (!state._audioRecordDest) {
       try {
         state._audioRecordDest = state._audioCtx.createMediaStreamDestination();
-        // Connect master gain to recorder destination too
         if (state._audioMasterGain) state._audioMasterGain.connect(state._audioRecordDest);
       } catch (e) {}
     }
 
-    // Build sequence (same as exportMp4)
     let sequence = [];
     const frameCount = state.frames.length;
     if (state.animDirection === 'forward') {
@@ -9055,89 +9475,34 @@ async function recordAudioSeqAV(mode = 'grid') {
     const singleLoop = [...sequence];
     for (let loop = 1; loop < (state.exportLoops || 1); loop++) sequence = sequence.concat(singleLoop);
 
-    // Compute export canvas dimensions (subset of exportMp4 layout logic)
     const frameAspect = getEffectiveFrameAspect();
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
     const total = cellCount + (state.showInfoCard ? 1 : 0);
     const rows = Math.ceil(total / state.gridCols);
-    const gapBase = state.spacing;
-    const padPx = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
-    const qualityMap = { low: 540, medium: 720, hd: 1080, high: 2160, max: Math.max(state.videoWidth, state.videoHeight) };
-    const maxSize = qualityMap[state.exportQuality] || 1080;
+    const videoLayout = getDeterministicVideoExportLayout(mode, rows);
+    const canvasW = videoLayout.canvasW;
+    const canvasH = videoLayout.canvasH;
+    const layout = videoLayout.layout;
 
-    let canvasW = 0, canvasH = 0;
-    let layout = { mode, padPx, headerH: 0, gap: gapBase, frameW: 0, frameH: 0, gridW: 0, gridH: 0, baseHeaderH: 0 };
-
-    if (mode === 'grid') {
-      const baseHeaderH = state.exportShowMetadata ? 48 : 0;
-      let headerH = baseHeaderH;
-      const dims = getTargetFrameOutputDims();
-      const baseFrameW = Math.max(2, Math.round(dims.w));
-      const baseFrameH = Math.max(2, Math.round(dims.h));
-
-      const gridW0 = state.gridCols * baseFrameW + (state.gridCols + 1) * gapBase;
-      const gridH0 = rows * baseFrameH + (rows + 1) * gapBase;
-
-      const allowedW = Math.max(2, maxSize - padPx * 2);
-      const allowedH = Math.max(2, maxSize - headerH - padPx * 2);
-
-      let scale = 1;
-      if (allowedW > 2 && allowedH > 2) scale = Math.min(1, allowedW / gridW0, allowedH / gridH0);
-
-      const gap = Math.max(0, Math.round(gapBase * scale));
-      const frameW = Math.max(2, Math.round(baseFrameW * scale));
-      const frameH = Math.max(2, Math.round(baseFrameH * scale));
-      const gridW = state.gridCols * frameW + (state.gridCols + 1) * gap;
-      const gridH = rows * frameH + (rows + 1) * gap;
-
-      canvasW = Math.floor((gridW + padPx * 2) / 2) * 2;
-      canvasH = Math.floor((headerH + gridH + padPx * 2) / 2) * 2;
-
-      layout = { mode, padPx, headerH, gap, frameW, frameH, gridW, gridH, baseHeaderH };
-    } else {
-      const baseHeaderH = state.exportShowMetadata ? 48 : 0;
-      let headerH = baseHeaderH;
-      const dims = getTargetFrameOutputDims();
-      const baseW = Math.max(2, Math.round(dims.w));
-      const baseH = Math.max(2, Math.round(dims.h));
-
-      const allowedW = Math.max(2, maxSize - padPx * 2);
-      const allowedH = Math.max(2, maxSize - headerH - padPx * 2);
-      let scale = 1;
-      if (allowedW > 2 && allowedH > 2) scale = Math.min(1, allowedW / baseW, allowedH / baseH);
-
-      const frameW = Math.max(2, Math.round(baseW * scale));
-      const frameH = Math.max(2, Math.round(baseH * scale));
-
-      canvasW = Math.floor((frameW + padPx * 2) / 2) * 2;
-      canvasH = Math.floor((headerH + frameH + padPx * 2) / 2) * 2;
-
-      layout = { mode, padPx, headerH, gap: gapBase, frameW, frameH, gridW: frameW, gridH: frameH, baseHeaderH };
-    }
-
-    // Preload frame images (same as exportMp4)
     loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Preparing AV recording...';
-    const frameImages = await Promise.all(state.frames.map(f => {
-      return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null);
-        img.src = getFrameDataUrl(f);
-      });
-    }));
-const cellOrder = generateCellOrder(cellCount, state.gridCols);
+    const frameImages = await Promise.all(state.frames.map(f => new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = getFrameDataUrl(f);
+    })));
+
+    const cellOrder = generateCellOrder(cellCount, state.gridCols);
     const r = parseInt(state.tcBgColor.slice(1,3), 16);
     const g = parseInt(state.tcBgColor.slice(3,5), 16);
     const b = parseInt(state.tcBgColor.slice(5,7), 16);
 
-    // Create canvas
     const canvas = document.createElement('canvas');
     canvas.width = canvasW;
     canvas.height = canvasH;
     const ctx = canvas.getContext('2d');
 
-    // Build stream
     const vStream = canvas.captureStream(state.animFps || 12);
     const vTrack = vStream.getVideoTracks()[0];
 
@@ -9150,13 +9515,10 @@ const cellOrder = generateCellOrder(cellCount, state.gridCols);
     const stream = new MediaStream([vTrack].concat(aTrack ? [aTrack] : []));
     const mime = pickBestMediaRecorderMime();
 
-    // Auto bitrate: scale with resolution + FPS for better quality (no UI needed).
-    // Rule of thumb: ~0.26 Mbps per (MPx * FPS), with sane caps.
     const fps = state.animFps || 12;
     const mpix = (canvasW * canvasH) / 1e6;
     let videoBps = Math.round(mpix * fps * 520000);
     videoBps = Math.max(6000000, Math.min(80000000, videoBps));
-    // Boost WebM quality a bit, keep MP4 conservative
     if (mime && mime.indexOf('webm') >= 0) videoBps = Math.max(3000000, Math.min(80000000, videoBps * 2));
     const audioBps = 320000;
 
@@ -9168,13 +9530,8 @@ const cellOrder = generateCellOrder(cellCount, state.gridCols);
       opts.bitsPerSecond = videoBps + audioBps;
       recorder = new MediaRecorder(stream, opts);
     } catch (e) {
-      try {
-        // If the browser rejects bitrate options, retry with mime only.
-        recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      } catch (e2) {
-        // Final fallback, let the browser pick defaults.
-        recorder = new MediaRecorder(stream);
-      }
+      try { recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); }
+      catch (e2) { recorder = new MediaRecorder(stream); }
     }
 
     const chunks = [];
@@ -9184,14 +9541,11 @@ const cellOrder = generateCellOrder(cellCount, state.gridCols);
     const ext = (mimeType && mimeType.indexOf('mp4') >= 0) ? 'mp4' : 'webm';
     const filename = makeExportFilename({ mode: (mode === 'grid' ? 'grid' : 'single'), ext, frames: state.frames.length, fps: state.animFps, extra: 'AV_AudioSeq' });
 
-    // Reset sim state and enable audio triggering in export renderer
     try { audioExportReset(); } catch (e) {}
     state._audioExportDoTrigger = true;
 
-    // Prime lastByCell to avoid instant hit on first frame
     try {
       if (state.audioSeq && state.audioSeq.playheads && state.audioSeq.playheads.length) {
-        // simulate first frame without triggering
         state._audioExportDoTrigger = false;
         ctx.fillStyle = state.bgColor;
         ctx.fillRect(0, 0, canvasW, canvasH);
@@ -9204,11 +9558,9 @@ const cellOrder = generateCellOrder(cellCount, state.gridCols);
     loadingProgress.textContent = aTrack ? `Recording AV (AudioSeq)... (${Math.round(videoBps/1e6)} Mbps)` : `Recording AV (no audio track)... (${Math.round(videoBps/1e6)} Mbps)`;
     recorder.start(250);
 
-    // Real-time tick loop
     const stepMs = 1000 / fps;
     let tick = 0;
     const totalTicks = sequence.length;
-    // Precompute AudioSeq playhead offsets so AV Single can still record audio based on grid logic
     const _audioSeqPlayheads = (state.audioSeq && Array.isArray(state.audioSeq.playheads)) ? state.audioSeq.playheads.slice() : [];
     const _audioSeqPhaseCount = Math.max(1, state.gridLoops || 1);
     const _audioSeqOffsets = _audioSeqPlayheads.map(cellIdx => {
@@ -9217,7 +9569,6 @@ const cellOrder = generateCellOrder(cellCount, state.gridCols);
       const off = Math.floor(rawOffset * frameCount * _audioSeqPhaseCount / Math.max(1, cellCount)) % frameCount;
       return { cellIdx, off };
     });
-
 
     await new Promise((resolve) => {
       const timer = setInterval(() => {
@@ -9235,7 +9586,6 @@ const cellOrder = generateCellOrder(cellCount, state.gridCols);
             renderMp4GridFrame(ctx, canvasW, canvasH, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, layout, false);
           } else {
             renderMp4SingleFrame(ctx, canvasW, canvasH, frameImages, sequence[tick], r, g, b, layout, false);
-            // In single mode we still want AudioSeq hits based on the full grid playheads
             if (_audioSeqOffsets && _audioSeqOffsets.length) {
               try {
                 const base = sequence[tick % sequence.length];
@@ -9243,7 +9593,6 @@ const cellOrder = generateCellOrder(cellCount, state.gridCols);
                 audioExportSimFromCells(_cells, tick);
               } catch (e) {}
             }
-
           }
 
           tick++;
@@ -9258,11 +9607,9 @@ const cellOrder = generateCellOrder(cellCount, state.gridCols);
       recorder.onstop = () => resolve();
     });
 
-    // finalize blob
     const blob = new Blob(chunks, { type: mimeType || mime || 'video/webm' });
     downloadBlob(blob, filename);
 
-    // restore
     state._audioExportDoTrigger = false;
     loadingOverlay.classList.remove('visible');
     if (wasPlaying) { try { togglePlay(); } catch (e) {} }
@@ -9275,6 +9622,7 @@ const cellOrder = generateCellOrder(cellCount, state.gridCols);
 }
 
 async function exportPngSeqDrawings() {
+
     if (!state.frames.length) return;
 
     loadingOverlay.classList.add('visible');
@@ -9873,6 +10221,37 @@ function drawExportMetadataBar(ctx, w, headerH, metaText, opts = {}) {
 // [FIX] removed stray brace that broke parsing
 
 
+
+function getStillExportMaxSize(explicitMaxSize = null) {
+  const qualityMap = {
+    low: 540,
+    medium: 720,
+    hd: 1080,
+    high: 2160,
+    max: Infinity
+  };
+  const uiCap = qualityMap[state.exportQuality] || 1080;
+  const argCap = Number.isFinite(explicitMaxSize) && explicitMaxSize > 0 ? explicitMaxSize : Infinity;
+  const cap = Math.min(uiCap, argCap);
+  return Number.isFinite(cap) ? Math.max(2, Math.round(cap)) : Infinity;
+}
+
+function finalizeStillExportCanvas(canvas, explicitMaxSize = null) {
+  const cap = getStillExportMaxSize(explicitMaxSize);
+  if (!Number.isFinite(cap)) return canvas;
+  const longSide = Math.max(canvas.width || 0, canvas.height || 0);
+  if (longSide <= cap) return canvas;
+  const scale = cap / Math.max(1, longSide);
+  const out = document.createElement('canvas');
+  out.width = Math.max(2, Math.round(canvas.width * scale));
+  out.height = Math.max(2, Math.round(canvas.height * scale));
+  const octx = out.getContext('2d');
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = 'high';
+  octx.drawImage(canvas, 0, 0, out.width, out.height);
+  return out;
+}
+
 async function exportImage(format, maxSize) {
   if (!state.frames.length) return;
 
@@ -9895,50 +10274,29 @@ const baseHeaderH = state.exportShowMetadata ? 48 : 0;
   const cellCount = Math.ceil(state.frames.length / state.cellSize);
   const total = cellCount + (state.showInfoCard ? 1 : 0);
   const rows = Math.ceil(total / state.gridCols);
-  const gap = state.spacing;
+  const gap = Math.max(0, Number(state.spacing) || 0);
 
-  // Raw grid size in pixels (before downscaling)
-  let gridW = state.gridCols * baseFrameW + (state.gridCols + 1) * gap;
-  let gridH = rows * baseFrameH + (rows + 1) * gap;
-
-  // Padding around the whole grid export (px in final output, BG-only)
-  let padX = padBase;
-  let padY = padBase;
-
-  // Clamp padding so export stays within maxSize (and leaves room for header if enabled)
-  const maxPadW = Math.floor((maxSize - 2) / 2);
-  const maxPadH = Math.floor((maxSize - headerH - 2) / 2);
-  const maxPad = Math.max(0, Math.min(maxPadW, maxPadH));
-  padX = Math.min(padX, maxPad);
-  padY = Math.min(padY, maxPad);
-
-  const allowedW = maxSize - padX * 2;
-  const allowedH = maxSize - headerH - padY * 2;
-
-  // Scale content to fit inside maxSize after padding + header
-  let scale = 1;
-  if (allowedW > 2 && allowedH > 2) {
-    scale = Math.min(1, allowedW / gridW, allowedH / gridH);
-  }
-
-  // Scaled working sizes
-  const sGap = Math.max(0, Math.round(gap * scale));
-  const sPadX = padX;
-  const sPadY = padY;
-  const sFrameW = Math.max(2, Math.round(baseFrameW * scale));
-  const sFrameH = Math.max(2, Math.round(baseFrameH * scale));
+  // Still exports should keep the same content geometry as the preview.
+  // Padding enlarges the export canvas, it must not silently downscale the grid.
+  const sGap = gap;
+  const sPadX = padBase;
+  const sPadY = padBase;
+  const sFrameW = baseFrameW;
+  const sFrameH = baseFrameH;
   let sHeaderH = headerH;
 
-  const sGridW = state.gridCols * sFrameW + (state.gridCols + 1) * sGap;
-  const sGridH = rows * sFrameH + (rows + 1) * sGap;
+  const sGridW = state.gridCols * sFrameW + Math.max(0, state.gridCols - 1) * sGap;
+  const sGridH = rows * sFrameH + Math.max(0, rows - 1) * sGap;
+
+  const stillPlacement = getStillExportPlacement('grid', sGridW, sGridH, sHeaderH, sPadX);
 
   // Final output canvas size (includes header + padding)
-  let canvasW = sGridW + sPadX * 2;
-  let canvasH = sHeaderH + sGridH + sPadY * 2;
+  let canvasW = stillPlacement.canvasW;
+  let canvasH = stillPlacement.canvasH;
 
   // Prepare BG crop regions so BG export matches what you see (including padding)
-  computeExportBgCrop('grid', sGridW, sGridH, sPadX);
-  computeExportBgCrop('single', sFrameW, sFrameH, sPadX);
+  computeExportBgCrop('grid');
+  computeExportBgCrop('single');
 
   // Auto-expand metadata header (no ellipsis: switch to 2 lines and grow header)
   if (state.exportShowMetadata && baseHeaderH > 0) {
@@ -9981,8 +10339,8 @@ const canvas = document.createElement('canvas');
     drawExportMetadataBar(ctx, canvasW, sHeaderH, metaText, { activeIndex: exportLogoIdx, baseHeaderH });
   }
 
-// BG overlay (optional) - fill the whole export body (header excluded)
   drawExportBgLayer(ctx, 0, sHeaderH, canvasW, canvasH - sHeaderH, 'grid');
+  drawExportBgPattern(ctx, 0, sHeaderH, canvasW, canvasH - sHeaderH, 'grid');
 
   // Draw frames
   const offset = state.showInfoCard ? 1 : 0;
@@ -9994,8 +10352,8 @@ const canvas = document.createElement('canvas');
     const row = Math.floor(i / state.gridCols);
     const col = i % state.gridCols;
 
-    const x = sPadX + col * (sFrameW + sGap) + sGap;
-    const y = sHeaderH + sPadY + row * (sFrameH + sGap) + sGap;
+    const x = stillPlacement.dx + col * (sFrameW + sGap);
+    const y = sHeaderH + stillPlacement.dy + row * (sFrameH + sGap);
 
     if (i === 0 && state.showInfoCard) {
       // Info card cell
@@ -10049,14 +10407,10 @@ const canvas = document.createElement('canvas');
 
   }
 
-  // BG drawing layer (optional) - drawn as overlay above base frames, below drawings/timecode
-  drawExportBgLayer(ctx, 0, sHeaderH, canvasW, canvasH - sHeaderH, 'grid');
-
-  // Pass 2: overlays
+  // Pass 2: ref/template drawings overlays
   for (const cell of __exportCells) {
-    const { x, y, w, h, frameIdx, frame } = cell;
+    const { x, y, w, h, frameIdx } = cell;
 
-    // Ref frame + drawings overlays
     if (state.refFrameAboveDrawings) {
       drawExportDrawings(ctx, x, y, w, h, frameIdx);
       drawExportRefFrame(ctx, x, y, w, h);
@@ -10064,25 +10418,33 @@ const canvas = document.createElement('canvas');
       drawExportRefFrame(ctx, x, y, w, h);
       drawExportDrawings(ctx, x, y, w, h, frameIdx);
     }
+  }
 
-    // Timecode overlay (optional)
+  if (state.bgLayerAboveDrawings) {
+    drawExportBgLayer(ctx, 0, sHeaderH, canvasW, canvasH - sHeaderH, 'grid');
+  }
+
+  // Pass 3: UI overlays
+  for (const cell of __exportCells) {
+    const { x, y, w, h, frameIdx, frame } = cell;
+
     if (computeShowTimecode()) {
       drawTimecodeOverlay(ctx, x, y, w, h, frame, getDerivedIndexFromFrameIdx(frameIdx), cellCount, frameIdx);
     }
 
-    // Optional cell border (visual clarity for exports)
     ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = Math.max(1, Math.round(1 * scale));
+    ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
   }
 
 
   // Encode
+  const outCanvas = finalizeStillExportCanvas(canvas, maxSize);
   const mime = (format === 'png') ? 'image/png' : 'image/jpeg';
   const quality = (format === 'png') ? undefined : 0.92;
 
   const blob = await new Promise(resolve => {
-    canvas.toBlob(b => resolve(b), mime, quality);
+    outCanvas.toBlob(b => resolve(b), mime, quality);
   });
   if (!blob) return;
 
@@ -10207,38 +10569,20 @@ const canvas = document.createElement('canvas');
     let baseW = Math.max(2, Math.round(dims.w));
     let baseH = Math.max(2, Math.round(dims.h));
 
-    // Padding in pixels (px in final output, BG-only)
-    let padX = padBase;
-    let padY = padBase;
+    // Still export must match preview geometry. Padding increases canvas size only.
+    const sPadX = padBase;
+    const sPadY = padBase;
 
-    // Clamp padding so export stays within maxSize (and leaves room for header if enabled)
-    const maxPadW = Math.floor((maxSize - 2) / 2);
-    const maxPadH = Math.floor((maxSize - headerH - 2) / 2);
-    const maxPad = Math.max(0, Math.min(maxPadW, maxPadH));
-    padX = Math.min(padX, maxPad);
-    padY = Math.min(padY, maxPad);
-
-    const allowedW = maxSize - padX * 2;
-    const allowedH = maxSize - headerH - padY * 2;
-
-    // Scale content to fit inside maxSize after padding + header
-    let scale = 1;
-    if (allowedW > 2 && allowedH > 2) {
-      scale = Math.min(1, allowedW / baseW, allowedH / baseH);
-    }
-
-    const sPadX = padX;
-    const sPadY = padY;
-
-    const frameW = Math.max(2, Math.round(baseW * scale));
-    const frameH = Math.max(2, Math.round(baseH * scale));
+    const frameW = baseW;
+    const frameH = baseH;
     let sHeaderH = headerH;
 
-    const canvasW = frameW + sPadX * 2;
-    let canvasH = sHeaderH + frameH + sPadY * 2;
+    let stillPlacement = getStillExportPlacement('single', frameW, frameH, sHeaderH, sPadX);
+    let canvasW = stillPlacement.canvasW;
+    let canvasH = stillPlacement.canvasH;
 
     // Ensure BG crop is up to date for single view (includes padding)
-    computeExportBgCrop('single', frameW, frameH, sPadX);
+    computeExportBgCrop('single');
 
     // Auto-expand metadata header (no ellipsis: switch to 2 lines and grow header)
     if (state.exportShowMetadata && baseHeaderH > 0) {
@@ -10263,10 +10607,11 @@ const canvas = document.createElement('canvas');
       const newHeaderH = computeExportMetadataHeaderH(mctx, canvasW, baseHeaderH, metaText);
 
       if (newHeaderH > headerH) {
-        const dH = newHeaderH - headerH;
         headerH = newHeaderH;
         sHeaderH = headerH;
-        canvasH += dH;
+        stillPlacement = getStillExportPlacement('single', frameW, frameH, sHeaderH, sPadX);
+        canvasW = stillPlacement.canvasW;
+        canvasH = stillPlacement.canvasH;
       }
     }
 
@@ -10284,15 +10629,15 @@ const canvas = document.createElement('canvas');
       drawExportMetadataBar(ctx, canvasW, headerH, metaText, { activeIndex: exportLogoIdx, baseHeaderH });
     }
 
-// Compose target rect inside padding
-    const dx = sPadX;
-    const dy = headerH + sPadY;
+    drawExportBgLayer(ctx, 0, headerH, canvasW, Math.max(1, canvasH - headerH), 'single');
+    drawExportBgPattern(ctx, 0, headerH, canvasW, Math.max(1, canvasH - headerH), 'single');
+
+// Compose target rect inside preview-matched padding
+    const dx = stillPlacement.dx;
+    const dy = headerH + stillPlacement.dy;
 
     const frameIdx = getPrimaryPreviewFrameIndex();
     const frame = state.frames[frameIdx];
-
-    // BG overlay (optional) - covers full body so your notes in the margin export too
-    drawExportBgLayer(ctx, 0, headerH, canvasW, Math.max(1, canvasH - headerH), 'single');
 
     // Video frame
     const src = getFrameDataUrl(frame);
@@ -10322,16 +10667,21 @@ const canvas = document.createElement('canvas');
       drawExportDrawings(ctx, dx, dy, frameW, frameH, frameIdx);
     }
 
+    if (state.bgLayerAboveDrawings) {
+      drawExportBgLayer(ctx, 0, headerH, canvasW, Math.max(1, canvasH - headerH), 'single');
+    }
+
     // Timecode
     if (computeShowTimecode()) {
       drawTimecodeOverlay(ctx, dx, dy, frameW, frameH, frame, getDerivedIndexFromFrameIdx(frameIdx), Math.ceil(state.frames.length / Math.max(1, Number(state.cellSize) || 1)), frameIdx);
     }
 
+    const outCanvas = finalizeStillExportCanvas(canvas, maxSize);
     const mime = (format === 'png') ? 'image/png' : 'image/jpeg';
     const quality = (format === 'png') ? undefined : 0.92;
 
     const blob = await new Promise(resolve => {
-      canvas.toBlob(b => resolve(b), mime, quality);
+      outCanvas.toBlob(b => resolve(b), mime, quality);
     });
     if (!blob) return;
 
@@ -10414,9 +10764,19 @@ const canvas = document.createElement('canvas');
 
   // INIT
   updateIntervalUI();
-  app.style.setProperty('--bg-color', state.bgColor);
+  if (bgColorInput) bgColorInput.value = state.bgColor;
+  if (toggleBgGrid) toggleBgGrid.classList.toggle('active', !!state.bgGridShow);
+  if (bgGridTypeSelect) bgGridTypeSelect.value = state.bgGridType || 'lines';
+  if (bgGridColorInput) bgGridColorInput.value = state.bgGridColor || '#ffffff';
+  if (bgGridOpacitySlider) bgGridOpacitySlider.value = String(Math.round((state.bgGridOpacity || 0) * 100));
+  if (bgGridOpacityValue) bgGridOpacityValue.textContent = `${Math.round((state.bgGridOpacity || 0) * 100)}%`;
+  if (bgGridSizeSlider) bgGridSizeSlider.value = String(state.bgGridSize || 24);
+  if (bgGridSizeValue) bgGridSizeValue.textContent = `${state.bgGridSize || 24}px`;
+  if (toggleBgAboveDrawings) toggleBgAboveDrawings.classList.toggle('active', !!state.bgLayerAboveDrawings);
+  updateBgAppearance();
   fontSizeValue.textContent = `${state.fontSize}px`;
   spacingValue.textContent = `${state.spacing}px`;
+  framesGrid.classList.toggle('seamless', Number(state.spacing) === 0);
   framesGrid.style.setProperty('--meta-font-size', `${state.fontSize}px`);
 
   // Frame image transform defaults
@@ -10608,7 +10968,7 @@ const canvas = document.createElement('canvas');
     // Use physical key codes - works with ANY keyboard layout (Russian, English, etc.)
     if (code === 'Space') { e.preventDefault(); togglePlay(); }
     else if (code === 'KeyG') { e.preventDefault(); setViewMode(state.viewMode === 'grid' ? 'single' : 'grid'); }
-    else if (code === 'KeyF') { e.preventDefault(); state.viewMode === 'single' ? fitToSingleFrame() : fitToScreen(); }
+    else if (code === 'KeyF') { e.preventDefault(); fitActiveView(); }
     else if (code === 'KeyM') { e.preventDefault(); toggleMenu(); }
     else if (code === 'KeyN') {
       e.preventDefault();
@@ -10746,10 +11106,10 @@ const canvas = document.createElement('canvas');
               renderGrid();
             }
             updateGridHint();
-            fitToScreen();
+            fitActiveView();
           });
         } else {
-          fitToScreen();
+          fitActiveView();
         }
       }
 
@@ -11667,6 +12027,7 @@ function audioInitUI() {
     _fgOrigRenderGrid();
     try { audioSyncPlayheads(); } catch (e) {}
     try { audioUpdateChips(); } catch (e) {}
+    try { syncBgUnderlayPreview(); } catch (e) {}
   };
 
   const _fgOrigUpdateAllCells = updateAllCells;
