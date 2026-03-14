@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.24.01                                        ║
+║      FRAMEGRID v0.25.01                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,8 +10,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.24.01</title>
+  <title>FRAMEGRID v0.25.01</title>
   <style>
+    :root {
+      --fg-accent: #35f2a3;
+    }
 
     /* Prevent page scrollbars (keep scrolling inside the side menu only) */
     html, body {
@@ -75,12 +78,12 @@
     .metadata-logo .fg-logo-cell { width: 8px; height: 8px; border-radius: 2px; }
 
     .fg-logo-cell { width: 3px; height: 3px; background: rgba(255,255,255,0.28); border-radius: 1px; }
-    .fg-logo-cell.active { background: #35f2a3; }
+    .fg-logo-cell.active { background: var(--fg-accent, #35f2a3); }
     .metadata-logo-text { white-space: nowrap; }
     /* Welcome logo sizing */
     .fg-logo-icon--welcome { grid-template-columns: repeat(3, 14px); grid-auto-rows: 14px; gap: 4px; }
     .fg-logo-icon--welcome .fg-logo-cell { width: 14px; height: 14px; border-radius: 3px; background: rgba(255,255,255,0.20); }
-    .fg-logo-icon--welcome .fg-logo-cell.active { background: #35f2a3; }
+    .fg-logo-icon--welcome .fg-logo-cell.active { background: var(--fg-accent, #35f2a3); }
 
     .metadata-group { display: flex; align-items: center; gap: 18px; min-width: 0; flex: 0 1 auto; }
     .metadata-group.fps-group { flex: 0 0 auto; }
@@ -131,7 +134,7 @@
       position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
     }
     .menu-toggle:hover { background: rgba(255,255,255,0.1); }
-    .menu-toggle.active { background: rgba(53, 242, 163, 0.2); border-color: #35f2a3; }
+    .menu-toggle.active { background: rgba(53, 242, 163, 0.2); border-color: var(--fg-accent, #35f2a3); }
     .menu-toggle span { width: 12px; height: 1px; background: rgba(255,255,255,0.8); }
     @media (max-width: 1100px) {
       .metadata-gap { width: 32px; min-width: 32px; }
@@ -164,7 +167,7 @@
     .frame-image-wrap .frame-media-xform {
       position: absolute;
       inset: 0;
-      transform: translate(var(--img-off-x, 0%), var(--img-off-y, 0%)) scale(var(--img-scale, 1));
+      transform: translate(var(--img-off-x, 0%), var(--img-off-y, 0%)) scale(var(--img-scale, 1)) rotate(var(--img-rot, 0deg));
       transform-origin: center center;
       will-change: transform;
     }
@@ -176,6 +179,7 @@
       object-fit: contain;
       display: block;
       z-index: 1;
+      opacity: var(--frame-img-opacity, 1);
     }
 
     /* Onion skin overlay (prev/next frames) */
@@ -240,7 +244,7 @@
       padding: 8%; aspect-ratio: var(--video-aspect, 16/9);
       justify-content: center; border: 1px solid rgba(255,255,255,0.2);
     }
-    .info-card-title { font-size: clamp(8px, 2.5vw, 18px); font-weight: 700; color: #35f2a3; margin-bottom: 0.6em; }
+    .info-card-title { font-size: clamp(8px, 2.5vw, 18px); font-weight: 700; color: var(--fg-accent, #35f2a3); margin-bottom: 0.6em; }
     .info-card-row { font-size: clamp(6px, 2vw, 14px); color: rgba(255,255,255,0.7); margin-bottom: 0.3em; }
 
     /* DROP ZONE */
@@ -262,7 +266,7 @@
     .drop-zone-formats { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 12px; }
     .drop-zone-hint { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 6px; }
     .drop-zone-btn {
-      padding: 10px 24px; background: #35f2a3; color: #000; border: none;
+      padding: 10px 24px; background: var(--fg-accent, #35f2a3); color: #000; border: none;
       border-radius: 2px; font-size: 11px; font-weight: 600;
       letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
     }
@@ -342,8 +346,8 @@
     .menu-row:last-child { margin-bottom: 0; }
     .menu-label { font-size: 11px; color: rgba(255,255,255,0.75); }
     .menu-hint {
-      font-size: 13px; color: rgba(53, 242, 163, 0.9); margin-top: 8px;
-      padding: 12px 10px; background: rgba(53, 242, 163, 0.1); border-radius: 2px; line-height: 1.45;
+      font-size: 10px; color: rgba(53, 242, 163, 0.9); margin-top: 8px;
+      padding: 12px 10px; background: rgba(53, 242, 163, 0.1); border-radius: 2px; line-height: 1.4;
     }
     .menu-hint.hint-good { color: rgba(53, 242, 163, 0.95); background: rgba(53, 242, 163, 0.10); }
     .menu-hint.hint-warn { color: rgba(255, 179, 71, 0.98); background: rgba(255, 179, 71, 0.10); }
@@ -368,7 +372,7 @@
       border: 1px solid rgba(255,255,255,0.2); border-radius: 2px;
       color: #fff; font-size: 11px; text-align: center;
     }
-    .menu-input:focus { outline: none; border-color: #35f2a3; }
+    .menu-input:focus { outline: none; border-color: var(--fg-accent, #35f2a3); }
     .menu-input-group { display: flex; align-items: center; gap: 2px; }
     .menu-input-narrow { width: 80px; }
     .menu-input-btn {
@@ -377,7 +381,7 @@
       display: flex; align-items: center; justify-content: center;
     }
     .menu-input-btn:hover { background: #333; }
-    .menu-input-btn:active { background: #35f2a3; color: #000; }
+    .menu-input-btn:active { background: var(--fg-accent, #35f2a3); color: #000; }
 
     /* Quick Toolbar */
     .quick-toolbar {
@@ -390,7 +394,7 @@
       display: flex; align-items: center; justify-content: center;
     }
     .quick-btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
-    .quick-btn:active, .quick-btn.active { background: rgba(53,242,163,0.3); border-color: #35f2a3; color: #35f2a3; }
+    .quick-btn:active, .quick-btn.active { background: rgba(53,242,163,0.3); border-color: var(--fg-accent, #35f2a3); color: var(--fg-accent, #35f2a3); }
     .quick-btn svg { width: 18px; height: 18px; fill: currentColor; }
     @media (max-width: 768px) {
       .quick-toolbar { top: 44px; }
@@ -409,7 +413,7 @@
       position: relative; width: 36px; height: 20px;
       background: #333; border-radius: 10px; cursor: pointer;
     }
-    .menu-toggle-switch.active { background: #35f2a3; }
+    .menu-toggle-switch.active { background: var(--fg-accent, #35f2a3); }
     .menu-toggle-switch::after {
       content: ''; position: absolute; top: 2px; left: 2px;
       width: 16px; height: 16px; background: #fff; border-radius: 50%;
@@ -423,7 +427,7 @@
     }
     .menu-slider::-webkit-slider-thumb {
       -webkit-appearance: none; width: 14px; height: 14px;
-      background: #35f2a3; border-radius: 50%; cursor: pointer;
+      background: var(--fg-accent, #35f2a3); border-radius: 50%; cursor: pointer;
     }
     .menu-slider-value { font-size: 10px; color: rgba(255,255,255,0.6); min-width: 36px; text-align: right; }
     .menu-slider-numwrap { display: flex; align-items: center; gap: 4px; }
@@ -432,7 +436,7 @@
       border: 1px solid rgba(255,255,255,0.2); border-radius: 2px;
       color: rgba(255,255,255,0.9); font-size: 10px; text-align: right;
     }
-    .menu-slider-input:focus { outline: none; border-color: #35f2a3; }
+    .menu-slider-input:focus { outline: none; border-color: var(--fg-accent, #35f2a3); }
     .menu-slider-unit { font-size: 10px; color: rgba(255,255,255,0.5); min-width: 10px; text-align: left; }
 
     .menu-btn {
@@ -443,7 +447,7 @@
     }
     .menu-btn:first-of-type { margin-top: 0; }
     .menu-btn:hover { background: rgba(255,255,255,0.1); }
-    .menu-btn.primary { background: #35f2a3; border-color: #35f2a3; color: #000; }
+    .menu-btn.primary { background: var(--fg-accent, #35f2a3); border-color: var(--fg-accent, #35f2a3); color: #000; }
     .menu-btn.primary:hover { background: #4df7b5; }
     .menu-color-input {
       width: 36px; height: 28px; padding: 2px; background: #111;
@@ -479,7 +483,7 @@
     .about-section { padding: 16px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: auto; }
     .about-header { display: flex; justify-content: space-between; cursor: pointer; }
     .about-section.collapsed .about-content { display: none; }
-    .about-title { font-size: 10px; letter-spacing: 0.14em; color: #35f2a3; }
+    .about-title { font-size: 10px; letter-spacing: 0.14em; color: var(--fg-accent, #35f2a3); }
     .about-toggle { font-size: 16px; color: rgba(255,255,255,0.4); }
     .about-section.collapsed .about-toggle::after { content: '+'; }
     .about-section:not(.collapsed) .about-toggle::after { content: '−'; }
@@ -487,7 +491,7 @@
     .about-version { font-size: 9px; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
     .about-description { font-size: 10px; line-height: 1.5; color: rgba(255,255,255,0.6); margin-bottom: 12px; }
     .about-copyright { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 12px; text-align: center; }
-    .about-author { color: #35f2a3; text-decoration: none; }
+    .about-author { color: var(--fg-accent, #35f2a3); text-decoration: none; }
     .about-author:hover { text-decoration: underline; }
     .about-subtitle { font-size: 9px; color: rgba(255,255,255,0.5); margin: 12px 0 8px; text-transform: uppercase; letter-spacing: 0.1em; }
     .about-hotkeys { margin-top: 8px; }
@@ -523,7 +527,7 @@
     /* PROGRESS */
     .progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.1); z-index: 30; display: none; }
     .progress-bar.visible { display: block; }
-    .progress-fill { height: 100%; background: #35f2a3; width: 0%; }
+    .progress-fill { height: 100%; background: var(--fg-accent, #35f2a3); width: 0%; }
 
     /* LOADING */
     .loading-overlay {
@@ -704,7 +708,7 @@
       transition: all 0.15s;
     }
     .draw-btn:hover { background: rgba(255,255,255,0.2); }
-    .draw-btn.active { background: #35f2a3; color: #000; }
+    .draw-btn.active { background: var(--fg-accent, #35f2a3); color: #000; }
     .draw-btn.wide {
       width: auto;
       padding: 0 10px;
@@ -734,7 +738,7 @@
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      background: #35f2a3;
+      background: var(--fg-accent, #35f2a3);
       cursor: pointer;
     }
     .draw-size-preview {
@@ -809,7 +813,7 @@
     .template-frame {
       position: fixed;
       background: rgba(0,0,0,0.5);
-      border: 2px dashed #35f2a3;
+      border: 2px dashed var(--fg-accent, #35f2a3);
       border-radius: 8px;
       display: none;
       z-index: 180;
@@ -905,7 +909,7 @@
       justify-content: center;
     }
     .draw-target-btn.active {
-      background: #35f2a3;
+      background: var(--fg-accent, #35f2a3);
       color: #000;
     }
     
@@ -1097,7 +1101,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.24.01</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.25.01</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1389,6 +1393,20 @@
             <div class="menu-slider-row">
               <input type="range" class="menu-slider" id="frameImgOffY" min="-50" max="50" step="1" value="0">
               <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="frameImgOffYNum" min="-50" max="50" step="1" value="0" inputmode="decimal"><span class="menu-slider-unit">%</span></div>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Rotation</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="frameImgRot" min="-360" max="360" step="0.1" value="0">
+              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="frameImgRotNum" min="-360" max="360" step="0.1" value="0.0" inputmode="decimal"><span class="menu-slider-unit">°</span></div>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Opacity</span>
+            <div class="menu-slider-group">
+              <input type="range" class="menu-slider" id="frameImgOpacity" min="0" max="1" step="0.01" value="1">
+              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="frameImgOpacityNum" min="0" max="1" step="0.01" value="1.00" inputmode="decimal"></div>
             </div>
           </div>
           <div class="menu-row">
@@ -1712,7 +1730,7 @@
             <span class="menu-label">S1<span class="fg-audio-sample-name" id="audioName1">no file</span></span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="audioLoad1" title="Load sample S1">⤓</button>
-              <input type="color" class="fg-audio-color" id="audioColor1" value="#35f2a3" title="S1 color">
+              <input type="color" class="fg-audio-color" id="audioColor1" value="var(--fg-accent, #35f2a3)" title="S1 color">
               <button class="menu-input-btn" id="audioTest1" title="Test S1">▶</button>
               <button class="menu-input-btn" id="audioRec1" title="Record mic to S1">●</button>
               <button class="menu-input-btn" id="audioClearSlot1" title="Clear mappings for S1">⌫</button>
@@ -1874,6 +1892,13 @@
               <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="refFrameOffYNum" min="-50" max="50" step="1" value="0" inputmode="decimal"><span class="menu-slider-unit">%</span></div>
             </div>
           </div>
+          <div class="menu-row">
+            <span class="menu-label">Rotation</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="refFrameRot" min="-360" max="360" step="0.1" value="0">
+              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="refFrameRotNum" min="-360" max="360" step="0.1" value="0.0" inputmode="decimal"><span class="menu-slider-unit">°</span></div>
+            </div>
+          </div>
 
           <div class="menu-row">
             <span class="menu-label">Scale</span>
@@ -1896,6 +1921,7 @@
       <div class="menu-section collapsed">
         <div class="menu-section-title">Export</div>
         <div class="menu-section-content">
+
           <div class="menu-row">
             <span class="menu-label">Quality</span>
             <select class="menu-select" id="exportQuality">
@@ -1967,15 +1993,13 @@
           <button class="menu-btn" id="exportSmallBtn">JPEG Grid</button>
           <button class="menu-btn" id="exportFullBtn">PNG Grid</button>
           <button class="menu-btn" id="exportMp4GridBtn">MP4 Grid</button>
-          <button class="menu-btn" id="exportWebmAVGridBtn">AV Grid (AudioSeq)</button>
+          <button class="menu-btn" id="exportResampledGridBtn">Time-Synced Original Audio Grid</button>
 
-          <button class="menu-btn" id="exportResampledGridBtn">Resampled Grid (Original audio)</button>
           <div class="menu-subtitle">Single</div>
-          <button class="menu-btn" id="exportPngSingleBtn">PNG Single</button>
           <button class="menu-btn" id="exportJpegSingleBtn">JPEG Single</button>
+          <button class="menu-btn" id="exportPngSingleBtn">PNG Single</button>
           <button class="menu-btn" id="exportMp4SingleBtn">MP4 Single</button>
-          <button class="menu-btn" id="exportResampledBtn">Resampled Single (Original audio)</button>
-          <button class="menu-btn" id="exportWebmAVSingleBtn">AV Single (AudioSeq)</button>
+          <button class="menu-btn" id="exportResampledBtn">Time-Synced Original Audio Single</button>
 
           <div class="menu-subtitle">Sequence</div>
           <button class="menu-btn" id="exportPngSeqDrawBtn">PNG Sequence (ZIP)</button>
@@ -2014,9 +2038,14 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.24.01</div>
+          <div class="about-version">Version v0.25.01</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
+                    <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
+            <span class="menu-label" style="opacity:0.7">Accent Color</span>
+            <input class="menu-color" type="color" id="fgAccentColor" value="#35f2a3">
+          </div>
+
           <div class="about-hotkeys">
             <div class="about-subtitle">Keyboard Shortcuts</div>
             <div class="hotkey-row"><span class="hotkey">Space</span> Play / Stop</div>
@@ -2082,7 +2111,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.24.01';
+  const APP_VERSION = 'v0.24-branch2_0.35';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   // Sync document/UI labels
@@ -2138,8 +2167,10 @@
     tcAlign: 'left', tcPosition: 'top', tcPadding: 0, tcMargin: 0,
     // Frame image transform inside each cell (preview + export)
     frameImgScale: 1,
+    frameImgRot: 0,
     frameImgOffX: 0, // percent of cell width
     frameImgOffY: 0, // percent of cell height
+    frameImgOpacity: 1.0, // opacity of the main frame image
     frameImgFill: 'empty', // 'empty' or 'edge'
 
     frameBgColor: '#111111', // background behind scaled-down frame image
@@ -2195,6 +2226,7 @@ exportQuality: 'hd', // low, medium, high, max
     refFrameOffX: 0, // percent of cell width
     refFrameOffY: 0, // percent of cell height
     refFrameScale: 1,
+    refFrameRot: 0,
     refFrameIncludeInExport: false,
     refFrameAboveDrawings: false, // ref frame layer position relative to drawings
     bgLayerAboveDrawings: false, // background drawing layer above template/frame overlays
@@ -2287,10 +2319,14 @@ exportQuality: 'hd', // low, medium, high, max
   const frameTargetAspectSelect = $('frameTargetAspect');
   const frameImgScaleSlider = $('frameImgScale');
     const frameImgScaleNum = $('frameImgScaleNum');
+  const frameImgRotSlider = $('frameImgRot');
+    const frameImgRotNum = $('frameImgRotNum');
   const frameImgOffXSlider = $('frameImgOffX');
     const frameImgOffXNum = $('frameImgOffXNum');
   const frameImgOffYSlider = $('frameImgOffY');
     const frameImgOffYNum = $('frameImgOffYNum');
+  const frameImgOpacitySlider = $('frameImgOpacity');
+    const frameImgOpacityNum = $('frameImgOpacityNum');
   const frameImgFillSelect = $('frameImgFill');
   const frameBgColorInput = $('frameBgColor');
   const applyFrameImgTransformBtn = $('applyFrameImgTransformBtn');
@@ -2390,22 +2426,97 @@ exportQuality: 'hd', // low, medium, high, max
   const fgLogoCellGroups = [fgLogoCellsA, fgLogoCellsB].filter(g => g && g.length);
 
   
-  function getLogoActiveIndexForTick(tick) {
-    const t = Number.isFinite(tick) ? tick : 0;
-    const slow = 10; // 10x slower than FPS ticks
-    const step = Math.floor(t / slow) % 9;
-    // Reverse order: 0,8,7,6,5,4,3,2,1,0,...
-    return (9 - step) % 9;
+  function getLogoActiveIndicesForTick(tick) {
+    const t = Number.isFinite(tick) ? Math.max(0, tick) : 0;
+    const slow = 10;
+    const step = Math.floor(t / slow);
+
+    const dir = String(state.animDirection || 'forward').toLowerCase();
+
+    // Sync mode -> all squares light up
+    if (dir === 'sync') return [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+    // For 3x3 logo
+    const frameCount = 9;
+    const totalCells = 9;
+    const pingPongCycle = (frameCount - 1) * 2; // 16
+
+    // Get sequential order
+    const cellOrder = generateCellOrder(9, 3);
+    const cellOrderMap = new Map();
+    cellOrder.forEach((cell, idx) => cellOrderMap.set(cell, idx));
+
+    // Shared RNG for random direction/pattern to accurately map exactly to current seed
+    const seedStr = String(state.animSeed || 'fg');
+    let h = 0; for (let i=0; i<seedStr.length; i++) h = Math.imul(31, h) + seedStr.charCodeAt(i) | 0;
+    const rng = () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) / 4294967296; };
+
+    // Pre-generate 9 stable random offsets based on the exact same seed mechanism
+    const randomOffsets = [];
+    for(let i=0; i<9; i++) randomOffsets.push(Math.floor(rng() * frameCount));
+
+    // Pre-generate dir shuffle mapping
+    const randomDirShuffle = [0,1,2,3,4,5,6,7,8];
+    for (let i = 8; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [randomDirShuffle[i], randomDirShuffle[j]] = [randomDirShuffle[j], randomDirShuffle[i]];
+    }
+
+    let activeCells = [];
+
+    // Scan all 9 cells, see which one is displaying frameIdx === 0
+    for (let i = 0; i < 9; i++) {
+      const cellIdx = i;
+      const cellOrderIdx = cellOrderMap.get(cellIdx) ?? 0;
+      let baseOffset = cellOrderIdx;
+
+      if (state.animPattern === 'random') {
+         baseOffset = randomOffsets[cellIdx];
+      }
+
+      let frameIdx;
+      const t = step + baseOffset;
+      if (dir === 'pingpong') {
+        const pos = t % pingPongCycle;
+        frameIdx = pos < frameCount ? pos : pingPongCycle - pos;
+      } else if (dir === 'backward') {
+        frameIdx = (frameCount - 1 - (t % frameCount) + frameCount) % frameCount;
+      } else if (dir === 'random') {
+        frameIdx = randomDirShuffle[t % frameCount];
+      } else if (dir === 'stutter') {
+        const group = Math.floor(t / 4);
+        const cycle = t % 4;
+        const offsetVal = (cycle === 0 || cycle === 2) ? 0 : 1;
+        frameIdx = (group * 2 + offsetVal) % frameCount;
+      } else if (dir === 'holdskip') {
+        frameIdx = (Math.floor(t / 2) * 2) % frameCount;
+      } else if (dir === 'shuffleloop') {
+        const loopNum = Math.floor(t / frameCount);
+        const idxInLoop = t % frameCount;
+        frameIdx = randomDirShuffle[(idxInLoop + loopNum) % frameCount];
+      } else {
+        // forward
+        frameIdx = t % frameCount;
+      }
+
+      if (frameIdx === 0) {
+        activeCells.push(cellIdx);
+      }
+    }
+
+    if (activeCells.length === 0) activeCells.push(cellOrder[0]); // fallback
+    return activeCells;
   }
 
   // Export logo active index (used by export renderers)
-  let exportLogoIdx = 0;
+  let exportLogoIndices = [0];
 
   function updateLogoFromTick() {
     if (!fgLogoCellGroups.length) return;
-    const idx = getLogoActiveIndexForTick(state.currentTick);
+    const indices = getLogoActiveIndicesForTick(state.currentTick);
+    exportLogoIndices = indices;
     for (const g of fgLogoCellGroups) {
-      for (let i = 0; i < g.length; i++) g[i].classList.toggle('active', i === idx);
+      for (let i = 0; i < g.length; i++) g[i].classList.toggle('active', indices.includes(i));
     }
   }
 
@@ -2429,6 +2540,7 @@ exportQuality: 'hd', // low, medium, high, max
   const refFrameOpacitySlider = $('refFrameOpacity');
     const refFrameOpacityValue = $('refFrameOpacityValue');  const refFrameOffXSlider = $('refFrameOffX');  const refFrameOffXNum = $('refFrameOffXNum');
   const refFrameOffYSlider = $('refFrameOffY');  const refFrameOffYNum = $('refFrameOffYNum');
+  const refFrameRotSlider = $('refFrameRot');  const refFrameRotNum = $('refFrameRotNum');
   const refFrameScaleSlider = $('refFrameScale');  const refFrameScaleNum = $('refFrameScaleNum');
   
   // Column +/- buttons
@@ -3194,7 +3306,10 @@ for (let i = 0; i < times.length; i++) {
     if (state.canvasAspect === 'auto') html += `<br>Target: auto · Current: ${gridAspect.toFixed(2)}:1`;
     if (state.canvasAspect === 'custom') html += `<br>Target: custom · Current: ${gridAspect.toFixed(2)}:1`;
     if (divisors.length && empty > 0 && state.cellSize === 1) html += `<br>Perfect cols: ${divisors.slice(0,5).join(', ')}`;
-    if (uniqueCounts.length) html += `<br>Ideal frames: ${uniqueCounts.slice(0, 4).join(', ')}`;
+    if (uniqueCounts.length) {
+      html += `<br>Ideal frames: ${uniqueCounts.slice(0, 4).join(', ')}`;
+      if (uniqueCounts.length > 4) html += `<br>Next ideal: ${uniqueCounts.slice(4, 8).join(', ')}`;
+    }
 
     if (state.canvasAspect === 'auto' || state.canvasAspect === 'custom' || aspectDiffCurrent < 0.045) {
       gridHint.classList.add('hint-good');
@@ -3340,17 +3455,21 @@ for (let i = 0; i < times.length; i++) {
   }
 
   // Draw a timecode overlay on a canvas export (PNG/JPEG/MP4) using the same visual logic as the UI.
-  function drawTimecodeOverlay(ctx, x, y, w, h, frame, derivedIndex, totalFrames, frameIdx) {
+  function drawTimecodeOverlay(ctx, x, y, w, h, frame, derivedIndex, totalFrames, frameIdx, opts = {}) {
     try {
       if (!frame) return;
       const label = formatTimecode(frame, derivedIndex, totalFrames, frameIdx);
       if (!label) return;
 
-      // Scale typography relative to the cell size
-      const fontScale = Math.max(0.25, Math.min(4, w / 150));
-      const fontSize = Math.max(8, Math.round((Number(state.fontSize) || 10) * fontScale));
-      const pad = Math.max(0, Math.round((Number(state.tcPadding) || 0) * fontScale));
-      const margin = Math.max(0, Math.round((Number(state.tcMargin) || 0) * fontScale));
+      // Calculate scale to perfectly match the preview UI proportions.
+      // In preview, the font size and margins are rendered relative to the previewCellW.
+      const scaleBoost = Number.isFinite(opts.scaleBoost) ? Math.max(1, Number(opts.scaleBoost)) : 1;
+      const baseW = Number(state.previewCellW) || 240;
+      const scale = (w / baseW) * scaleBoost;
+
+      const fontSize = Math.max(1, Math.round((Number(state.fontSize) || 10) * scale));
+      const pad = Math.max(0, Math.round((Number(state.tcPadding) || 0) * scale));
+      const margin = Math.max(0, Math.round((Number(state.tcMargin) || 0) * scale));
 
       ctx.save();
       ctx.font = `${fontSize}px system-ui`;
@@ -3544,6 +3663,20 @@ function getStillExportPlacement(mode, contentW, contentH, headerH = 0, fallback
 }
 
 
+function getExportHeaderHeight(mode, canvasW) {
+  // Let's make the header height a consistent ~4.5% of the canvas width, just like single was.
+  // This will make the grid metadata strip feel proportional to the whole image.
+  return Math.max(48, Math.round(canvasW * 0.045));
+}
+
+function getStillOverlayScaleBoost(canvasW, canvasH, explicitMaxSize = null) {
+  const cap = getStillExportMaxSize(explicitMaxSize);
+  if (!Number.isFinite(cap)) return 1;
+  const longSide = Math.max(1, Math.round(Math.max(canvasW || 0, canvasH || 0)));
+  if (longSide <= cap) return 1;
+  return Math.max(1, longSide / Math.max(1, cap));
+}
+
 function getDeterministicVideoExportLayout(mode, rows) {
   const gapBase = Math.max(0, Number(state.spacing) || 0);
   const padPx = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
@@ -3571,13 +3704,17 @@ function getDeterministicVideoExportLayout(mode, rows) {
   };
 
   if (mode === 'grid') {
-    const baseHeaderH = state.exportShowMetadata ? 48 : 0;
-    let headerH = baseHeaderH;
     const dims = getTargetFrameOutputDims();
     const frameW = Math.max(2, Math.round(dims.w));
     const frameH = Math.max(2, Math.round(dims.h));
     const gridW = state.gridCols * frameW + Math.max(0, state.gridCols - 1) * gapBase;
     const gridH = rows * frameH + Math.max(0, rows - 1) * gapBase;
+
+    // Grid width determines the base header size
+    const rawHeader = getExportHeaderHeight('grid', gridW);
+    const baseHeaderH = state.exportShowMetadata ? rawHeader : 0;
+    let headerH = baseHeaderH;
+
     const placement = getStillExportPlacement('grid', gridW, gridH, headerH, padPx);
     logicalCanvasW = placement.canvasW;
     logicalCanvasH = placement.canvasH;
@@ -3623,11 +3760,12 @@ function getDeterministicVideoExportLayout(mode, rows) {
     };
     computeExportBgCrop('grid');
   } else {
-    const baseHeaderH = state.exportShowMetadata ? 36 : 0;
-    let headerH = baseHeaderH;
     const dims = getTargetFrameOutputDims();
     const frameW = Math.max(2, Math.round(dims.w));
     const frameH = Math.max(2, Math.round(dims.h));
+    const rawHeader = getExportHeaderHeight('single', frameW);
+    const baseHeaderH = state.exportShowMetadata ? rawHeader : 0;
+    let headerH = baseHeaderH;
     const placement = getStillExportPlacement('single', frameW, frameH, headerH, padPx);
     logicalCanvasW = placement.canvasW;
     logicalCanvasH = placement.canvasH;
@@ -4400,6 +4538,15 @@ function fitToSingleFrame() {
     // Spacing should not trigger auto-centering/auto-fit (prevents flicker while dragging).
   };
   bgColorInput.oninput = () => { state.bgColor = bgColorInput.value; updateBgAppearance(); };
+  const accentColorInput = $('fgAccentColor');
+  if (accentColorInput) {
+    accentColorInput.value = state.fgAccentColor || '#35f2a3';
+    accentColorInput.oninput = () => {
+      state.fgAccentColor = accentColorInput.value;
+      document.documentElement.style.setProperty('--fg-accent', state.fgAccentColor);
+      updateLogoFromTick(); // Redraw logo in UI
+    };
+  }
   if (toggleBgGrid) {
     toggleBgGrid.onclick = () => {
       state.bgGridShow = !state.bgGridShow;
@@ -4477,8 +4624,10 @@ function fitToSingleFrame() {
   function applyFrameImgTransform() {
     if (!framesGrid) return;
     framesGrid.style.setProperty('--img-scale', String(state.frameImgScale));
+    framesGrid.style.setProperty('--img-rot', `${state.frameImgRot}deg`);
     framesGrid.style.setProperty('--img-off-x', `${state.frameImgOffX}%`);
     framesGrid.style.setProperty('--img-off-y', `${state.frameImgOffY}%`);
+    framesGrid.style.setProperty('--frame-img-opacity', String(state.frameImgOpacity !== undefined ? state.frameImgOpacity : 1));
     framesGrid.style.setProperty('--frame-bg', String(state.frameBgColor || '#111111'));
     if (state.refFrameSource && state.refFrameVisible && state.refFrameFollowFrameTransform) {
       requestComposite();
@@ -4558,20 +4707,46 @@ function fitToSingleFrame() {
       applyFrameImgTransform();
     };
   }
+
+  if (frameImgRotSlider) {
+    frameImgRotSlider.oninput = () => {
+      state.frameImgRot = parseFloat(frameImgRotSlider.value) || 0;
+      if (frameImgRotNum) frameImgRotNum.value = state.frameImgRot.toFixed(1);
+      applyFrameImgTransform();
+    };
+  }
+
+  if (frameImgRotNum) {
+    frameImgRotNum.oninput = () => {
+      const v = parseFloat(frameImgRotNum.value);
+      if (!Number.isFinite(v)) return;
+      state.frameImgRot = Math.max(-360, Math.min(360, v));
+      frameImgRotNum.value = state.frameImgRot.toFixed(1);
+      if (frameImgRotSlider) frameImgRotSlider.value = String(state.frameImgRot);
+      applyFrameImgTransform();
+    };
+  }
   if (resetFrameTransformBtn) {
     resetFrameTransformBtn.addEventListener('click', () => {
       state.frameImgScale = 1;
       state.frameImgOffX = 0;
       state.frameImgOffY = 0;
+      state.frameImgRot = 0;
+      state.frameImgOpacity = 1;
 
       if (frameImgScaleSlider) frameImgScaleSlider.value = '1';
       if (frameImgScaleNum) frameImgScaleNum.value = '1.00';
+      if (frameImgOpacitySlider) frameImgOpacitySlider.value = '1';
+      if (frameImgOpacityNum) frameImgOpacityNum.value = '1.00';
 
       if (frameImgOffXSlider) frameImgOffXSlider.value = '0';
       if (frameImgOffXNum) frameImgOffXNum.value = '0';
 
       if (frameImgOffYSlider) frameImgOffYSlider.value = '0';
       if (frameImgOffYNum) frameImgOffYNum.value = '0';
+
+      if (frameImgRotSlider) frameImgRotSlider.value = '0';
+      if (frameImgRotNum) frameImgRotNum.value = '0.0';
 
       applyFrameImgTransform();
       renderGrid();
@@ -4679,14 +4854,18 @@ function fitToSingleFrame() {
   }
   exportSmallBtn.onclick = () => exportImage('jpeg', 2048).catch(e => console.error(e));
   exportFullBtn.onclick = () => exportImage('png', 8192).catch(e => console.error(e));
-  exportMp4GridBtn.onclick = () => exportMp4('grid');
+  exportMp4GridBtn.onclick = () => {
+    if (state.exportAudioLayer) recordAudioSeqAV('grid');
+    else exportMp4('grid');
+  };
   if (exportPngSingleBtn) exportPngSingleBtn.onclick = () => exportSingleStill('png').catch(e => console.error(e));
   if (exportJpegSingleBtn) exportJpegSingleBtn.onclick = () => exportSingleStill('jpeg').catch(e => console.error(e));
-  exportMp4SingleBtn.onclick = () => exportMp4('single');
+  exportMp4SingleBtn.onclick = () => {
+    if (state.exportAudioLayer) recordAudioSeqAV('single');
+    else exportMp4('single');
+  };
   if (exportResampledBtn) exportResampledBtn.onclick = () => exportResampledVideo('single');
   if (exportResampledGridBtn) exportResampledGridBtn.onclick = () => exportResampledVideo('grid');
-  if (exportWebmAVGridBtn) exportWebmAVGridBtn.onclick = () => recordAudioSeqAV('grid');
-  if (exportWebmAVSingleBtn) exportWebmAVSingleBtn.onclick = () => recordAudioSeqAV('single');
   if (exportPngSeqDrawBtn) exportPngSeqDrawBtn.onclick = exportPngSeqDrawings;
   
   // Export quality and loops
@@ -4895,18 +5074,39 @@ function updateAllCells() {
       const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[cellIdx] ?? 0) : cellOffset;
 
       let frameIdx;
+      const t = state.currentTick + baseOffset;
       if (state.animDirection === 'pingpong') {
-        const pos = (state.currentTick + baseOffset) % pingPongCycle;
+        const pos = t % pingPongCycle;
         frameIdx = pos < frameCount ? pos : pingPongCycle - pos;
       } else if (state.animDirection === 'backward') {
-        frameIdx = (frameCount - 1 - ((state.currentTick + baseOffset) % frameCount) + frameCount) % frameCount;
+        frameIdx = (frameCount - 1 - (t % frameCount) + frameCount) % frameCount;
       } else if (state.animDirection === 'sync') {
         frameIdx = state.currentTick % frameCount;
       } else if (state.animDirection === 'random') {
         ensureAnimDirShuffle(frameCount);
-        frameIdx = state.animDirShuffle[(state.currentTick + baseOffset) % frameCount];
+        frameIdx = state.animDirShuffle[t % frameCount];
+      } else if (state.animDirection === 'stutter') {
+        // 1, 2, 1, 2, 3, 2, 3, 4 ...
+        // Sequence of phases:
+        // Math.floor(t/4)*2 -> base
+        // Then + [0, 1, 0, 1] over 4 ticks
+        const group = Math.floor(t / 4);
+        const cycle = t % 4;
+        const offsetVal = (cycle === 0 || cycle === 2) ? 0 : 1;
+        frameIdx = (group * 2 + offsetVal) % frameCount;
+      } else if (state.animDirection === 'holdskip') {
+        // Hold for 2 ticks, then jump +2
+        // tick: 0,1 -> 0; 2,3 -> 2; 4,5 -> 4
+        frameIdx = (Math.floor(t / 2) * 2) % frameCount;
+      } else if (state.animDirection === 'shuffleloop') {
+        ensureAnimDirShuffle(frameCount);
+        // Every full loop, it would ideally reshuffle, but we need deterministic stateless.
+        // We'll use a shifted shuffle per loop
+        const loopNum = Math.floor(t / frameCount);
+        const idxInLoop = t % frameCount;
+        frameIdx = state.animDirShuffle[(idxInLoop + loopNum) % frameCount];
       } else {
-        frameIdx = (state.currentTick + baseOffset) % frameCount;
+        frameIdx = t % frameCount;
       }
 
       const frame = state.frames[frameIdx];
@@ -5071,6 +5271,47 @@ function updateAllCells() {
           const idx = r * cols + c;
           if (idx < totalCells) order.push(idx);
         }
+      }
+    } else if (state.animPattern === 'vertical-snake') {
+      for (let c = 0; c < cols; c++) {
+        if (c % 2 === 0) {
+          for (let r = 0; r < rows; r++) {
+            const idx = r * cols + c;
+            if (idx < totalCells) order.push(idx);
+          }
+        } else {
+          for (let r = rows - 1; r >= 0; r--) {
+            const idx = r * cols + c;
+            if (idx < totalCells) order.push(idx);
+          }
+        }
+      }
+    } else if (state.animPattern === 'checkerboard') {
+      // Evens then odds
+      for (let i = 0; i < totalCells; i++) {
+        if ((i % cols + Math.floor(i / cols)) % 2 === 0) order.push(i);
+      }
+      for (let i = 0; i < totalCells; i++) {
+        if ((i % cols + Math.floor(i / cols)) % 2 !== 0) order.push(i);
+      }
+    } else if (state.animPattern === 'spiral') {
+      let top = 0, bottom = rows - 1, left = 0, right = cols - 1;
+      let dir = 0; // 0=right, 1=down, 2=left, 3=up
+      while (top <= bottom && left <= right) {
+        if (dir === 0) {
+          for (let i = left; i <= right; i++) { const idx = top * cols + i; if (idx < totalCells) order.push(idx); }
+          top++;
+        } else if (dir === 1) {
+          for (let i = top; i <= bottom; i++) { const idx = i * cols + right; if (idx < totalCells) order.push(idx); }
+          right--;
+        } else if (dir === 2) {
+          for (let i = right; i >= left; i--) { const idx = bottom * cols + i; if (idx < totalCells) order.push(idx); }
+          bottom--;
+        } else if (dir === 3) {
+          for (let i = bottom; i >= top; i--) { const idx = i * cols + left; if (idx < totalCells) order.push(idx); }
+          left++;
+        }
+        dir = (dir + 1) % 4;
       }
     } else if (state.animPattern === 'random') {
       // Seeded random cell order
@@ -5321,7 +5562,7 @@ let isDrawing = false;
   }
 
   // ====================================
-  //  DRAW UNDO v0.24.01 STEP3 (stable)
+  //  DRAW UNDO v0.25.01 STEP3 (stable)
   //  - target-only snapshots
   //  - FRM captures per-tile snapshots
   //  - undo never clears layers when snapshot is missing
@@ -6038,9 +6279,12 @@ function compositeAllLayers() {
     const mainScale = follow ? (Number(state.frameImgScale) || 1) : 1;
     const mainOffXPct = follow ? (Number(state.frameImgOffX) || 0) : 0;
     const mainOffYPct = follow ? (Number(state.frameImgOffY) || 0) : 0;
+    const mainRot = follow ? (Number(state.frameImgRot) || 0) : 0;
 
     const s = (Number(state.refFrameScale) || 1) * mainScale;
+    const rot = (Number(state.refFrameRot) || 0) + mainRot;
     const alpha = Math.max(0, Math.min(1, Number(state.refFrameOpacity) || 0));
+
     for (let i = offset; i < items.length; i++) {
       const item = items[i];
       const rect = item.getBoundingClientRect();
@@ -6057,13 +6301,19 @@ function compositeAllLayers() {
       const dx = x + (w - dw) / 2 + ox;
       const dy = y + (h - dh) / 2 + oy;
 
+      const cx = dx + dw / 2;
+      const cy = dy + dh / 2;
+
       drawCtx.save();
       drawCtx.globalAlpha = alpha;
       drawCtx.globalCompositeOperation = 'source-over';
       drawCtx.beginPath();
       drawCtx.rect(x, y, w, h);
       drawCtx.clip();
-      drawCtx.drawImage(src, dx, dy, dw, dh);
+
+      drawCtx.translate(cx, cy);
+      drawCtx.rotate(rot * Math.PI / 180);
+      drawCtx.drawImage(src, -dw / 2, -dh / 2, dw, dh);
       drawCtx.restore();
     }
   }
@@ -8065,6 +8315,7 @@ if (refFrameOffXSlider) refFrameOffXSlider.disabled = !hasRef;
     state.refFrameOffX = 0;
     state.refFrameOffY = 0;
     state.refFrameScale = 1;
+    state.refFrameRot = 0;
     updateRefFrameUI();
     compositeAllLayers();
   }
@@ -8244,6 +8495,26 @@ if (refFrameOffXSlider) {
       state.refFrameOffY = Math.max(-50, Math.min(50, Math.round(v)));
       refFrameOffYNum.value = String(state.refFrameOffY);
       if (refFrameOffYSlider) refFrameOffYSlider.value = String(state.refFrameOffY);
+      compositeAllLayers();
+    };
+  }
+
+  if (refFrameRotSlider) {
+    refFrameRotSlider.oninput = () => {
+      state.refFrameRot = parseFloat(refFrameRotSlider.value) || 0;
+      if (refFrameRotNum) refFrameRotNum.value = state.refFrameRot.toFixed(1);
+      compositeAllLayers();
+    };
+  }
+
+  if (refFrameRotNum) {
+    refFrameRotNum.oninput = () => {
+      if (!state.refFrameSource) return;
+      const v = parseFloat(refFrameRotNum.value);
+      if (!Number.isFinite(v)) return;
+      state.refFrameRot = Math.max(-360, Math.min(360, v));
+      refFrameRotNum.value = state.refFrameRot.toFixed(1);
+      if (refFrameRotSlider) refFrameRotSlider.value = String(state.refFrameRot);
       compositeAllLayers();
     };
   }
@@ -8767,6 +9038,9 @@ function getOrCreateAudioStreamForRecorder(videoEl) {
 }
 
 async function exportResampledVideo(forceMode = null) {
+  window._exportKind = "mp4";
+  window._exportVariant = "rsmpl";
+
   try {
     if (!state.frames.length) return;
     if (!videoElement || !Number.isFinite(videoElement.duration) || videoElement.duration <= 0) {
@@ -8871,7 +9145,7 @@ async function exportResampledVideo(forceMode = null) {
         loadingProgress.textContent = (aTrack ? 'Recording resampled video (with audio)... ' : 'Recording resampled video (no audio track)... ') + pct + '%';
       } catch (e) {}
 
-      exportLogoIdx = getLogoActiveIndexForTick(tick);
+      exportLogoIndices = getLogoActiveIndicesForTick(tick);
       ectx.save();
       ectx.globalAlpha = 1;
       ectx.globalCompositeOperation = 'source-over';
@@ -8933,10 +9207,13 @@ async function exportResampledVideo(forceMode = null) {
   // MP4 Export using mp4-muxer for true MP4 (H.264)
 
   async function exportMp4(mode, opts = {}) {
+  window._exportKind = "mp4";
+  window._exportVariant = state.exportAudioLayer ? "av" : "";
+
     const drawingsOnly = !!(opts && opts.drawingsOnly);
     if (!state.frames.length) return;
 
-    const exportLogoIdx = getLogoActiveIndexForTick(state.currentTick);
+    const exportLogoIndices = getLogoActiveIndicesForTick(state.currentTick);
     loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Loading MP4 encoder...';
 
@@ -8958,13 +9235,16 @@ async function exportResampledVideo(forceMode = null) {
     let layout = { mode, padPx, headerH: 0, baseHeaderH: 0, gap: gapBase, frameW: 0, frameH: 0, gridW: 0, gridH: 0, dx: 0, dy: 0, logicalW: 0, logicalH: 0, scaleX: 1, scaleY: 1 };
 
     if (mode === 'grid') {
-      const baseHeaderH = state.exportShowMetadata ? 48 : 0;
-      let headerH = baseHeaderH;
       const dims = getTargetFrameOutputDims();
       const frameW = Math.max(2, Math.round(dims.w));
       const frameH = Math.max(2, Math.round(dims.h));
       const gridW = state.gridCols * frameW + Math.max(0, state.gridCols - 1) * gapBase;
       const gridH = rows * frameH + Math.max(0, rows - 1) * gapBase;
+
+      const rawHeader = getExportHeaderHeight('grid', gridW);
+      const baseHeaderH = state.exportShowMetadata ? rawHeader : 0;
+      let headerH = baseHeaderH;
+
       const placement = getStillExportPlacement('grid', gridW, gridH, headerH, padPx);
       logicalCanvasW = placement.canvasW;
       logicalCanvasH = placement.canvasH;
@@ -8983,11 +9263,14 @@ async function exportResampledVideo(forceMode = null) {
       layout = { mode, padPx, headerH, baseHeaderH, gap: gapBase, frameW, frameH, gridW, gridH, dx: placement.dx, dy: placement.dy, logicalW: logicalCanvasW, logicalH: logicalCanvasH, scaleX: 1, scaleY: 1 };
       computeExportBgCrop('grid');
     } else {
-      const baseHeaderH = state.exportShowMetadata ? 36 : 0;
-      let headerH = baseHeaderH;
       const dims = getTargetFrameOutputDims();
       const frameW = Math.max(2, Math.round(dims.w));
       const frameH = Math.max(2, Math.round(dims.h));
+
+      const rawHeader = getExportHeaderHeight('single', frameW);
+      const baseHeaderH = state.exportShowMetadata ? rawHeader : 0;
+      let headerH = baseHeaderH;
+
       const placement = getStillExportPlacement('single', frameW, frameH, headerH, padPx);
       logicalCanvasW = placement.canvasW;
       logicalCanvasH = placement.canvasH;
@@ -9190,7 +9473,8 @@ function renderMp4GridFrame(ctx, w, h, frameImages, tick, sequence, cellOrder, r
 
     if (state.exportShowMetadata && outHeaderH > 0) {
       const metaText = buildExportMetaText({ mode: 'grid', cols: state.gridCols, frameW: frameWLogical, frameH: frameHLogical, frames: frameCount, fps: state.animFps, srcW: state.videoWidth, srcH: state.videoHeight, duration: state.videoDuration, date: state.videoDate });
-      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndex: exportLogoIdx, baseHeaderH: Math.round((layout.baseHeaderH || headerHLogical) * sy) });
+      const dynamicLogoIdx = typeof getLogoActiveIndicesForTick === 'function' ? getLogoActiveIndicesForTick(tick) : exportLogoIndices;
+      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndices: dynamicLogoIdx });
     }
 
     if (!state.bgLayerAboveDrawings) drawExportBgLayer(ctx, 0, outHeaderH, w, bodyH, 'grid');
@@ -9501,7 +9785,15 @@ const dx = x + (w - dw) / 2 + ox;
     ctx.rect(x, y, w, h);
     ctx.clip();
     const _smPrev = ctx.imageSmoothingEnabled;
-    ctx.drawImage(img, dx, dy, dw, dh);
+
+    const cx = dx + dw / 2;
+    const cy = dy + dh / 2;
+    ctx.translate(cx, cy);
+    ctx.rotate((Number(state.frameImgRot) || 0) * Math.PI / 180);
+    ctx.globalAlpha = state.frameImgOpacity !== undefined ? Number(state.frameImgOpacity) : 1;
+    ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+    ctx.globalAlpha = 1;
+
     ctx.imageSmoothingEnabled = _smPrev;
     ctx.restore();
   }
@@ -9519,8 +9811,16 @@ const dx = x + (w - dw) / 2 + ox;
     srcW = Math.max(1, Number(srcW) || 1);
     srcH = Math.max(1, Number(srcH) || 1);
 
-    const s = Number(state.refFrameScale) || 1;
+    const follow = !!state.refFrameFollowFrameTransform;
+    const mainScale = follow ? (Number(state.frameImgScale) || 1) : 1;
+    const mainOffXPct = follow ? (Number(state.frameImgOffX) || 0) : 0;
+    const mainOffYPct = follow ? (Number(state.frameImgOffY) || 0) : 0;
+    const mainRot = follow ? (Number(state.frameImgRot) || 0) : 0;
+
+    const s = (Number(state.refFrameScale) || 1) * mainScale;
+    const rot = (Number(state.refFrameRot) || 0) + mainRot;
     const alpha = Math.max(0, Math.min(1, Number(state.refFrameOpacity) || 0));
+
     const contain = Math.min(w / srcW, h / srcH);
     const dw = srcW * contain * s;
     const dh = srcH * contain * s;
@@ -9529,13 +9829,19 @@ const dx = x + (w - dw) / 2 + ox;
     const dx = x + (w - dw) / 2 + ox;
     const dy = y + (h - dh) / 2 + oy;
 
+    const cx = dx + dw / 2;
+    const cy = dy + dh / 2;
+
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.globalCompositeOperation = 'source-over';
     ctx.beginPath();
     ctx.rect(x, y, w, h);
     ctx.clip();
-    ctx.drawImage(src, dx, dy, dw, dh);
+
+    ctx.translate(cx, cy);
+    ctx.rotate(rot * Math.PI / 180);
+    ctx.drawImage(src, -dw / 2, -dh / 2, dw, dh);
     ctx.restore();
   }
 
@@ -9561,7 +9867,7 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, layout,
 
     if (state.exportShowMetadata && outHeaderH > 0) {
       const metaText = buildExportMetaText({ mode: 'single', frameW: frameWLogical, frameH: frameHLogical, frames: frameCount, fps: state.animFps, frameIdx, time: frame?.time || 0, srcW: state.videoWidth, srcH: state.videoHeight, duration: state.videoDuration, date: state.videoDate });
-      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndex: exportLogoIdx, baseHeaderH: Math.round((layout.baseHeaderH || headerHLogical) * sy) });
+      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndices: exportLogoIndices });
     }
     if (!state.bgLayerAboveDrawings) drawExportBgLayer(ctx, 0, outHeaderH, w, bodyH, 'single');
     drawExportBgPattern(ctx, 0, outHeaderH, w, bodyH, 'single');
@@ -9584,6 +9890,8 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, layout,
   // If "Drawings in Export" is ON, PNGs are composited (video/image + drawings).
   // If OFF, PNGs contain only the base video/image frames.
 async function recordAudioSeqAV(mode = 'grid') {
+  window._exportKind = 'mp4';
+  window._exportVariant = 'av';
   try {
     if (!state.frames.length) return;
     if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
@@ -9956,7 +10264,7 @@ async function exportPngSeqDrawings() {
         metaCanvas.width = metaW;
         metaCanvas.height = Math.max(1, metaH);
         const metaCtx = metaCanvas.getContext('2d');
-        drawExportMetadataBar(metaCtx, metaW, metaH, metaTextLocal, { activeIndex: exportLogoIdx, baseHeaderH });
+        drawExportMetadataBar(metaCtx, metaW, metaH, metaTextLocal, { activeIndices: exportLogoIndices });
         const metaBlob = await new Promise(r => metaCanvas.toBlob(r, 'image/png'));
         if (metaBlob) pngs.push({ name: 'metadata.png', blob: metaBlob });
       } catch (e) {}
@@ -10118,9 +10426,12 @@ function downloadBlob(blob, filename, mime = '') {
 // ==============================
 // EXPORT METADATA HELPERS (stage2)
 // ==============================
-const FG_ACCENT_COLOR = '#35f2a3';
+function getAccentColor() {
+  return state.fgAccentColor || '#35f2a3';
+}
 
-function drawFGLogoCanvas(ctx, x, y, size, activeIndex = 0) {
+function drawFGLogoCanvas(ctx, x, y, size, activeIndices = [0]) {
+  const arr = Array.isArray(activeIndices) ? activeIndices : [activeIndices];
   const gap = Math.max(1, Math.round(size * 0.06));
   const cell = Math.max(1, Math.floor((size - gap * 2) / 3));
   const iconW = cell * 3 + gap * 2;
@@ -10132,10 +10443,14 @@ function drawFGLogoCanvas(ctx, x, y, size, activeIndex = 0) {
       const idx = r * 3 + c;
       const cx = ox + c * (cell + gap);
       const cy = oy + r * (cell + gap);
-      ctx.fillStyle = (idx === activeIndex)
-        ? FG_ACCENT_COLOR
+      ctx.fillStyle = (arr.includes(idx))
+        ? getAccentColor()
         : 'rgba(255,255,255,0.22)';
-      ctx.fillRect(cx, cy, cell, cell);
+      // Rounding like the actual logo
+      const r_logo = Math.max(1, cell * 0.15);
+      ctx.beginPath();
+      ctx.roundRect(cx, cy, cell, cell, r_logo);
+      ctx.fill();
     }
   }
 }
@@ -10145,53 +10460,252 @@ function drawFGLogoCanvas(ctx, x, y, size, activeIndex = 0) {
 function getMetaBaseName() {
   const v = String(state.filenameOverride || '').trim();
   const raw = v || (state.videoFile && state.videoFile.name) || 'video';
-  // drop extension for display
-  const base = raw.replace(/\.[^/.]+$/, '') || raw;
-  return base || 'video';
+  // Пользователь попросил оставлять расширение (.mov и т.д.)
+  return raw || 'video';
 }
 
-function buildExportMetaParts(opts = {}) {
-  const mode = String(opts.mode || '').trim();
-  const cols = Number.isFinite(opts.cols) ? Math.max(0, Math.round(opts.cols)) : null;
-  const frameW = Number.isFinite(opts.frameW) ? Math.max(1, Math.round(opts.frameW)) : null;
-  const frameH = Number.isFinite(opts.frameH) ? Math.max(1, Math.round(opts.frameH)) : null;
-  const frames = Number.isFinite(opts.frames) ? Math.max(0, Math.round(opts.frames)) : null;
-  const fps = Number.isFinite(opts.fps) ? Math.max(1, Math.round(opts.fps)) : null;
-  const frameIdx = Number.isFinite(opts.frameIdx) ? Math.max(0, Math.round(opts.frameIdx)) : null;
 
-  const parts = [getMetaBaseName()];
 
-  if (mode) parts.push(mode);
-  if (mode === 'grid' && cols) parts.push(`C${cols}`);
-  if (frameW && frameH) parts.push(`${frameW}×${frameH}`);
-  if (frames !== null) parts.push(`${frames}f`);
-  if (fps !== null) parts.push(`${fps}fps`);
 
-  if (frameIdx !== null && frames !== null && frames > 0) {
-    parts.push(`F${frameIdx + 1}/${frames}`);
-  }
-  if (Number.isFinite(opts.time)) {
-    parts.push(formatTime(Math.max(0, Number(opts.time) || 0)));
-  }
-  if (Number.isFinite(opts.srcW) && Number.isFinite(opts.srcH) && opts.srcW > 0 && opts.srcH > 0) {
-    parts.push(`src ${Math.round(opts.srcW)}×${Math.round(opts.srcH)}`);
-  }
-  if (opts.duration != null && Number.isFinite(Number(opts.duration))) {
-    parts.push(formatTime(Math.max(0, Number(opts.duration) || 0)));
-  }
-  if (opts.date) {
-    try {
-      parts.push(formatDate(opts.date));
-    } catch (e) {}
-  }
+function padFrameNumber(value, total) {
+  const n = Math.max(1, Math.round(Number(value) || 1));
+  const t = Math.max(1, Math.round(Number(total) || n));
+  const digits = Math.max(3, String(t).length);
+  return String(n).padStart(digits, '0');
+}
 
-  return parts.filter(Boolean);
+function ellipsizeRight(ctx, text, maxWidth) {
+  const raw = String(text || '');
+  if (!raw) return '';
+  if (ctx.measureText(raw).width <= maxWidth) return raw;
+  const ell = '...';
+  let lo = 0;
+  let hi = raw.length;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2);
+    const test = raw.slice(0, mid).replace(/\s+$/, '') + ell;
+    if (ctx.measureText(test).width <= maxWidth) lo = mid;
+    else hi = mid - 1;
+  }
+  return raw.slice(0, lo).replace(/\s+$/, '') + ell;
+}
+
+function getAudioOverlayCounts() {
+  const seq = state.audioSeq || {};
+  const sampleCount = Array.isArray(seq.samples) ? seq.samples.filter(Boolean).length : 0;
+  const playCount = Array.isArray(seq.playheads) ? seq.playheads.length : 0;
+  return { sampleCount, playCount };
 }
 
 function buildExportMetaText(opts = {}) {
-  return buildExportMetaParts(opts).join(' · ');
+  const mode = String(opts.mode || 'single').trim().toLowerCase();
+  const exportKind = String(opts.exportKind || window._exportKind || 'still').trim().toLowerCase();
+  let variant = String(opts.variant || window._exportVariant || '').trim().toLowerCase();
+
+  const baseName = String(opts.baseName || (typeof getMetaBaseName === 'function' ? getMetaBaseName() : '')).trim();
+  const cols = Math.max(1, Math.round(Number(opts.cols) || state.gridCols || 1));
+  const frameCount = Math.max(0, Math.round(Number(opts.frames) || state.frames?.length || 0));
+  const rows = Math.max(1, Math.round(Number(opts.rows) || Math.ceil(Math.max(1, frameCount) / cols)));
+
+  const frameW = Math.max(0, Math.round(Number(opts.frameW) || 0));
+  const frameH = Math.max(0, Math.round(Number(opts.frameH) || 0));
+  const gap = Math.max(0, Number(state.spacing) || 0);
+
+  const fallbackSrcFrames = typeof getApproxSourceFrameCount === 'function' ? getApproxSourceFrameCount() : frameCount;
+  const srcFrames = Math.max(0, Math.round(Number(opts.srcFrames) || fallbackSrcFrames));
+  const frameIdx = Math.max(0, Math.round(Number(opts.frameIdx) || 0));
+  const fps = Math.max(0, Math.round(Number(opts.fps) || 0));
+
+  const { sampleCount, playCount } = getAudioOverlayCounts();
+
+  const fmt = (n) => String(Math.max(0, Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202F');
+
+  let wCell = frameW;
+  let hCell = frameH;
+  if (typeof getFrameTileDims === 'function') {
+    const d = getFrameTileDims();
+    if (d && d.tw && d.th) {
+      wCell = Math.round(d.tw);
+      hCell = Math.round(d.th);
+    }
+  }
+
+  const gridW = mode === 'grid' ? (wCell * cols + Math.max(0, cols - 1) * gap) : wCell;
+  const gridH = mode === 'grid' ? (hCell * rows + Math.max(0, rows - 1) * gap) : hCell;
+
+  const topParts = [];
+  if (mode === 'grid') {
+    const ptn = String(state.animPattern || 'sequential').toLowerCase();
+    const dir = String(state.animDirection || 'forward').toLowerCase();
+    topParts.push(`c${cols}`);
+    topParts.push(`r${rows}`);
+    topParts.push(ptn);
+    topParts.push(dir);
+    topParts.push(`${fmt(frameCount)}f`);
+    topParts.push(`from`);
+    topParts.push(`${fmt(srcFrames)}`);
+    topParts.push(`total`);
+  } else {
+    topParts.push(`f${padFrameNumber(frameIdx + 1, srcFrames)}`);
+    topParts.push(`of`);
+    topParts.push(`${fmt(srcFrames)}`);
+    topParts.push(`total`);
+  }
+
+  if (variant === 'av') topParts.push('av');
+
+  const bottomParts = [];
+  if (wCell > 0 && hCell > 0) {
+    bottomParts.push(`${fmt(wCell)}`);
+    bottomParts.push(`×`);
+    bottomParts.push(`${fmt(hCell)}`);
+    if (mode === 'grid' && gridW > 0 && gridH > 0) {
+      bottomParts.push(`grid`);
+      bottomParts.push(`${fmt(gridW)}`);
+      bottomParts.push(`×`);
+      bottomParts.push(`${fmt(gridH)}`);
+    }
+  }
+
+  if (exportKind === 'mp4' && fps > 0) {
+    bottomParts.push(`${fps}fps`);
+  }
+
+  if (variant === 'av') {
+    if (sampleCount > 0) bottomParts.push(`s${sampleCount}`);
+    if (playCount > 0) bottomParts.push(`p${playCount}`);
+  } else if (variant === 'rsmpl') {
+    // В новой спеке вместо rsmpl пишем audio
+    bottomParts.push('audio');
+  }
+
+  return {
+    topLeft: baseName,
+    topRight: topParts.join('  '),
+    bottom: bottomParts.join('  ')
+  };
+}
+function getExportMetadataLayout(ctx, w, headerH, metaInput) {
+  const h = Number.isFinite(headerH) ? Math.max(0, headerH) : 0;
+  if (!h) return { headerH: 0, padX: 0, iconSize: 0, textGap: 0, fontSize: 0, textX: 0, textW: 0, meta: { topLeft: '', topRight: '', bottom: '' } };
+
+  const meta = (metaInput && typeof metaInput === 'object') ? metaInput : { topLeft: '', topRight: '', bottom: '' };
+
+  // Логика охранного поля:
+  // Логотип состоит из 3x3 "квадратиков". Отступ со всех сторон должен быть равен 1 квадратику.
+  // Итого по вертикали: 1 (отступ) + 3 (лого) + 1 (отступ) = 5 частей.
+  const cell = h / 5;
+  const padX = cell;
+  const iconSize = cell * 3;
+  const textGap = cell; // Отступ от лого до текста тоже равен 1 квадратику
+  const textX = padX + iconSize + textGap;
+  const textW = w - textX - padX;
+
+  // Шрифт на 20% меньше (было 0.48 * iconSize, стало ~0.38)
+  let fontSize = iconSize * 0.38;
+  const family = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
+
+  const topRight = String(meta.topRight || '');
+  const topLeft = String(meta.topLeft || '');
+  const bottom = String(meta.bottom || '');
+
+  ctx.font = `600 ${fontSize}px ${family}`;
+  let rightW = topRight ? ctx.measureText(topRight).width : 0;
+  let gap = topRight ? fontSize * 1.5 : 0;
+  let leftW = textW - rightW - gap;
+
+  // Если нижняя строка слишком длинная, слегка сжимаем шрифт
+  const bottomW = ctx.measureText(bottom).width;
+  if (bottomW > textW && textW > 0) {
+      fontSize = fontSize * (textW / bottomW) * 0.95; 
+      ctx.font = `600 ${fontSize}px ${family}`;
+  }
+
+  rightW = topRight ? ctx.measureText(topRight).width : 0;
+  gap = topRight ? fontSize * 1.5 : 0;
+  leftW = textW - rightW - gap;
+
+  return { headerH: h, padX, iconSize, textGap, fontSize, textX, textW, meta };
 }
 
+function computeExportMetadataHeaderH(ctx, w, baseHeaderH, metaText) {
+  return baseHeaderH;
+}
+
+function drawExportMetadataBar(ctx, w, headerH, metaInput, opts = {}) {
+  const layout = getExportMetadataLayout(ctx, w, headerH, metaInput);
+  const meta = layout.meta || { topLeft: '', topRight: '', bottom: '' };
+  if (!layout.headerH) return;
+
+  ctx.save();
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  // Round bottom corners slightly, like the logo
+  const r_meta = Math.max(2, layout.headerH * 0.08);
+  ctx.roundRect(0, 0, w, layout.headerH, [0, 0, r_meta, r_meta]);
+  ctx.fill();
+
+  const iconX = layout.padX;
+  const iconY = (layout.headerH - layout.iconSize) / 2;
+  drawFGLogoCanvas(ctx, iconX, iconY, layout.iconSize, opts.activeIndices || [0]);
+
+  const textX = layout.textX;
+  const textW = layout.textW;
+  const family = 'system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  const topRight = String(meta.topRight || '');
+  const topLeft = String(meta.topLeft || '');
+  const bottom = String(meta.bottom || '');
+
+  const topY = iconY;
+  const bottomY = iconY + layout.iconSize - 2;
+
+  ctx.font = `600 ${layout.fontSize}px ${family}`;
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+
+  function drawJustifiedBlocks(ctx, blocks, x, y, maxW) {
+    if (!blocks || blocks.length === 0) return;
+    if (blocks.length === 1) {
+      ctx.textAlign = 'left';
+      ctx.fillText(ellipsizeRight(ctx, blocks[0], maxW), x, y);
+      return;
+    }
+
+    let totalW = 0;
+    const widths = blocks.map(b => {
+      const cw = ctx.measureText(b).width;
+      totalW += cw;
+      return cw;
+    });
+
+    const minGap = ctx.measureText(' ').width * 2;
+    const gap = Math.max(minGap, (maxW - totalW) / (blocks.length - 1));
+
+    let cx = x;
+    ctx.textAlign = 'left';
+    for (let i = 0; i < blocks.length; i++) {
+      ctx.fillText(blocks[i], cx, y);
+      cx += widths[i] + gap;
+    }
+  }
+
+  // --- ВЕРХНЯЯ СТРОКА ---
+  ctx.textBaseline = 'top';
+  const topWords = [];
+  if (topLeft) topWords.push(topLeft);
+  if (topRight) {
+    topWords.push(...topRight.split('  ').filter(Boolean));
+  }
+  drawJustifiedBlocks(ctx, topWords, textX, topY, textW);
+
+  // --- НИЖНЯЯ СТРОКА ---
+  ctx.textBaseline = 'alphabetic'; 
+  const bottomWords = bottom.split('  ').filter(Boolean);
+
+  // Пользователь попросил всегда растягивать (justify) нижнюю строку для теста:
+  drawJustifiedBlocks(ctx, bottomWords, textX, bottomY, textW);
+
+  ctx.restore();
+}
 function wrapTextEllipsis(ctx, text, maxWidth, maxLines) {
   const clean = String(text || '').replace(/\s+/g, ' ').trim();
   if (!clean) return [''];
@@ -10257,109 +10771,11 @@ function wrapTextEllipsis(ctx, text, maxWidth, maxLines) {
 	// ==============================
 	// EXPORT METADATA LAYOUT
 	// ==============================
-	function splitMetaParts(metaText) {
-	  const raw = String(metaText || '').trim();
-	  if (!raw) return [];
-	  return raw.split('·').map(s => String(s || '').trim()).filter(Boolean);
-	}
+	
 
-	function fitMetaLineParts(ctx, parts, maxWidth, baseFontSize, minFontSize = 8) {
-	  const clean = (parts || []).map(s => String(s || '').trim()).filter(Boolean);
-	  if (!clean.length) return { parts: [''], fontSize: Math.max(minFontSize, Math.round(baseFontSize)), lineH: Math.round(Math.max(minFontSize, Math.round(baseFontSize)) * 1.25), widths: [0], gap: 0 };
-	  for (let fs = Math.max(minFontSize, Math.round(baseFontSize)); fs >= minFontSize; fs--) {
-	    ctx.font = `600 ${fs}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-	    const widths = clean.map(p => ctx.measureText(p).width);
-	    const total = widths.reduce((a, b) => a + b, 0);
-	    const minGap = clean.length > 1 ? Math.max(8, Math.round(fs * 0.8)) : 0;
-	    if (total + minGap * Math.max(0, clean.length - 1) <= maxWidth) {
-	      const gap = clean.length > 1 ? Math.max(minGap, (maxWidth - total) / Math.max(1, clean.length - 1)) : 0;
-	      return { parts: clean, fontSize: fs, lineH: Math.round(fs * 1.25), widths, gap };
-	    }
-	  }
-	  const fs = minFontSize;
-	  ctx.font = `600 ${fs}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-	  const widths = clean.map(p => ctx.measureText(p).width);
-	  const total = widths.reduce((a, b) => a + b, 0);
-	  const minGap = clean.length > 1 ? Math.max(8, Math.round(fs * 0.8)) : 0;
-	  const gap = clean.length > 1 ? Math.max(minGap, (maxWidth - total) / Math.max(1, clean.length - 1)) : 0;
-	  return { parts: clean, fontSize: fs, lineH: Math.round(fs * 1.25), widths, gap };
-	}
+	
 
-	function getExportMetadataLayout(ctx, w, baseHeaderH, metaText) {
-	  const baseH = Number.isFinite(baseHeaderH) ? Math.max(0, Math.round(baseHeaderH)) : 0;
-	  if (!baseH) return { headerH: 0, lines: [], baseH };
-	  const padX = 12;
-	  const iconSize = Math.max(16, Math.min(28, Math.round(baseH * 0.55)));
-	  const gapToIcon = 10;
-	  const textW = Math.max(20, Math.round(w - padX - padX - iconSize - gapToIcon));
-	  const parts = splitMetaParts(metaText);
-	  const baseFontSize = Math.max(10, Math.round(baseH * 0.26));
-	  const minFontSize = 8;
-	  const single = fitMetaLineParts(ctx, parts, textW, baseFontSize, minFontSize);
-	  const totalSingle = single.widths.reduce((a, b) => a + b, 0) + single.gap * Math.max(0, single.parts.length - 1);
-	  if (totalSingle <= textW + 0.5) {
-	    return { headerH: baseH, lines: [single], baseH, padX, iconSize, gapToIcon };
-	  }
-	  const line1Parts = parts.length ? [parts[0]] : [''];
-	  const line2Parts = parts.length > 1 ? parts.slice(1) : [];
-	  const line1 = fitMetaLineParts(ctx, line1Parts, textW, baseFontSize, minFontSize);
-	  const line2 = fitMetaLineParts(ctx, line2Parts, textW, baseFontSize, minFontSize);
-	  const visibleLines = [line1].concat(line2.parts.length ? [line2] : []);
-	  const lineGap = visibleLines.length > 1 ? 4 : 0;
-	  const totalH = visibleLines.reduce((sum, line) => sum + line.lineH, 0) + lineGap * Math.max(0, visibleLines.length - 1);
-	  const headerH = Math.max(baseH, Math.round(totalH + 12));
-	  return { headerH, lines: visibleLines, baseH, padX, iconSize, gapToIcon };
-	}
 
-	function computeExportMetadataHeaderH(ctx, w, baseHeaderH, metaText) {
-	  return getExportMetadataLayout(ctx, w, baseHeaderH, metaText).headerH || 0;
-	}
-
-function drawExportMetadataBar(ctx, w, headerH, metaText, opts = {}) {
-  const baseH = Number.isFinite(opts.baseHeaderH) ? Math.max(0, Math.round(opts.baseHeaderH)) : Math.max(0, Math.round(headerH));
-  const layout = getExportMetadataLayout(ctx, w, baseH, metaText);
-  const lines = layout.lines || [];
-  const padX = Number.isFinite(layout.padX) ? layout.padX : 12;
-  const iconSize = Number.isFinite(layout.iconSize) ? layout.iconSize : Math.max(16, Math.min(28, Math.round(baseH * 0.55)));
-  const gapToIcon = Number.isFinite(layout.gapToIcon) ? layout.gapToIcon : 10;
-
-  ctx.save();
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, w, headerH);
-
-  const iconX = Math.max(padX, Math.round(w - padX - iconSize));
-  const iconY = Math.floor((headerH - iconSize) / 2);
-  drawFGLogoCanvas(ctx, iconX, iconY, iconSize, Number(opts.activeIndex || 0));
-
-  const textX = padX;
-  const maxTextW = Math.max(20, Math.round(iconX - gapToIcon - textX));
-  const totalH = lines.reduce((sum, line) => sum + (line.lineH || 0), 0) + 4 * Math.max(0, lines.length - 1);
-  let y = Math.floor((headerH - totalH) / 2);
-  if (y < 0) y = 0;
-
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-
-  for (let li = 0; li < lines.length; li++) {
-    const line = lines[li];
-    const parts = line.parts || [''];
-    const fontSize = line.fontSize || Math.max(8, Math.round(baseH * 0.26));
-    const lineH = line.lineH || Math.round(fontSize * 1.25);
-    const widths = (line.widths && line.widths.length === parts.length) ? line.widths : parts.map(() => 0);
-    const rawTotal = widths.reduce((a, b) => a + b, 0);
-    const minGap = parts.length > 1 ? Math.max(8, Math.round(fontSize * 0.8)) : 0;
-    const gap = parts.length > 1 ? Math.max(minGap, Math.min(line.gap || minGap, (maxTextW - rawTotal) / Math.max(1, parts.length - 1))) : 0;
-    ctx.font = `600 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-    let x = textX;
-    for (let i = 0; i < parts.length; i++) {
-      ctx.fillText(parts[i], x, y);
-      x += (widths[i] || ctx.measureText(parts[i]).width) + gap;
-    }
-    y += lineH + (li < lines.length - 1 ? 4 : 0);
-  }
-
-  ctx.restore();
-}
 // [FIX] removed stray brace that broke parsing
 
 
@@ -10402,11 +10818,8 @@ async function exportImage(format, maxSize) {
 
   
 
-  const exportLogoIdx = getLogoActiveIndexForTick(state.currentTick);
-const baseHeaderH = state.exportShowMetadata ? 48 : 0;
-  let headerH = baseHeaderH;
+  const exportLogoIndices = getLogoActiveIndicesForTick(state.currentTick);
   let metaText = '';
-
 
   const dims = getTargetFrameOutputDims();
   let baseFrameW = Math.max(2, Math.round(dims.w));
@@ -10418,19 +10831,21 @@ const baseHeaderH = state.exportShowMetadata ? 48 : 0;
   const rows = Math.ceil(total / state.gridCols);
   const gap = Math.max(0, Number(state.spacing) || 0);
 
-  // Still exports should keep the same content geometry as the preview.
-  // Padding enlarges the export canvas, it must not silently downscale the grid.
   const sGap = gap;
   const sPadX = padBase;
   const sPadY = padBase;
   const sFrameW = baseFrameW;
   const sFrameH = baseFrameH;
-  let sHeaderH = headerH;
 
   const sGridW = state.gridCols * sFrameW + Math.max(0, state.gridCols - 1) * sGap;
   const sGridH = rows * sFrameH + Math.max(0, rows - 1) * sGap;
 
-  const stillPlacement = getStillExportPlacement('grid', sGridW, sGridH, sHeaderH, sPadX);
+  const rawHeader = getExportHeaderHeight('grid', sGridW);
+  let baseHeaderH = state.exportShowMetadata ? rawHeader : 0;
+  let headerH = baseHeaderH;
+  let sHeaderH = headerH;
+
+  let stillPlacement = getStillExportPlacement('grid', sGridW, sGridH, sHeaderH, sPadX);
 
   // Final output canvas size (includes header + padding)
   let canvasW = stillPlacement.canvasW;
@@ -10475,11 +10890,6 @@ const canvas = document.createElement('canvas');
   // Background fill (JPEG needs opaque anyway; PNG becomes easier to read)
   ctx.fillStyle = state.bgColor || '#000';
   ctx.fillRect(0, 0, canvasW, canvasH);
-
-  // Metadata header
-  if (state.exportShowMetadata && metaText) {
-    drawExportMetadataBar(ctx, canvasW, sHeaderH, metaText, { activeIndex: exportLogoIdx, baseHeaderH });
-  }
 
   drawExportBgLayer(ctx, 0, sHeaderH, canvasW, canvasH - sHeaderH, 'grid');
   const stillCapGrid = getStillExportMaxSize(maxSize);
@@ -10536,7 +10946,7 @@ const canvas = document.createElement('canvas');
         await ensureImageReady(img);
       }
       if (img.naturalWidth) {
-        ctx.drawImage(img, x, y, sFrameW, sFrameH);
+        drawFrameCell(ctx, img, x, y, sFrameW, sFrameH);
       } else {
         // Best-effort: draw placeholder
         ctx.fillStyle = '#111';
@@ -10568,22 +10978,32 @@ const canvas = document.createElement('canvas');
     drawExportBgLayer(ctx, 0, sHeaderH, canvasW, canvasH - sHeaderH, 'grid');
   }
 
-  // Pass 3: UI overlays
-  for (const cell of __exportCells) {
-    const { x, y, w, h, frameIdx, frame } = cell;
+  // Encode base content first, then draw overlay in final output space so PNG/JPEG match MP4.
+  const outCanvas = finalizeStillExportCanvas(canvas, maxSize);
+  const outCtx = outCanvas.getContext('2d');
+  const sx = outCanvas.width / Math.max(1, canvasW);
+  const sy = outCanvas.height / Math.max(1, canvasH);
 
-    if (computeShowTimecode()) {
-      drawTimecodeOverlay(ctx, x, y, w, h, frame, getDerivedIndexFromFrameIdx(frameIdx), cellCount, frameIdx);
-    }
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  if (state.exportShowMetadata && metaText) {
+    drawExportMetadataBar(outCtx, outCanvas.width, Math.max(1, Math.round(sHeaderH * sy)), metaText, { activeIndices: exportLogoIndices, baseHeaderH: Math.max(1, Math.round(baseHeaderH * sy)) });
   }
 
+  for (const cell of __exportCells) {
+    const x = cell.x * sx;
+    const y = cell.y * sy;
+    const w = cell.w * sx;
+    const h = cell.h * sy;
+    const frameIdx = cell.frameIdx;
+    const frame = cell.frame;
 
-  // Encode
-  const outCanvas = finalizeStillExportCanvas(canvas, maxSize);
+    if (computeShowTimecode()) {
+      drawTimecodeOverlay(outCtx, x, y, w, h, frame, getDerivedIndexFromFrameIdx(frameIdx), cellCount, frameIdx);
+    }
+
+    outCtx.strokeStyle = 'rgba(255,255,255,0.12)';
+    outCtx.lineWidth = 1;
+    outCtx.strokeRect(x + 0.5, y + 0.5, Math.max(0, w - 1), Math.max(0, h - 1));
+  }
   const mime = (format === 'png') ? 'image/png' : 'image/jpeg';
   const quality = (format === 'png') ? undefined : 0.92;
 
@@ -10701,24 +11121,25 @@ const canvas = document.createElement('canvas');
 
     
 
-  const exportLogoIdx = getLogoActiveIndexForTick(state.currentTick);
+  const exportLogoIndices = getLogoActiveIndicesForTick(state.currentTick);
 // Export padding is only meaningful when BG layer is included
     const padBase = state.exportBgLayer ? Math.max(0, Math.round(Number(state.exportPaddingPx) || 0)) : 0;
 
-    const baseHeaderH = state.exportShowMetadata ? 48 : 0;
-    let headerH = baseHeaderH;
     let metaText = '';
 
     const dims = getTargetFrameOutputDims();
     let baseW = Math.max(2, Math.round(dims.w));
     let baseH = Math.max(2, Math.round(dims.h));
 
-    // Still export must match preview geometry. Padding increases canvas size only.
     const sPadX = padBase;
     const sPadY = padBase;
 
     const frameW = baseW;
     const frameH = baseH;
+
+    const rawHeader = getExportHeaderHeight('single', frameW);
+    let baseHeaderH = state.exportShowMetadata ? rawHeader : 0;
+    let headerH = baseHeaderH;
     let sHeaderH = headerH;
 
     let stillPlacement = getStillExportPlacement('single', frameW, frameH, sHeaderH, sPadX);
@@ -10768,11 +11189,6 @@ const canvas = document.createElement('canvas');
     ctx.fillStyle = state.bgColor || '#000';
     ctx.fillRect(0, 0, canvasW, canvasH);
 
-    // Header
-    if (state.exportShowMetadata && metaText) {
-      drawExportMetadataBar(ctx, canvasW, headerH, metaText, { activeIndex: exportLogoIdx, baseHeaderH });
-    }
-
     drawExportBgLayer(ctx, 0, headerH, canvasW, Math.max(1, canvasH - headerH), 'single');
     const stillCapSingle = getStillExportMaxSize(maxSize);
     const stillScaleSingle = Number.isFinite(stillCapSingle) ? Math.min(1, stillCapSingle / Math.max(1, Math.max(canvasW, canvasH))) : 1;
@@ -10794,7 +11210,7 @@ const canvas = document.createElement('canvas');
         await ensureImageReady(img);
       }
       if (img.naturalWidth) {
-        ctx.drawImage(img, dx, dy, frameW, frameH);
+        drawFrameCell(ctx, img, dx, dy, frameW, frameH);
       } else {
         ctx.fillStyle = '#111';
         ctx.fillRect(dx, dy, frameW, frameH);
@@ -10817,12 +11233,18 @@ const canvas = document.createElement('canvas');
       drawExportBgLayer(ctx, 0, headerH, canvasW, Math.max(1, canvasH - headerH), 'single');
     }
 
-    // Timecode
-    if (computeShowTimecode()) {
-      drawTimecodeOverlay(ctx, dx, dy, frameW, frameH, frame, getDerivedIndexFromFrameIdx(frameIdx), Math.ceil(state.frames.length / Math.max(1, Number(state.cellSize) || 1)), frameIdx);
+    const outCanvas = finalizeStillExportCanvas(canvas, maxSize);
+    const outCtx = outCanvas.getContext('2d');
+    const sx = outCanvas.width / Math.max(1, canvasW);
+    const sy = outCanvas.height / Math.max(1, canvasH);
+
+    if (state.exportShowMetadata && metaText) {
+      drawExportMetadataBar(outCtx, outCanvas.width, Math.max(1, Math.round(headerH * sy)), metaText, { activeIndices: exportLogoIndices, baseHeaderH: Math.max(1, Math.round(baseHeaderH * sy)) });
     }
 
-    const outCanvas = finalizeStillExportCanvas(canvas, maxSize);
+    if (computeShowTimecode()) {
+      drawTimecodeOverlay(outCtx, dx * sx, dy * sy, frameW * sx, frameH * sy, frame, getDerivedIndexFromFrameIdx(frameIdx), Math.ceil(state.frames.length / Math.max(1, Number(state.cellSize) || 1)), frameIdx);
+    }
     const mime = (format === 'png') ? 'image/png' : 'image/jpeg';
     const quality = (format === 'png') ? undefined : 0.92;
 
@@ -10904,13 +11326,17 @@ const canvas = document.createElement('canvas');
       const txt = String(state.tcCustomText || '').trim();
       if (txt) parts.push(txt);
     }
-    return parts.join(' | ');
+    return parts.join(' ');
   }
   function formatDate(d) { return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 
   // INIT
   updateIntervalUI();
   if (bgColorInput) bgColorInput.value = state.bgColor;
+  if ($('fgAccentColor')) {
+    $('fgAccentColor').value = state.fgAccentColor || '#35f2a3';
+    document.documentElement.style.setProperty('--fg-accent', state.fgAccentColor || '#35f2a3');
+  }
   if (toggleBgGrid) toggleBgGrid.classList.toggle('active', !!state.bgGridShow);
   if (bgGridTypeSelect) bgGridTypeSelect.value = state.bgGridType || 'lines';
   if (bgGridColorInput) bgGridColorInput.value = state.bgGridColor || '#ffffff';
@@ -10928,6 +11354,8 @@ const canvas = document.createElement('canvas');
   // Frame image transform defaults
   if (frameImgScaleSlider) frameImgScaleSlider.value = String(state.frameImgScale);
   if (frameImgScaleNum) frameImgScaleNum.value = state.frameImgScale.toFixed(2);
+  if (frameImgRotSlider) frameImgRotSlider.value = String(state.frameImgRot);
+  if (frameImgRotNum) frameImgRotNum.value = state.frameImgRot.toFixed(1);
       if (frameImgOffXSlider) frameImgOffXSlider.value = String(state.frameImgOffX);
   if (frameImgOffXNum) frameImgOffXNum.value = String(state.frameImgOffX);
       if (frameImgOffYSlider) frameImgOffYSlider.value = String(state.frameImgOffY);
@@ -11366,7 +11794,7 @@ const canvas = document.createElement('canvas');
     playheads: [], // cellIdx[]
     frameMap: {},  // frameIdx(string) -> { slot, vel, prob }
     samples: [null, null, null, null], // slot -> { buffer, name }
-    colors: ['#35f2a3', '#ff4fd8', '#ffd54a', '#4aa3ff'] // slot -> hex
+    colors: ['var(--fg-accent, #35f2a3)', '#ff4fd8', '#ffd54a', '#4aa3ff'] // slot -> hex
   };
 
   // Backward compat: ensure colors exist
@@ -11376,7 +11804,7 @@ const canvas = document.createElement('canvas');
   if (typeof state.audioSeq.flashIntensity !== 'number') state.audioSeq.flashIntensity = 0.85;
   if (!state.audioSeq.velSteps || !Array.isArray(state.audioSeq.velSteps) || state.audioSeq.velSteps.length < 2) state.audioSeq.velSteps = [0.25, 0.5, 0.75, 1];
   if (!state.audioSeq.colors || !Array.isArray(state.audioSeq.colors) || state.audioSeq.colors.length < 4) {
-    state.audioSeq.colors = ['#35f2a3', '#ff4fd8', '#ffd54a', '#4aa3ff'];
+    state.audioSeq.colors = ['var(--fg-accent, #35f2a3)', '#ff4fd8', '#ffd54a', '#4aa3ff'];
   }
 
   function audioColorForSlot(slot) {
