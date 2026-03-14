@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.25.01                                        ║
+║      FRAMEGRID v0.25.20                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.25.01</title>
+  <title>FRAMEGRID v0.25.20</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
@@ -52,7 +52,7 @@
 
     /* METADATA BAR */
     .metadata-bar {
-      height: 36px; min-height: 36px; background: #000;
+      height: 48px; min-height: 48px; background: #000;
       border-bottom: 1px solid rgba(255,255,255,0.15);
       position: relative;
       display: flex; align-items: center; justify-content: flex-start;
@@ -1101,7 +1101,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.25.01</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.25.20</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1116,6 +1116,11 @@
           <div class="metadata-item dynamic" id="metaAnimFps"></div>
         </div>
         <div class="metadata-gap"></div>
+        <div class="metadata-group" id="metaAnimSettingsGroup" style="display:none;">
+          <div class="metadata-item" id="metaDirection"></div>
+          <div class="metadata-item" id="metaPattern"></div>
+        </div>
+        <div class="metadata-gap" id="metaAnimSettingsGap" style="display:none;"></div>
         <div class="metadata-group">
           <div class="metadata-item" id="metaFrames"></div>
           <div class="metadata-item hide-mobile" id="metaGridShape"></div>
@@ -1411,7 +1416,7 @@
           </div>
           <div class="menu-row">
             <span class="menu-label">Outside BG</span>
-            <input class="menu-color" type="color" id="frameBgColor" value="#111111">
+            <input class="menu-color" type="color" id="frameBgColor" value="#000000">
           </div>
 
           <button class="menu-btn" id="resetFrameTransformBtn">Reset Transform</button>
@@ -1649,8 +1654,12 @@
               <option value="forward">Forward</option>
               <option value="backward">Backward</option>
               <option value="pingpong">Ping-pong</option>
+              <option value="bounce-offset">Bounce Offset</option>
+              <option value="stutter">Stutter (Glitch)</option>
+              <option value="holdskip">Hold & Skip</option>
+              <option value="shuffleloop">Shuffle Loop</option>
               <option value="sync">Sync (all same)</option>
-              <option value="random">Random</option>
+              <option value="random">Random (Chaos)</option>
             </select>
           </div>
           <div class="menu-row" id="animSeedRow">
@@ -1668,8 +1677,15 @@
               <option value="center">Center-out</option>
               <option value="snake">Snake</option>
               <option value="vertical">Vertical</option>
+              <option value="vertical-snake">Vertical Snake</option>
+              <option value="spiral">Spiral</option>
+              <option value="checkerboard">Checkerboard</option>
               <option value="random">Random</option>
             </select>
+          </div>
+          <div style="display:flex; gap:8px; margin-top: 8px;">
+            <button class="menu-btn" id="btnFlipX" style="flex:1; margin-top:0;">FLIP X</button>
+            <button class="menu-btn" id="btnFlipY" style="flex:1; margin-top:0;">FLIP Y</button>
           </div>
           <button class="menu-btn primary" id="playBtn">▶ Play Animation</button>
           <button class="menu-btn" id="stopBtn" style="display:none;">■ Stop</button>
@@ -1941,6 +1957,10 @@
             </div>
           </div>
           <div class="menu-row">
+            <span class="menu-label">Render from First Frame</span>
+            <div class="menu-toggle-switch active" id="toggleExportResetPlay"></div>
+          </div>
+          <div class="menu-row">
             <span class="menu-label">Include Drawings</span>
             <div class="menu-toggle-switch active" id="toggleExportDraw"></div>
           </div>
@@ -1989,7 +2009,7 @@
             <span class="menu-label">Metadata in Export</span>
             <div class="menu-toggle-switch" id="toggleExportMetadata"></div>
           </div>
-          <div class="menu-subtitle">Grid</div>
+                    <div class="menu-subtitle">Grid</div>
           <button class="menu-btn" id="exportSmallBtn">JPEG Grid</button>
           <button class="menu-btn" id="exportFullBtn">PNG Grid</button>
           <button class="menu-btn" id="exportMp4GridBtn">MP4 Grid</button>
@@ -2038,7 +2058,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.25.01</div>
+          <div class="about-version">Version v0.25.20</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
@@ -2053,7 +2073,7 @@
             <div class="hotkey-row"><span class="hotkey">F</span> Fit (Grid or Single)</div>
             <div class="hotkey-row"><span class="hotkey">M</span> Toggle Menu</div>
             <div class="hotkey-row"><span class="hotkey">N</span> Collapse/Expand All Sections</div>
-            <div class="hotkey-row"><span class="hotkey">+ / -</span> FPS Up / Down</div>
+            <div class="hotkey-row"><span class="hotkey">+ / -</span> FPS (Shift: ±5, Ctrl+Shift: ±10)</div>
             <div class="hotkey-row"><span class="hotkey">0</span> Export MP4 (Current View)</div>
             <div class="hotkey-row"><span class="hotkey">9</span> Export JPEG (Current View)</div>
             <div class="hotkey-row"><span class="hotkey">D</span> Draw Mode</div>
@@ -2070,7 +2090,12 @@
             <div class="hotkey-row"><span class="hotkey">Z</span> Undo (also Ctrl/Cmd+Z)</div>
             <div class="hotkey-row"><span class="hotkey">C</span> Clear Current Target</div>
             <div class="hotkey-row"><span class="hotkey">L</span> Long Stroke</div>
-            <div class="hotkey-row"><span class="hotkey">R</span> Regenerate Grid</div>
+                        <div class="hotkey-row"><span class="hotkey">↑ / ↓</span> Cycle Direction</div>
+            <div class="hotkey-row"><span class="hotkey">Ctrl/Cmd + ↑ / ↓</span> Cycle Pattern</div>
+            <div class="hotkey-row"><span class="hotkey">Shift + ↑ / ↓</span> Columns (Grid Size)</div>
+            <div class="hotkey-row"><span class="hotkey">Ctrl/Cmd + ← / →</span> Cell Size (- / +)</div>
+            <div class="hotkey-row"><span class="hotkey">Shift + ← / →</span> Loop Phases (- / +)</div>
+            <div class="hotkey-row"><span class="hotkey">Ctrl + Shift + (+ / -)</span> FPS (±5)</div>
             <div class="hotkey-row"><span class="hotkey">[ ]</span> Brush Size</div>
     
   <input type="file" id="audioInput1" accept="audio/*">
@@ -2111,7 +2136,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.24-branch2_0.35';
+  const APP_VERSION = 'v0.25.20';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   // Sync document/UI labels
@@ -2173,13 +2198,13 @@
     frameImgOpacity: 1.0, // opacity of the main frame image
     frameImgFill: 'empty', // 'empty' or 'edge'
 
-    frameBgColor: '#111111', // background behind scaled-down frame image
+    frameBgColor: '#000000', // background behind scaled-down frame image
     frameTargetAspect: 'auto', // 'auto' (source) or aspect string like '16:9'
     scale: 1, panX: 0, panY: 0, isPanning: false,
     startPanX: 0, startPanY: 0, startMouseX: 0, startMouseY: 0,
     menuOpen: false,
     // Animation
-    animFps: 14, animDirection: 'forward', animPattern: 'sequential',
+    animFps: 14, animDirection: 'forward', animPattern: 'sequential', flipPatternX: false, flipPatternY: false,
     animSeed: 1, animRandomOrder: [], animRandomOrderSeed: null,
     animRandomStarts: [], animRandomStartsSeed: null, animRandomStartsFrames: 0, animRandomStartsCols: 0, animRandomStartsPattern: '',
     isPlaying: false, animFrame: 0, animInterval: null,
@@ -2279,7 +2304,16 @@ exportQuality: 'hd', // low, medium, high, max
     framesGrid.style.setProperty('--video-aspect', String(getEffectiveFrameAspect()));
   }
 
-  function getTargetFrameOutputDims() {
+  function getExportScaledGap(frameW) {
+  const baseGap = Math.max(0, Number(state.spacing) || 0);
+  if (baseGap === 0) return 0;
+  // UI gap is relative to the previewCellW (typically 240px). 
+  // We scale it so it looks identical on export.
+  const previewW = Number(state.previewCellW) || 240;
+  return Math.round(baseGap * (frameW / previewW));
+}
+
+function getTargetFrameOutputDims() {
     const srcW = Math.max(1, Math.round(Number(state.videoWidth) || 1));
     const srcH = Math.max(1, Math.round(Number(state.videoHeight) || 1));
     const srcAspect = srcW / srcH;
@@ -2349,6 +2383,7 @@ exportQuality: 'hd', // low, medium, high, max
   const exportJpegSingleBtn = $('exportJpegSingleBtn');
   const exportPngSeqDrawBtn = $('exportPngSeqDrawBtn');
   const toggleExportMetadata = $('toggleExportMetadata');
+  const toggleExportResetPlay = $('toggleExportResetPlay');
   const toggleExportAlphaDraw = $('toggleExportAlphaDraw');
   const toggleExportRefFrame = $('toggleExportRefFrame');
   const toggleExportBg = $('toggleExportBg');
@@ -2428,87 +2463,63 @@ exportQuality: 'hd', // low, medium, high, max
   
   function getLogoActiveIndicesForTick(tick) {
     const t = Number.isFinite(tick) ? Math.max(0, tick) : 0;
-    const slow = 10;
-    const step = Math.floor(t / slow);
-
     const dir = String(state.animDirection || 'forward').toLowerCase();
 
-    // Sync mode -> all squares light up
-    if (dir === 'sync') return [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    // Sync mode -> flashes on the first frame of the cycle
+    if (dir === 'sync') {
+       const mainFrames = Math.max(1, state.frames.length || 1);
+       if (t % mainFrames === 0) return [0, 1, 2, 3, 4, 5, 6, 7, 8];
+       return [];
+    }
 
-    // For 3x3 logo
-    const frameCount = 9;
-    const totalCells = 9;
-    const pingPongCycle = (frameCount - 1) * 2; // 16
+    // We map the actual grid's state down to the 3x3 logo.
+    const frameCount = Math.max(1, state.frames.length || 1);
+    const cellCount = Math.ceil(frameCount / Math.max(1, state.cellSize || 1));
+    const totalCells = state.showInfoCard ? cellCount + 1 : cellCount;
+    const offset = state.showInfoCard ? 1 : 0;
+    const animCellCount = cellCount; 
 
-    // Get sequential order
-    const cellOrder = generateCellOrder(9, 3);
+    // Safety check
+    if (animCellCount <= 0) return [0];
+
+    const cols = Math.max(1, state.gridCols || 1);
+    const rows = Math.ceil(totalCells / cols);
+
+    const cellOrder = generateCellOrder(animCellCount, cols);
     const cellOrderMap = new Map();
     cellOrder.forEach((cell, idx) => cellOrderMap.set(cell, idx));
 
-    // Shared RNG for random direction/pattern to accurately map exactly to current seed
-    const seedStr = String(state.animSeed || 'fg');
-    let h = 0; for (let i=0; i<seedStr.length; i++) h = Math.imul(31, h) + seedStr.charCodeAt(i) | 0;
-    const rng = () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) / 4294967296; };
+    ensureAnimDirShuffle(frameCount);
+    if (state.animPattern === 'random') ensureAnimRandomStarts(animCellCount);
 
-    // Pre-generate 9 stable random offsets based on the exact same seed mechanism
-    const randomOffsets = [];
-    for(let i=0; i<9; i++) randomOffsets.push(Math.floor(rng() * frameCount));
+    let activeCells = new Set();
 
-    // Pre-generate dir shuffle mapping
-    const randomDirShuffle = [0,1,2,3,4,5,6,7,8];
-    for (let i = 8; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      [randomDirShuffle[i], randomDirShuffle[j]] = [randomDirShuffle[j], randomDirShuffle[i]];
-    }
+    for (let c = 0; c < animCellCount; c++) {
+      const cellOrderIdx = cellOrderMap.get(c) ?? 0;
+      const phaseCount = Math.max(1, state.gridLoops || 1);
+      const cellOffset = Math.floor(cellOrderIdx * frameCount * phaseCount / Math.max(1, animCellCount)) % frameCount;
+      const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[c] ?? 0) : cellOffset;
 
-    let activeCells = [];
+      const frameIdx = resolveDirectionFrame(t, baseOffset, frameCount, dir, state.animDirShuffle);
 
-    // Scan all 9 cells, see which one is displaying frameIdx === 0
-    for (let i = 0; i < 9; i++) {
-      const cellIdx = i;
-      const cellOrderIdx = cellOrderMap.get(cellIdx) ?? 0;
-      let baseOffset = cellOrderIdx;
-
-      if (state.animPattern === 'random') {
-         baseOffset = randomOffsets[cellIdx];
-      }
-
-      let frameIdx;
-      const t = step + baseOffset;
-      if (dir === 'pingpong') {
-        const pos = t % pingPongCycle;
-        frameIdx = pos < frameCount ? pos : pingPongCycle - pos;
-      } else if (dir === 'backward') {
-        frameIdx = (frameCount - 1 - (t % frameCount) + frameCount) % frameCount;
-      } else if (dir === 'random') {
-        frameIdx = randomDirShuffle[t % frameCount];
-      } else if (dir === 'stutter') {
-        const group = Math.floor(t / 4);
-        const cycle = t % 4;
-        const offsetVal = (cycle === 0 || cycle === 2) ? 0 : 1;
-        frameIdx = (group * 2 + offsetVal) % frameCount;
-      } else if (dir === 'holdskip') {
-        frameIdx = (Math.floor(t / 2) * 2) % frameCount;
-      } else if (dir === 'shuffleloop') {
-        const loopNum = Math.floor(t / frameCount);
-        const idxInLoop = t % frameCount;
-        frameIdx = randomDirShuffle[(idxInLoop + loopNum) % frameCount];
-      } else {
-        // forward
-        frameIdx = t % frameCount;
-      }
-
+      // We look for where the playhead is currently hitting frame 0.
       if (frameIdx === 0) {
-        activeCells.push(cellIdx);
+        const uiIdx = c + offset;
+        const x = uiIdx % cols;
+        const y = Math.floor(uiIdx / cols);
+
+        // Map (x, y) down to (3 x 3) using proportional bucketing
+        const lx = Math.min(2, Math.floor((x / cols) * 3));
+        const ly = Math.min(2, Math.floor((y / rows) * 3));
+
+        activeCells.add(ly * 3 + lx);
       }
     }
 
-    if (activeCells.length === 0) activeCells.push(cellOrder[0]); // fallback
-    return activeCells;
+    // If pingpong is going backwards and frame 0 is not anywhere, it returns empty (goes dark).
+    return Array.from(activeCells);
   }
 
-  // Export logo active index (used by export renderers)
   let exportLogoIndices = [0];
 
   function updateLogoFromTick() {
@@ -2796,7 +2807,40 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
     const rows = Math.max(1, Math.ceil(visibleCells / cols));
     const gw = tw && cols ? tw * cols : 0;
     const gh = th && rows ? th * rows : 0;
-    if (metaGridShape) metaGridShape.innerHTML = `<span>c${cols}r${rows}</span>`;
+
+    // Grid vs Single visibility
+    const isSingle = (state.gridCols === 1 && state.cellSize >= state.frames.length);
+    const mPtn = $('metaPattern');
+    const mDir = $('metaDirection');
+    const mGrp = $('metaAnimSettingsGroup');
+    const mGap = $('metaAnimSettingsGap');
+
+    if (isSingle) {
+       if (mGrp) mGrp.style.display = 'none';
+       if (mGap) mGap.style.display = 'none';
+    } else {
+       if (mGrp) mGrp.style.display = 'flex';
+       if (mGap) mGap.style.display = 'block';
+       if (mDir) mDir.innerHTML = `<span>${String(state.animDirection || 'forward')}</span>`;
+              let ptnStr = String(state.animPattern || 'sequential');
+       if (state.flipPatternX && state.flipPatternY) ptnStr += ' flipXY';
+       else if (state.flipPatternX) ptnStr += ' flipX';
+       else if (state.flipPatternY) ptnStr += ' flipY';
+       if (mPtn) mPtn.innerHTML = `<span>${ptnStr}</span>`;
+    }
+
+    if (metaGridShape) {
+       if (isSingle) {
+          metaGridShape.innerHTML = '';
+       } else {
+          const cs = Math.max(1, Number(state.cellSize) || 1);
+          const lp = Math.max(1, Number(state.gridLoops) || 1);
+          let shapeStr = `c${cols}r${rows}`;
+          if (cs > 1) shapeStr += ` /${cs}`;
+          if (lp > 1) shapeStr += ` x${lp}`;
+          metaGridShape.innerHTML = `<span>${shapeStr}</span>`;
+       }
+    }
     if (!tw || !th) {
       metaLayout.innerHTML = '';
       return;
@@ -3554,7 +3598,7 @@ function getViewportExportPadForElement(el, mode = 'grid') {
       const cellCount = Math.ceil(state.frames.length / state.cellSize);
       const total = cellCount + (state.showInfoCard ? 1 : 0);
       const rows = Math.ceil(total / state.gridCols);
-      const gap = Math.max(0, Number(state.spacing) || 0);
+      const gap = getExportScaledGap(baseFrameW);
       dstContentW = state.gridCols * baseFrameW + Math.max(0, state.gridCols - 1) * gap;
       dstContentH = rows * baseFrameH + Math.max(0, rows - 1) * gap;
     }
@@ -3678,7 +3722,9 @@ function getStillOverlayScaleBoost(canvasW, canvasH, explicitMaxSize = null) {
 }
 
 function getDeterministicVideoExportLayout(mode, rows) {
-  const gapBase = Math.max(0, Number(state.spacing) || 0);
+  const dims = getTargetFrameOutputDims();
+  const frameW = Math.max(2, Math.round(dims.w));
+  const gapBase = getExportScaledGap(frameW);
   const padPx = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
   const qualityMap = { low: 540, medium: 720, hd: 1080, high: 2160, max: Infinity };
   const qualityCap = qualityMap[state.exportQuality] || 1080;
@@ -3704,8 +3750,7 @@ function getDeterministicVideoExportLayout(mode, rows) {
   };
 
   if (mode === 'grid') {
-    const dims = getTargetFrameOutputDims();
-    const frameW = Math.max(2, Math.round(dims.w));
+    // dims and frameW already defined above
     const frameH = Math.max(2, Math.round(dims.h));
     const gridW = state.gridCols * frameW + Math.max(0, state.gridCols - 1) * gapBase;
     const gridH = rows * frameH + Math.max(0, rows - 1) * gapBase;
@@ -4628,7 +4673,7 @@ function fitToSingleFrame() {
     framesGrid.style.setProperty('--img-off-x', `${state.frameImgOffX}%`);
     framesGrid.style.setProperty('--img-off-y', `${state.frameImgOffY}%`);
     framesGrid.style.setProperty('--frame-img-opacity', String(state.frameImgOpacity !== undefined ? state.frameImgOpacity : 1));
-    framesGrid.style.setProperty('--frame-bg', String(state.frameBgColor || '#111111'));
+    framesGrid.style.setProperty('--frame-bg', String(state.frameBgColor || '#000000'));
     if (state.refFrameSource && state.refFrameVisible && state.refFrameFollowFrameTransform) {
       requestComposite();
     }
@@ -4812,6 +4857,7 @@ function fitToSingleFrame() {
         state.gridCols = calculateOptimalColumns(cellCount);
         gridColsInput.value = state.gridCols;
       }
+      updateMetaLayoutInfo();
       if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
     }
   };
@@ -4826,6 +4872,7 @@ function fitToSingleFrame() {
     if (state.gridLoops > 1) {
       state.gridLoops -= 1;
       updateLoopPhasesUI();
+      updateMetaLayoutInfo();
       updateAllCells();
     }
   };
@@ -4833,6 +4880,7 @@ function fitToSingleFrame() {
     if (state.gridLoops < 5) {
       state.gridLoops += 1;
       updateLoopPhasesUI();
+      updateMetaLayoutInfo();
       updateAllCells();
     }
   };
@@ -4878,8 +4926,28 @@ function fitToSingleFrame() {
   animFpsInput.onchange = () => { state.animFps = Math.max(1, Math.min(60, parseInt(animFpsInput.value) || 8)); animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); };
   fpsMinus.onclick = () => { if (state.animFps > 1) { state.animFps--; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); } };
   fpsPlus.onclick = () => { if (state.animFps < 60) { state.animFps++; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); } };
-  animDirectionSelect.onchange = () => { state.animDirection = animDirectionSelect.value; if (state.animDirection === 'random') { state.animDirShuffleSeed = null; state.animDirShuffle = null; state.animDirShuffleFrames = 0; } updateAnimSeedUI(); if (state.isPlaying) restartAnimation(); else updateAllCells(); };
-  animPatternSelect.onchange = () => { state.animPattern = animPatternSelect.value; updateAnimSeedUI(); state.animRandomStartsSeed = null; if (state.isPlaying) restartAnimation(); else updateAllCells(); };
+  animDirectionSelect.onchange = () => { state.animDirection = animDirectionSelect.value; if (state.animDirection === 'random') { state.animDirShuffleSeed = null; state.animDirShuffle = null; state.animDirShuffleFrames = 0; } updateAnimSeedUI(); updateMetaLayoutInfo(); if (state.isPlaying) restartAnimation(); else updateAllCells(); };
+  animPatternSelect.onchange = () => { state.animPattern = animPatternSelect.value; updateAnimSeedUI(); state.animRandomStartsSeed = null; updateMetaLayoutInfo(); if (state.isPlaying) restartAnimation(); else updateAllCells(); };
+  const btnFlipX = $('btnFlipX');
+  const btnFlipY = $('btnFlipY');
+  if (btnFlipX) {
+     btnFlipX.onclick = () => {
+        state.flipPatternX = !state.flipPatternX;
+        btnFlipX.classList.toggle('primary', state.flipPatternX);
+        state.animRandomStartsSeed = null; 
+        updateMetaLayoutInfo();
+        if (state.isPlaying) restartAnimation(); else updateAllCells();
+     };
+  }
+  if (btnFlipY) {
+     btnFlipY.onclick = () => {
+        state.flipPatternY = !state.flipPatternY;
+        btnFlipY.classList.toggle('primary', state.flipPatternY);
+        state.animRandomStartsSeed = null; 
+        updateMetaLayoutInfo();
+        if (state.isPlaying) restartAnimation(); else updateAllCells();
+     };
+  }
   if (animSeedInput) {
     animSeedInput.onchange = () => {
       state.animSeed = (parseInt(animSeedInput.value, 10) || 1) >>> 0;
@@ -5048,6 +5116,53 @@ function ensureAnimRandomStarts(totalCells) {
     if (animSeedInput) animSeedInput.value = (parseInt(state.animSeed, 10) || 1);
   }
 
+
+  // Unified direction resolver
+  function getAnimDirectionCycleLength(frameCount, dir) {
+    if (dir === 'pingpong' || dir === 'bounce-offset') return frameCount > 1 ? (frameCount - 1) * 2 : 1;
+    return frameCount;
+  }
+
+  function resolveDirectionFrame(tick, baseOffset, frameCount, dir, shuffleArray) {
+    if (frameCount <= 0) return 0;
+
+    if (dir === 'sync') {
+      return tick % frameCount;
+    }
+
+    if (dir === 'bounce-offset') {
+      const cycle = frameCount > 1 ? (frameCount - 1) * 2 : 1;
+      const globalPos = tick % cycle;
+      const seqFrame = globalPos < frameCount ? globalPos : cycle - globalPos;
+      return (seqFrame + baseOffset) % frameCount;
+    }
+
+    const t = tick + baseOffset;
+
+    if (dir === 'pingpong') {
+      const cycle = frameCount > 1 ? (frameCount - 1) * 2 : 1;
+      const pos = t % cycle;
+      return pos < frameCount ? pos : cycle - pos;
+    } else if (dir === 'backward') {
+      return (frameCount - 1 - (t % frameCount) + frameCount) % frameCount;
+    } else if (dir === 'random') {
+      return shuffleArray[t % frameCount];
+    } else if (dir === 'stutter') {
+      const group = Math.floor(t / 4);
+      const cycle = t % 4;
+      const offsetVal = (cycle === 0 || cycle === 2) ? 0 : 1;
+      return (group * 2 + offsetVal) % frameCount;
+    } else if (dir === 'holdskip') {
+      return (Math.floor(t / 2) * 2) % frameCount;
+    } else if (dir === 'shuffleloop') {
+      const loopNum = Math.floor(t / frameCount);
+      const idxInLoop = t % frameCount;
+      return shuffleArray[(idxInLoop + loopNum) % frameCount];
+    } else {
+      return t % frameCount; // forward
+    }
+  }
+
 function updateAllCells() {
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = state.showInfoCard ? 1 : 0;
@@ -5073,41 +5188,8 @@ function updateAllCells() {
 
       const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[cellIdx] ?? 0) : cellOffset;
 
-      let frameIdx;
-      const t = state.currentTick + baseOffset;
-      if (state.animDirection === 'pingpong') {
-        const pos = t % pingPongCycle;
-        frameIdx = pos < frameCount ? pos : pingPongCycle - pos;
-      } else if (state.animDirection === 'backward') {
-        frameIdx = (frameCount - 1 - (t % frameCount) + frameCount) % frameCount;
-      } else if (state.animDirection === 'sync') {
-        frameIdx = state.currentTick % frameCount;
-      } else if (state.animDirection === 'random') {
-        ensureAnimDirShuffle(frameCount);
-        frameIdx = state.animDirShuffle[t % frameCount];
-      } else if (state.animDirection === 'stutter') {
-        // 1, 2, 1, 2, 3, 2, 3, 4 ...
-        // Sequence of phases:
-        // Math.floor(t/4)*2 -> base
-        // Then + [0, 1, 0, 1] over 4 ticks
-        const group = Math.floor(t / 4);
-        const cycle = t % 4;
-        const offsetVal = (cycle === 0 || cycle === 2) ? 0 : 1;
-        frameIdx = (group * 2 + offsetVal) % frameCount;
-      } else if (state.animDirection === 'holdskip') {
-        // Hold for 2 ticks, then jump +2
-        // tick: 0,1 -> 0; 2,3 -> 2; 4,5 -> 4
-        frameIdx = (Math.floor(t / 2) * 2) % frameCount;
-      } else if (state.animDirection === 'shuffleloop') {
-        ensureAnimDirShuffle(frameCount);
-        // Every full loop, it would ideally reshuffle, but we need deterministic stateless.
-        // We'll use a shifted shuffle per loop
-        const loopNum = Math.floor(t / frameCount);
-        const idxInLoop = t % frameCount;
-        frameIdx = state.animDirShuffle[(idxInLoop + loopNum) % frameCount];
-      } else {
-        frameIdx = t % frameCount;
-      }
+      ensureAnimDirShuffle(frameCount);
+      let frameIdx = resolveDirectionFrame(state.currentTick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
 
       const frame = state.frames[frameIdx];
       if (!frame) return;
@@ -5319,7 +5401,22 @@ function updateAllCells() {
       const shuffled = buildShuffledOrder(seed, totalCells);
       shuffled.forEach(i => order.push(i));
     }
-    
+
+    // Apply Flips
+    if (state.flipPatternX || state.flipPatternY) {
+      for (let i = 0; i < order.length; i++) {
+        const val = order[i];
+        const x = val % cols;
+        const y = Math.floor(val / cols);
+        const nx = state.flipPatternX ? (cols - 1 - x) : x;
+        const ny = state.flipPatternY ? (rows - 1 - y) : y;
+        const nval = ny * cols + nx;
+        if (nval >= 0 && nval < totalCells) {
+          order[i] = nval;
+        }
+      }
+    }
+
     return order;
   }
 
@@ -5336,22 +5433,8 @@ function updateAllCells() {
     if (state.animPattern === 'random') ensureAnimRandomStarts(cellCount);
     const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[cellIdx] ?? 0) : offset;
 
-    let frameIdx;
-    if (state.animDirection === 'pingpong') {
-      const cycle = frameCount > 1 ? (frameCount - 1) * 2 : 1;
-      const pos = (tick + baseOffset) % cycle;
-      frameIdx = pos < frameCount ? pos : cycle - pos;
-    } else if (state.animDirection === 'backward') {
-      frameIdx = (frameCount - 1 - ((tick + baseOffset) % frameCount) + frameCount) % frameCount;
-    } else if (state.animDirection === 'sync') {
-      frameIdx = tick % frameCount;
-    } else if (state.animDirection === 'random') {
-      ensureAnimDirShuffle(frameCount);
-      frameIdx = state.animDirShuffle[(tick + baseOffset) % frameCount];
-    } else {
-      frameIdx = (tick + baseOffset) % frameCount;
-    }
-    return frameIdx;
+    ensureAnimDirShuffle(frameCount);
+    return resolveDirectionFrame(tick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
   }
 
   // Update all cells to show frames at current tick
@@ -5562,7 +5645,7 @@ let isDrawing = false;
   }
 
   // ====================================
-  //  DRAW UNDO v0.25.01 STEP3 (stable)
+  //  DRAW UNDO v0.25.20 STEP3 (stable)
   //  - target-only snapshots
   //  - FRM captures per-tile snapshots
   //  - undo never clears layers when snapshot is missing
@@ -9213,6 +9296,12 @@ async function exportResampledVideo(forceMode = null) {
     const drawingsOnly = !!(opts && opts.drawingsOnly);
     if (!state.frames.length) return;
 
+    if (state.exportResetPlay) {
+       state.currentTick = 0;
+       updateLogoFromTick();
+       updateAllCells();
+    }
+
     const exportLogoIndices = getLogoActiveIndicesForTick(state.currentTick);
     loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Loading MP4 encoder...';
@@ -9299,18 +9388,9 @@ async function exportResampledVideo(forceMode = null) {
       img.src = f.dataUrl;
     })));
 
-    let sequence = [];
     const frameCount = state.frames.length;
-    if (state.animDirection === 'forward') {
-      for (let i = 0; i < frameCount; i++) sequence.push(i);
-    } else if (state.animDirection === 'backward') {
-      for (let i = frameCount - 1; i >= 0; i--) sequence.push(i);
-    } else {
-      for (let i = 0; i < frameCount; i++) sequence.push(i);
-      for (let i = frameCount - 2; i > 0; i--) sequence.push(i);
-    }
-    const singleLoop = [...sequence];
-    for (let loop = 1; loop < state.exportLoops; loop++) sequence = sequence.concat(singleLoop);
+    const cycleLen = getAnimDirectionCycleLength(frameCount, state.animDirection);
+    const totalTicks = cycleLen * Math.max(1, state.exportLoops);
 
     const cellOrder = generateCellOrder(cellCount, state.gridCols);
     const r = parseInt(state.tcBgColor.slice(1,3), 16);
@@ -9425,12 +9505,17 @@ Alternatively, use PNG sequence export.`);
     try { audioExportReset(); } catch (e) {}
     state._audioExportDoTrigger = false;
 
-    for (let tick = 0; tick < sequence.length; tick++) {
-      loadingProgress.textContent = `Encoding ${tick + 1}/${sequence.length}`;
+    for (let tick = 0; tick < totalTicks; tick++) {
+      loadingProgress.textContent = `Encoding MP4... ${tick + 1}/${totalTicks}`;
       ctx.fillStyle = state.bgColor;
       ctx.fillRect(0, 0, canvasW, canvasH);
-      if (mode === 'grid') renderMp4GridFrame(ctx, canvasW, canvasH, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly);
-      else renderMp4SingleFrame(ctx, canvasW, canvasH, frameImages, sequence[tick], r, g, b, layout, drawingsOnly);
+      if (mode === 'grid') {
+        renderMp4GridFrame(ctx, canvasW, canvasH, frameImages, tick, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly);
+      } else {
+        ensureAnimDirShuffle(frameCount);
+        const singleFrameIdx = resolveDirectionFrame(tick, 0, frameCount, state.animDirection, state.animDirShuffle);
+        renderMp4SingleFrame(ctx, canvasW, canvasH, frameImages, singleFrameIdx, r, g, b, layout, drawingsOnly);
+      }
       const videoFrame = new VideoFrame(canvas, { timestamp: tick * frameDuration, duration: frameDuration });
       encoder.encode(videoFrame, { keyFrame: tick % 30 === 0 });
       videoFrame.close();
@@ -9451,7 +9536,7 @@ Alternatively, use PNG sequence export.`);
     URL.revokeObjectURL(link.href);
   }
 
-function renderMp4GridFrame(ctx, w, h, frameImages, tick, sequence, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly = false) {
+function renderMp4GridFrame(ctx, w, h, frameImages, tick, cellOrder, rows, frameAspect, r, g, b, layout, drawingsOnly = false) {
     const headerHLogical = (layout && Number.isFinite(layout.headerH)) ? layout.headerH : (state.exportShowMetadata ? 48 : 0);
     const sx = (layout && Number.isFinite(layout.scaleX)) ? layout.scaleX : 1;
     const sy = (layout && Number.isFinite(layout.scaleY)) ? layout.scaleY : 1;
@@ -9490,7 +9575,9 @@ function renderMp4GridFrame(ctx, w, h, frameImages, tick, sequence, cellOrder, r
       const cellOrderIdx = cellOrder.indexOf(c);
       const phaseCount = Math.max(1, state.gridLoops || 1);
       const cellOffset = Math.floor(cellOrderIdx * frameCount * phaseCount / Math.max(1, cellCount)) % frameCount;
-      const animFrameIdx = (sequence[tick % sequence.length] + cellOffset) % frameCount;
+      const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[c] ?? 0) : cellOffset;
+      ensureAnimDirShuffle(frameCount);
+      const animFrameIdx = resolveDirectionFrame(tick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
       const frame = state.frames[animFrameIdx];
       const img = frameImages ? frameImages[animFrameIdx] : null;
       if (!drawingsOnly && img) drawFrameCell(ctx, img, x, y, frameW, frameH);
@@ -9779,7 +9866,7 @@ const dx = x + (w - dw) / 2 + ox;
     const dy = y + (h - dh) / 2 + oy;
 
     ctx.save();
-    ctx.fillStyle = String(state.frameBgColor || '#111111');
+    ctx.fillStyle = String(state.frameBgColor || '#000000');
     ctx.fillRect(x, y, w, h);
     ctx.beginPath();
     ctx.rect(x, y, w, h);
@@ -9901,6 +9988,13 @@ async function recordAudioSeqAV(mode = 'grid') {
 
     const wasPlaying = !!state.isPlaying;
     if (wasPlaying) { try { togglePlay(); } catch (e) {} }
+
+    // Auto-reset tick if enabled
+    if (state.exportResetPlay) {
+       state.currentTick = 0;
+       updateLogoFromTick();
+       updateAllCells();
+    }
 
     audioEnsureCtx();
     if (!state._audioCtx) {
@@ -10432,11 +10526,16 @@ function getAccentColor() {
 
 function drawFGLogoCanvas(ctx, x, y, size, activeIndices = [0]) {
   const arr = Array.isArray(activeIndices) ? activeIndices : [activeIndices];
-  const gap = Math.max(1, Math.round(size * 0.06));
-  const cell = Math.max(1, Math.floor((size - gap * 2) / 3));
-  const iconW = cell * 3 + gap * 2;
-  const ox = x + Math.floor((size - iconW) / 2);
-  const oy = y + Math.floor((size - iconW) / 2);
+  // Match CSS proportions: cell=8, gap=1, radius=2
+  // Total width = 8*3 + 1*2 = 26 units.
+  const unit = size / 26;
+  const cell = unit * 8;
+  const gap = unit * 1;
+  const r_logo = unit * 2;
+
+  const iconW = size;
+  const ox = x;
+  const oy = y;
 
   for (let r = 0; r < 3; r++) {
     for (let c = 0; c < 3; c++) {
@@ -10446,10 +10545,14 @@ function drawFGLogoCanvas(ctx, x, y, size, activeIndices = [0]) {
       ctx.fillStyle = (arr.includes(idx))
         ? getAccentColor()
         : 'rgba(255,255,255,0.22)';
-      // Rounding like the actual logo
-      const r_logo = Math.max(1, cell * 0.15);
+
       ctx.beginPath();
-      ctx.roundRect(cx, cy, cell, cell, r_logo);
+      if (ctx.roundRect) {
+         ctx.roundRect(cx, cy, cell, cell, r_logo);
+      } else {
+         // Fallback
+         ctx.rect(cx, cy, cell, cell);
+      }
       ctx.fill();
     }
   }
@@ -10537,14 +10640,25 @@ function buildExportMetaText(opts = {}) {
   if (mode === 'grid') {
     const ptn = String(state.animPattern || 'sequential').toLowerCase();
     const dir = String(state.animDirection || 'forward').toLowerCase();
-    topParts.push(`c${cols}`);
-    topParts.push(`r${rows}`);
-    topParts.push(ptn);
-    topParts.push(dir);
+
     topParts.push(`${fmt(frameCount)}f`);
+
+    const cs = Math.max(1, Number(state.cellSize) || 1);
+    const lp = Math.max(1, Number(state.gridLoops) || 1);
+    if (cs > 1) topParts.push(`/${cs}`);
+    if (lp > 1) topParts.push(`x${lp}`);
+
     topParts.push(`from`);
     topParts.push(`${fmt(srcFrames)}`);
     topParts.push(`total`);
+
+    topParts.push(`c${cols} r${rows}`);
+    topParts.push(dir);
+    let outPtn = ptn;
+    if (state.flipPatternX && state.flipPatternY) outPtn += ' flipXY';
+    else if (state.flipPatternX) outPtn += ' flipX';
+    else if (state.flipPatternY) outPtn += ' flipY';
+    topParts.push(outPtn);
   } else {
     topParts.push(`f${padFrameNumber(frameIdx + 1, srcFrames)}`);
     topParts.push(`of`);
@@ -10829,13 +10943,13 @@ async function exportImage(format, maxSize) {
   const cellCount = Math.ceil(state.frames.length / state.cellSize);
   const total = cellCount + (state.showInfoCard ? 1 : 0);
   const rows = Math.ceil(total / state.gridCols);
-  const gap = Math.max(0, Number(state.spacing) || 0);
+  const sFrameW = baseFrameW;
+  const sFrameH = baseFrameH;
 
+  const gap = getExportScaledGap(sFrameW);
   const sGap = gap;
   const sPadX = padBase;
   const sPadY = padBase;
-  const sFrameW = baseFrameW;
-  const sFrameH = baseFrameH;
 
   const sGridW = state.gridCols * sFrameW + Math.max(0, state.gridCols - 1) * sGap;
   const sGridH = rows * sFrameH + Math.max(0, rows - 1) * sGap;
@@ -11360,7 +11474,7 @@ const canvas = document.createElement('canvas');
   if (frameImgOffXNum) frameImgOffXNum.value = String(state.frameImgOffX);
       if (frameImgOffYSlider) frameImgOffYSlider.value = String(state.frameImgOffY);
   if (frameImgOffYNum) frameImgOffYNum.value = String(state.frameImgOffY);
-      if (frameBgColorInput) frameBgColorInput.value = String(state.frameBgColor || '#111111');
+      if (frameBgColorInput) frameBgColorInput.value = String(state.frameBgColor || '#000000');
   framesGrid.style.setProperty('--img-scale', String(state.frameImgScale));
   framesGrid.style.setProperty('--img-off-x', `${state.frameImgOffX}%`);
   framesGrid.style.setProperty('--img-off-y', `${state.frameImgOffY}%`);
@@ -11524,6 +11638,51 @@ const canvas = document.createElement('canvas');
         updateDrawOpacityUI();
         return;
       }
+      if (code === 'Equal' || code === 'NumpadAdd' || code === 'Minus' || code === 'NumpadSubtract') {
+         e.preventDefault();
+         const dir = (code === 'Minus' || code === 'NumpadSubtract') ? -1 : 1;
+         const step = e.shiftKey ? 10 : 5; // In Ctrl block, e.shiftKey means Ctrl+Shift
+         state.animFps = Math.max(1, Math.min(60, (state.animFps || 14) + (dir * step)));
+         if (animFpsInput) animFpsInput.value = state.animFps;
+         if (state.isPlaying) restartAnimation();
+         updateMetaAnimFps();
+         return;
+      }
+      if (code === 'ArrowUp') {
+         e.preventDefault();
+         // Ctrl/Cmd + Up = Cycle Pattern Prev
+         const sel = document.getElementById('animPattern');
+         if (sel && sel.options.length > 0) {
+            let idx = sel.selectedIndex - 1;
+            if (idx < 0) idx = sel.options.length - 1;
+            sel.selectedIndex = idx;
+            sel.onchange();
+         }
+         return;
+      }
+      if (code === 'ArrowDown') {
+         e.preventDefault();
+         // Ctrl/Cmd + Down = Cycle Pattern Next
+         const sel = document.getElementById('animPattern');
+         if (sel && sel.options.length > 0) {
+            let idx = (sel.selectedIndex + 1) % sel.options.length;
+            sel.selectedIndex = idx;
+            sel.onchange();
+         }
+         return;
+      }
+      if (code === 'ArrowLeft') {
+         e.preventDefault();
+         // Ctrl/Cmd + Left = Cell Size Minus
+         const btn = document.getElementById('cellMinus'); if (btn) btn.click();
+         return;
+      }
+      if (code === 'ArrowRight') {
+         e.preventDefault();
+         // Ctrl/Cmd + Right = Cell Size Plus
+         const btn = document.getElementById('cellPlus'); if (btn) btn.click();
+         return;
+      }
       return;
     }
     if (e.altKey) return;
@@ -11562,17 +11721,19 @@ const canvas = document.createElement('canvas');
       if (t) t.click();
     }
 
-    else if (code === 'NumpadAdd' || (code === 'Equal' && (e.shiftKey || e.key === '+'))) {
+    else if (code === 'NumpadAdd' || code === 'Equal') {
       e.preventDefault();
-      // Increase animation FPS
-      if (typeof fpsPlus !== 'undefined' && fpsPlus) fpsPlus.click();
-      else { state.animFps = Math.min(60, (state.animFps || 14) + 1); if (animFpsInput) animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); }
+      const step = e.shiftKey ? 5 : 1;
+      state.animFps = Math.min(60, (state.animFps || 14) + step);
+      if (animFpsInput) animFpsInput.value = state.animFps;
+      if (state.isPlaying) restartAnimation(); updateMetaAnimFps();
     }
     else if (code === 'NumpadSubtract' || code === 'Minus') {
       e.preventDefault();
-      // Decrease animation FPS
-      if (typeof fpsMinus !== 'undefined' && fpsMinus) fpsMinus.click();
-      else { state.animFps = Math.max(1, (state.animFps || 14) - 1); if (animFpsInput) animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); }
+      const step = e.shiftKey ? 5 : 1;
+      state.animFps = Math.max(1, (state.animFps || 14) - step);
+      if (animFpsInput) animFpsInput.value = state.animFps;
+      if (state.isPlaying) restartAnimation(); updateMetaAnimFps();
     }
 
     else if (code === 'KeyD') { e.preventDefault(); setDrawMode(!state.drawMode); }
@@ -11582,7 +11743,6 @@ const canvas = document.createElement('canvas');
     else if (code === 'KeyZ') { e.preventDefault(); undoDraw(); }
     else if (code === 'KeyC') { e.preventDefault(); clearDrawTarget(); }
     else if (code === 'KeyP') { e.preventDefault(); togglePalette(); }
-    else if (code === 'KeyR') { e.preventDefault(); regenerateGrid(); }
     else if (code === 'KeyL') { e.preventDefault(); toggleLongStroke(); }
     else if (code === 'KeyT') { e.preventDefault(); toggleTemplateVisibility(); }
     else if (code === 'KeyH') { e.preventDefault(); toggleRefFrameVisibility(); }
@@ -11652,10 +11812,58 @@ const canvas = document.createElement('canvas');
         setDrawSize((state.drawSize|0) + 4);
       }
     }
+    else if (code === 'ArrowUp') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        // Shift+ArrowUp: Plus columns
+        const btn = document.getElementById('colsPlus'); if (btn) btn.click();
+      } else {
+        // ArrowUp: Cycle Direction Prev
+        const sel = document.getElementById('animDirection');
+        if (sel && sel.options.length > 0) {
+           let idx = sel.selectedIndex - 1;
+           if (idx < 0) idx = sel.options.length - 1;
+           sel.selectedIndex = idx;
+           sel.onchange();
+        }
+      }
+    }
+    else if (code === 'ArrowDown') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        // Shift+ArrowDown: Minus columns
+        const btn = document.getElementById('colsMinus'); if (btn) btn.click();
+      } else {
+        // ArrowDown: Cycle Direction Next
+        const sel = document.getElementById('animDirection');
+        if (sel && sel.options.length > 0) {
+           let idx = (sel.selectedIndex + 1) % sel.options.length;
+           sel.selectedIndex = idx;
+           sel.onchange();
+        }
+      }
+    }
+    else if (code === 'ArrowLeft') { 
+      e.preventDefault(); 
+      if (e.shiftKey) {
+         // Shift+Left: Loop Phases Minus
+         const btn = document.getElementById('loopMinus'); if (btn) btn.click();
+      } else {
+         prevFrame(); 
+      }
+    }
+    else if (code === 'ArrowRight') { 
+      e.preventDefault();
+      if (e.shiftKey) {
+         // Shift+Right: Loop Phases Plus
+         const btn = document.getElementById('loopPlus'); if (btn) btn.click();
+      } else {
+         nextFrame(); 
+      }
+    }
+
     else if (code === 'Home') { e.preventDefault(); resetToStart(); }
     else if (code === 'End') { e.preventDefault(); resetToEnd(); }
-    else if (code === 'ArrowLeft') { e.preventDefault(); prevFrame(); }
-    else if (code === 'ArrowRight') { e.preventDefault(); nextFrame(); }
 }, true);
 
 
