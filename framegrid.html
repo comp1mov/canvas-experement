@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.25.40                                        ║
+║      FRAMEGRID v0.25.47                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.25.40</title>
+  <title>FRAMEGRID v0.25.47</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
@@ -1105,7 +1105,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.25.40</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.25.47</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1117,7 +1117,7 @@
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group fps-group">
-          <div class="metadata-item dynamic menu-input-group" style="display:flex; align-items:center; gap:6px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.22); background: transparent;">
+          <div class="metadata-item dynamic menu-input-group" style="display:flex; align-items:center; gap:6px; padding: 2px 4px; background: transparent; border:none;">
             <button class="menu-input-btn" id="metaFpsMinus" style="width:20px;height:20px;font-size:12px;border:none;">−</button>
             <span id="metaAnimFpsText" style="min-width:36px;text-align:center;">14 fps</span>
             <input type="number" class="hidden-fps-input" style="display:none;" value="14" min="1" max="60">
@@ -1461,6 +1461,14 @@
               <button class="menu-input-btn" id="cellMinus">÷</button>
               <span id="cellSizeLabel" style="min-width:44px;text-align:center;font-size:11px;color:#fff;">1</span>
               <button class="menu-input-btn" id="cellPlus">×</button>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Visible</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="revealMinus">−</button>
+              <span id="revealLabel" style="min-width:44px;text-align:center;font-size:11px;color:#fff;">All</span>
+              <button class="menu-input-btn" id="revealPlus">+</button>
             </div>
           </div>
           <div class="menu-row">
@@ -2134,7 +2142,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.25.40</div>
+          <div class="about-version">Version v0.25.47</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
@@ -2212,7 +2220,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.25.40';
+  const APP_VERSION = 'v0.25.47';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   // Sync document/UI labels
@@ -2269,6 +2277,7 @@
     previewCellW: 240, // preview cell width in CSS px (stabilizes iPad grid sizing)
 
     fontSize: 10, spacing: 0,
+    cellReveal: 0,
     tcTextColor: '#ffffff', tcBgColor: '#000000', tcOpacity: 0.7,
     tcAlign: 'left', tcPosition: 'top', tcPadding: 0, tcMargin: 0,
     // Frame image transform inside each cell (preview + export)
@@ -2529,9 +2538,11 @@ function getTargetFrameOutputDims() {
   const metaDuration = $('metaDuration'), metaSourceFrames = $('metaSourceFrames'), metaAnimFps = $('metaAnimFps'), metaDate = $('metaDate'), metaFrames = $('metaFrames'), metaGridShape = $('metaGridShape'), metaLayout = $('metaLayout');
 
   function updateMetaAnimFps() {
-    if (!metaAnimFps) return;
-    metaAnimFps.innerHTML = '<span></span>';
-    metaAnimFps.querySelector('span').textContent = `${state.animFps}fps`;
+    const txt = document.getElementById('metaAnimFpsText');
+    if (txt) txt.textContent = `${state.animFps} fps`;
+    const hid = document.querySelector('.hidden-fps-input');
+    if (hid) hid.value = state.animFps;
+    if (animFpsInput) animFpsInput.value = state.animFps;
   }
 
   // Logo icon: animate the active square while playing (based on currentTick)
@@ -2638,6 +2649,34 @@ function getTargetFrameOutputDims() {
   // Column +/- buttons
   const colsMinus = $('colsMinus'), colsPlus = $('colsPlus');
   const cellSizeLabel = $('cellSizeLabel'), cellMinus = $('cellMinus'), cellPlus = $('cellPlus');
+  const revealMinus = $('revealMinus'), revealPlus = $('revealPlus');
+  const revealLabel = $('revealLabel');
+
+  function updateRevealUI() {
+    if (revealLabel) revealLabel.textContent = state.cellReveal === 0 ? 'All' : String(state.cellReveal);
+  }
+
+  function applyReveal() {
+    if (state.viewMode !== 'grid') {
+      framesGrid.querySelectorAll('.frame-item').forEach(item => item.style.visibility = '');
+      return;
+    }
+    const items = framesGrid.querySelectorAll('.frame-item');
+    const offset = state.showInfoCard ? 1 : 0;
+    items.forEach((item, i) => {
+      if (i < offset) return;
+      const cellIdx = i - offset;
+      item.style.visibility = (state.cellReveal > 0 && cellIdx >= state.cellReveal) ? 'hidden' : '';
+    });
+  }
+
+  if (revealMinus) revealMinus.onclick = () => {
+    if (state.cellReveal > 0) { state.cellReveal--; updateRevealUI(); applyReveal(); }
+  };
+  if (revealPlus) revealPlus.onclick = () => {
+    const maxCells = framesGrid.querySelectorAll('.frame-item').length - (state.showInfoCard ? 1 : 0);
+    if (state.cellReveal < maxCells) { state.cellReveal++; updateRevealUI(); applyReveal(); }
+  };
   const loopPhasesLabel = $('loopPhasesLabel'), loopMinus = $('loopMinus'), loopPlus = $('loopPlus');
   
   // Quick toolbar
@@ -4984,7 +5023,7 @@ function fitToSingleFrame() {
     }
   };
   loopPlus.onclick = () => {
-    if (state.gridLoops < 5) {
+    if (state.gridLoops < 16) {
       state.gridLoops += 1;
       updateLoopPhasesUI();
       updateMetaLayoutInfo();
@@ -5127,8 +5166,12 @@ function fitToSingleFrame() {
 
   const metaFpsMinus = $('metaFpsMinus');
   const metaFpsPlus = $('metaFpsPlus');
-  if (metaFpsMinus) metaFpsMinus.onclick = () => { if (state.animFps > 1) { state.animFps--; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); } };
-  if (metaFpsPlus) metaFpsPlus.onclick = () => { if (state.animFps < 60) { state.animFps++; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); } };
+  if (metaFpsMinus) metaFpsMinus.onclick = () => {
+    if (state.animFps > 1) { state.animFps--; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); }
+  };
+  if (metaFpsPlus) metaFpsPlus.onclick = () => {
+    if (state.animFps < 60) { state.animFps++; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); }
+  };
 
   const hiddenFps = document.querySelector('.hidden-fps-input');
   if (hiddenFps) {
@@ -5472,6 +5515,7 @@ function updateAllCells() {
       }
       item.dataset.frameIdx = frameIdx;
     });
+    applyReveal();
     // Keep drawings animating even when Draw Mode is OFF.
 
     // Composite is needed whenever any overlay layer exists (BG / Template / per-frame drawings).
@@ -5912,7 +5956,7 @@ let isDrawing = false;
   }
 
   // ====================================
-  //  DRAW UNDO v0.25.40 STEP3 (stable)
+  //  DRAW UNDO v0.25.47 STEP3 (stable)
   //  - target-only snapshots
   //  - FRM captures per-tile snapshots
   //  - undo never clears layers when snapshot is missing
@@ -11969,8 +12013,8 @@ const canvas = document.createElement('canvas');
          const dir = (code === 'Minus' || code === 'NumpadSubtract') ? -1 : 1;
          const step = e.shiftKey ? 10 : 5; // In Ctrl block, e.shiftKey means Ctrl+Shift
          state.animFps = Math.max(1, Math.min(60, (state.animFps || 14) + (dir * step)));
-         if (animFpsInput) animFpsInput.value = state.animFps;
          if (state.isPlaying) restartAnimation();
+         updateMetaAnimFps();
          updateMetaAnimFps();
          return;
       }
@@ -13196,12 +13240,6 @@ function audioInitUI() {
 
     const isCtrl = e.ctrlKey || e.metaKey;
 
-    _btnRepeatTimer = setTimeout(() => {
-      _btnRepeatInterval = setInterval(() => {
-        btn.click();
-      }, 120);
-    }, 400);
-
     if (isCtrl) {
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -13227,6 +13265,13 @@ function audioInitUI() {
       }
       return;
     }
+
+    // Only start hold-repeat for normal (non-ctrl) clicks
+    _btnRepeatTimer = setTimeout(() => {
+      _btnRepeatInterval = setInterval(() => {
+        btn.click();
+      }, 120);
+    }, 400);
   });
 
   const stopBtnRepeat = () => {
@@ -13235,6 +13280,14 @@ function audioInitUI() {
     _btnRepeatTimer = null;
     _btnRepeatInterval = null;
   };
+
+  // Block the native click that browser fires after ctrl+pointerdown
+  document.addEventListener('click', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.target.closest('.menu-input-btn')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  }, true);
 
   document.addEventListener('pointerup', stopBtnRepeat);
   document.addEventListener('pointerleave', stopBtnRepeat, true);
