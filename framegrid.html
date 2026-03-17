@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.25.20                                        ║
+║      FRAMEGRID v0.25.40                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.25.20</title>
+  <title>FRAMEGRID v0.25.40</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
@@ -151,12 +151,12 @@
     .canvas-inner { position: absolute; z-index: 1; transform-origin: 0 0; padding: var(--canvas-inner-pad, clamp(520px, 28vw, 1400px)); box-sizing: border-box; }
 
     /* GRID */
-    .frames-grid { display: grid; gap: var(--grid-gap, 2px); width: max-content; align-content: start; position: relative; z-index: 2; }
+    .frames-grid { display: grid; gap: max(0px, var(--grid-gap, 0px)); padding: calc(min(0px, var(--grid-gap, 0px)) * -0.5); width: max-content; align-content: start; position: relative; z-index: 2; }
     .bg-underlay-canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
     .frames-grid.seamless { gap: 0 !important; }
     .frames-grid.seamless .frame-item { background: var(--frame-bg, #111); }
     .frames-grid.seamless .frame-image-wrap { outline: 1px solid var(--frame-bg, #111); outline-offset: -1px; }
-    .frame-item { background: #000; position: relative; }
+    .frame-item { background: #000; position: relative; margin: min(0px, calc(var(--grid-gap, 0px) / 2)); }
     .frame-item.dimmed { opacity: 0.25; }
     .frame-image-wrap {
       position: relative; width: 100%;
@@ -379,6 +379,7 @@
       width: 28px; height: 28px; background: #222; border: 1px solid rgba(255,255,255,0.2);
       border-radius: 2px; color: #fff; font-size: 16px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     }
     .menu-input-btn:hover { background: #333; }
     .menu-input-btn:active { background: var(--fg-accent, #35f2a3); color: #000; }
@@ -449,6 +450,9 @@
     .menu-btn:hover { background: rgba(255,255,255,0.1); }
     .menu-btn.primary { background: var(--fg-accent, #35f2a3); border-color: var(--fg-accent, #35f2a3); color: #000; }
     .menu-btn.primary:hover { background: #4df7b5; }
+
+    .menu-btn.active-toggle { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.8); color: #fff; }
+
     .menu-color-input {
       width: 36px; height: 28px; padding: 2px; background: #111;
       border: 1px solid rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer;
@@ -1101,7 +1105,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.25.20</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.25.40</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1113,7 +1117,12 @@
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group fps-group">
-          <div class="metadata-item dynamic" id="metaAnimFps"></div>
+          <div class="metadata-item dynamic menu-input-group" style="display:flex; align-items:center; gap:6px; padding: 2px 4px; border: 1px solid rgba(255,255,255,0.22); background: transparent;">
+            <button class="menu-input-btn" id="metaFpsMinus" style="width:20px;height:20px;font-size:12px;border:none;">−</button>
+            <span id="metaAnimFpsText" style="min-width:36px;text-align:center;">14 fps</span>
+            <input type="number" class="hidden-fps-input" style="display:none;" value="14" min="1" max="60">
+            <button class="menu-input-btn" id="metaFpsPlus" style="width:20px;height:20px;font-size:12px;border:none;">+</button>
+          </div>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group" id="metaAnimSettingsGroup" style="display:none;">
@@ -1390,28 +1399,28 @@
             <span class="menu-label">Offset X</span>
             <div class="menu-slider-row">
               <input type="range" class="menu-slider" id="frameImgOffX" min="-50" max="50" step="1" value="0">
-              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="frameImgOffXNum" min="-50" max="50" step="1" value="0" inputmode="decimal"><span class="menu-slider-unit">%</span></div>
+              <input type="number" class="menu-slider-input" id="frameImgOffXNum" min="-50" max="50" step="1" value="0" inputmode="decimal">
             </div>
           </div>
           <div class="menu-row">
             <span class="menu-label">Offset Y</span>
             <div class="menu-slider-row">
               <input type="range" class="menu-slider" id="frameImgOffY" min="-50" max="50" step="1" value="0">
-              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="frameImgOffYNum" min="-50" max="50" step="1" value="0" inputmode="decimal"><span class="menu-slider-unit">%</span></div>
+              <input type="number" class="menu-slider-input" id="frameImgOffYNum" min="-50" max="50" step="1" value="0" inputmode="decimal">
             </div>
           </div>
           <div class="menu-row">
             <span class="menu-label">Rotation</span>
             <div class="menu-slider-row">
               <input type="range" class="menu-slider" id="frameImgRot" min="-360" max="360" step="0.1" value="0">
-              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="frameImgRotNum" min="-360" max="360" step="0.1" value="0.0" inputmode="decimal"><span class="menu-slider-unit">°</span></div>
+              <input type="number" class="menu-slider-input" id="frameImgRotNum" min="-360" max="360" step="0.1" value="0.0" inputmode="decimal">
             </div>
           </div>
           <div class="menu-row">
             <span class="menu-label">Opacity</span>
-            <div class="menu-slider-group">
+            <div class="menu-slider-row">
               <input type="range" class="menu-slider" id="frameImgOpacity" min="0" max="1" step="0.01" value="1">
-              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="frameImgOpacityNum" min="0" max="1" step="0.01" value="1.00" inputmode="decimal"></div>
+              <input type="number" class="menu-slider-input" id="frameImgOpacityNum" min="0" max="1" step="0.01" value="1.00" inputmode="decimal">
             </div>
           </div>
           <div class="menu-row">
@@ -1469,8 +1478,8 @@
           <div class="menu-row">
             <span class="menu-label">Spacing</span>
             <div class="menu-slider-row">
-              <input type="range" class="menu-slider" id="spacingSlider" min="0" max="20" value="2">
-              <span class="menu-slider-value" id="spacingValue">2px</span>
+              <input type="range" class="menu-slider" id="spacingSlider" min="-20" max="20" value="0">
+              <span class="menu-slider-value" id="spacingValue">0px</span>
             </div>
           </div>
           <div class="menu-hint" id="gridHint">Load video to see suggestions</div>
@@ -1683,7 +1692,7 @@
               <option value="random">Random</option>
             </select>
           </div>
-          <div style="display:flex; gap:8px; margin-top: 8px;">
+          <div style="display:flex; gap:8px; margin-top: 8px; margin-bottom: 8px;">
             <button class="menu-btn" id="btnFlipX" style="flex:1; margin-top:0;">FLIP X</button>
             <button class="menu-btn" id="btnFlipY" style="flex:1; margin-top:0;">FLIP Y</button>
           </div>
@@ -1693,6 +1702,54 @@
       </div>
 
       
+
+      <!-- CHRONOPHOTO -->
+      <div class="menu-section collapsed" id="chronophotoSection">
+        <div class="menu-section-title">Chronophoto</div>
+        <div class="menu-section-content">
+          <div class="menu-row">
+            <span class="menu-label">Enable</span>
+            <div class="menu-toggle-switch" id="toggleChronophoto"></div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Blend Mode</span>
+            <select class="menu-select" id="chronoBlend">
+              <option value="source-over">Normal</option>
+              <option value="screen">Screen</option>
+              <option value="overlay">Overlay</option>
+              <option value="multiply">Multiply</option>
+              <option value="lighten">Lighten</option>
+              <option value="darken">Darken</option>
+              <option value="color-dodge">Color Dodge</option>
+              <option value="color-burn">Color Burn</option>
+              <option value="difference">Difference</option>
+              <option value="exclusion">Exclusion</option>
+              <option value="hard-light">Hard Light</option>
+              <option value="soft-light">Soft Light</option>
+            </select>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Frame Depth</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="chronoDepthMinus">−</button>
+              <input type="number" class="menu-input menu-input-narrow" id="chronoDepth" value="3" min="1" max="15">
+              <button class="menu-input-btn" id="chronoDepthPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Layer Opacity</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="chronoOpacity" min="0.05" max="1.0" step="0.05" value="0.4">
+              <input type="number" class="menu-slider-input" id="chronoOpacityNum" min="0.05" max="1.0" step="0.05" value="0.40" inputmode="decimal">
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label" title="Cascade makes older frames more transparent">Cascade Fade</span>
+            <div class="menu-toggle-switch" id="toggleChronoCascade"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="menu-section collapsed" id="audioSeqSection">
         <div class="menu-section-title">Audio Collision Seq</div>
         <div class="menu-section-content">
@@ -2009,20 +2066,39 @@
             <span class="menu-label">Metadata in Export</span>
             <div class="menu-toggle-switch" id="toggleExportMetadata"></div>
           </div>
-                    <div class="menu-subtitle">Grid</div>
-          <button class="menu-btn" id="exportSmallBtn">JPEG Grid</button>
-          <button class="menu-btn" id="exportFullBtn">PNG Grid</button>
-          <button class="menu-btn" id="exportMp4GridBtn">MP4 Grid</button>
-          <button class="menu-btn" id="exportResampledGridBtn">Time-Synced Original Audio Grid</button>
 
-          <div class="menu-subtitle">Single</div>
-          <button class="menu-btn" id="exportJpegSingleBtn">JPEG Single</button>
-          <button class="menu-btn" id="exportPngSingleBtn">PNG Single</button>
-          <button class="menu-btn" id="exportMp4SingleBtn">MP4 Single</button>
-          <button class="menu-btn" id="exportResampledBtn">Time-Synced Original Audio Single</button>
+          <!-- Consolidated Export UI -->
+          <div class="menu-subtitle">Target View</div>
+          <div style="display:flex; gap: 8px; margin-bottom: 12px;" id="exportTargetMode">
+            <button class="menu-btn active-toggle" data-val="grid" style="flex:1; margin-top:0;">Grid</button>
+            <button class="menu-btn" data-val="single" style="flex:1; margin-top:0;">Single</button>
+          </div>
 
-          <div class="menu-subtitle">Sequence</div>
-          <button class="menu-btn" id="exportPngSeqDrawBtn">PNG Sequence (ZIP)</button>
+          <div class="menu-subtitle">Export Format</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+             <button class="menu-btn" id="expJpegBtn" style="margin:0;">JPEG</button>
+             <button class="menu-btn" id="expPngBtn" style="margin:0;">PNG</button>
+             <button class="menu-btn" id="expMp4Btn" style="margin:0;">MP4</button>
+             <button class="menu-btn" id="expSeqBtn" style="margin:0;">SEQ (ZIP)</button>
+          </div>
+
+          <div class="menu-subtitle">Time-Sync Audio Mode</div>
+          <button class="menu-btn" id="expSyncAudioBtn">Render with Original Audio</button>
+
+          <!-- Hidden legacy buttons to keep logic intact -->
+          <div style="display:none;">
+            <button id="exportSmallBtn"></button>
+            <button id="exportFullBtn"></button>
+            <button id="exportMp4GridBtn"></button>
+            <button id="exportResampledGridBtn"></button>
+            <button id="exportJpegSingleBtn"></button>
+            <button id="exportPngSingleBtn"></button>
+            <button id="exportMp4SingleBtn"></button>
+            <button id="exportResampledBtn"></button>
+            <button id="exportPngSeqDrawBtn"></button>
+          </div>
+
+          <div class="menu-subtitle">System</div>
           <button class="menu-btn" id="newVideoBtn">Load New Video</button>
         </div>
       </div>
@@ -2058,7 +2134,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.25.20</div>
+          <div class="about-version">Version v0.25.40</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
@@ -2136,7 +2212,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.25.20';
+  const APP_VERSION = 'v0.25.40';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   // Sync document/UI labels
@@ -2162,6 +2238,11 @@
   }, { passive: false });
 
   const state = {
+    chronoEnabled: false,
+    chronoBlend: 'screen',
+    chronoDepth: 3,
+    chronoOpacity: 0.4,
+    chronoCascade: false,
     videoFile: null, filenameOverride: '', drawCanvasDpr: 1, videoUrl: null, videoDuration: 0,
     // Source type
     isSingleImage: false,
@@ -2187,11 +2268,11 @@
     bgGridShow: false, bgGridType: 'lines', bgGridColor: '#ffffff', bgGridOpacity: 0.12, bgGridSize: 24,
     previewCellW: 240, // preview cell width in CSS px (stabilizes iPad grid sizing)
 
-    fontSize: 10, spacing: 2,
+    fontSize: 10, spacing: 0,
     tcTextColor: '#ffffff', tcBgColor: '#000000', tcOpacity: 0.7,
     tcAlign: 'left', tcPosition: 'top', tcPadding: 0, tcMargin: 0,
     // Frame image transform inside each cell (preview + export)
-    frameImgScale: 1,
+    frameImgScale: 1.01,
     frameImgRot: 0,
     frameImgOffX: 0, // percent of cell width
     frameImgOffY: 0, // percent of cell height
@@ -4021,6 +4102,9 @@ const tc = document.createElement('div');
 
     updateTimecodeVisibility();
 
+    // Ensure chrono is applied to new grid
+    updateAllCells();
+
     // Sync drawing geometry after grid build (deferred so layout is stable)
     schedulePostGridSync();
   }
@@ -4771,6 +4855,29 @@ function fitToSingleFrame() {
       applyFrameImgTransform();
     };
   }
+
+  if (frameImgOpacitySlider) {
+    frameImgOpacitySlider.oninput = () => {
+      const v = parseFloat(frameImgOpacitySlider.value);
+      state.frameImgOpacity = isNaN(v) ? 1 : v;
+      if (frameImgOpacityNum) frameImgOpacityNum.value = state.frameImgOpacity.toFixed(2);
+      applyFrameImgTransform();
+      requestComposite();
+    };
+  }
+
+  if (frameImgOpacityNum) {
+    frameImgOpacityNum.oninput = () => {
+      const v = parseFloat(frameImgOpacityNum.value);
+      if (!Number.isFinite(v)) return;
+      state.frameImgOpacity = Math.max(0, Math.min(1, v));
+      frameImgOpacityNum.value = state.frameImgOpacity.toFixed(2);
+      if (frameImgOpacitySlider) frameImgOpacitySlider.value = String(state.frameImgOpacity);
+      applyFrameImgTransform();
+      requestComposite();
+    };
+  }
+
   if (resetFrameTransformBtn) {
     resetFrameTransformBtn.addEventListener('click', () => {
       state.frameImgScale = 1;
@@ -4915,7 +5022,98 @@ function fitToSingleFrame() {
   if (exportResampledBtn) exportResampledBtn.onclick = () => exportResampledVideo('single');
   if (exportResampledGridBtn) exportResampledGridBtn.onclick = () => exportResampledVideo('grid');
   if (exportPngSeqDrawBtn) exportPngSeqDrawBtn.onclick = exportPngSeqDrawings;
-  
+ 
+  // Consolidated Export UI Logic
+  let activeExportMode = 'grid';
+  const exportTargetMode = document.getElementById('exportTargetMode');
+  if (exportTargetMode) {
+     const btns = exportTargetMode.querySelectorAll('.menu-btn');
+     btns.forEach(b => {
+       b.addEventListener('click', () => {
+         btns.forEach(x => x.classList.remove('active-toggle'));
+         b.classList.add('active-toggle');
+         activeExportMode = b.dataset.val;
+       });
+     });
+  }
+
+  const expJpegBtn = document.getElementById('expJpegBtn');
+  const expPngBtn = document.getElementById('expPngBtn');
+  const expMp4Btn = document.getElementById('expMp4Btn');
+  const expSeqBtn = document.getElementById('expSeqBtn');
+  const expSyncAudioBtn = document.getElementById('expSyncAudioBtn');
+
+  if (expJpegBtn) expJpegBtn.onclick = () => { activeExportMode === 'grid' ? $('exportSmallBtn').click() : $('exportJpegSingleBtn').click(); };
+  if (expPngBtn) expPngBtn.onclick = () => { activeExportMode === 'grid' ? $('exportFullBtn').click() : $('exportPngSingleBtn').click(); };
+  if (expMp4Btn) expMp4Btn.onclick = () => { activeExportMode === 'grid' ? $('exportMp4GridBtn').click() : $('exportMp4SingleBtn').click(); };
+  if (expSeqBtn) expSeqBtn.onclick = () => { $('exportPngSeqDrawBtn').click(); };
+  if (expSyncAudioBtn) expSyncAudioBtn.onclick = () => { activeExportMode === 'grid' ? $('exportResampledGridBtn').click() : $('exportResampledBtn').click(); };
+ 
+
+  // Chronophoto bindings
+  const toggleChronophoto = $('toggleChronophoto');
+  const chronoBlend = $('chronoBlend');
+  const chronoDepth = $('chronoDepth');
+  const chronoDepthMinus = $('chronoDepthMinus');
+  const chronoDepthPlus = $('chronoDepthPlus');
+  const chronoOpacity = $('chronoOpacity');
+  const chronoOpacityNum = $('chronoOpacityNum');
+
+  const toggleChronoCascade = $('toggleChronoCascade');
+
+  const updateChronoUI = () => {
+    updateAllCells();
+    requestComposite();
+  };
+
+  if (toggleChronoCascade) {
+    toggleChronoCascade.onclick = () => {
+      state.chronoCascade = !state.chronoCascade;
+      toggleChronoCascade.classList.toggle('active', state.chronoCascade);
+      updateChronoUI();
+    };
+  }
+
+  if (toggleChronophoto) {
+    toggleChronophoto.onclick = () => {
+      state.chronoEnabled = !state.chronoEnabled;
+      toggleChronophoto.classList.toggle('active', state.chronoEnabled);
+      updateChronoUI();
+    };
+  }
+  if (chronoBlend) {
+    chronoBlend.onchange = () => {
+      state.chronoBlend = chronoBlend.value;
+      updateChronoUI();
+    };
+  }
+  if (chronoDepth) {
+    chronoDepth.onchange = () => {
+      state.chronoDepth = Math.max(1, Math.min(30, parseInt(chronoDepth.value) || 1));
+      chronoDepth.value = state.chronoDepth;
+      updateChronoUI();
+    };
+  }
+  if (chronoDepthMinus) chronoDepthMinus.onclick = () => { if (state.chronoDepth > 1) { state.chronoDepth--; chronoDepth.value = state.chronoDepth; updateChronoUI(); } };
+  if (chronoDepthPlus) chronoDepthPlus.onclick = () => { if (state.chronoDepth < 30) { state.chronoDepth++; chronoDepth.value = state.chronoDepth; updateChronoUI(); } };
+
+  if (chronoOpacity) {
+    chronoOpacity.oninput = () => {
+      state.chronoOpacity = parseFloat(chronoOpacity.value) || 0.4;
+      if (chronoOpacityNum) chronoOpacityNum.value = state.chronoOpacity.toFixed(2);
+      updateChronoUI();
+    };
+  }
+  if (chronoOpacityNum) {
+    chronoOpacityNum.oninput = () => {
+      const v = parseFloat(chronoOpacityNum.value);
+      state.chronoOpacity = isNaN(v) ? 0.4 : Math.max(0.01, Math.min(1.0, v));
+      chronoOpacityNum.value = state.chronoOpacity.toFixed(2);
+      if (chronoOpacity) chronoOpacity.value = String(state.chronoOpacity);
+      updateChronoUI();
+    };
+  }
+
   // Export quality and loops
   exportQualitySelect.onchange = () => { state.exportQuality = exportQualitySelect.value; };
   loopsMinus.onclick = () => { if (state.exportLoops > 1) { state.exportLoops--; loopsInput.value = state.exportLoops; } };
@@ -4925,7 +5123,25 @@ function fitToSingleFrame() {
   // Animation controls
   animFpsInput.onchange = () => { state.animFps = Math.max(1, Math.min(60, parseInt(animFpsInput.value) || 8)); animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); };
   fpsMinus.onclick = () => { if (state.animFps > 1) { state.animFps--; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); } };
-  fpsPlus.onclick = () => { if (state.animFps < 60) { state.animFps++; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); } };
+  fpsPlus.onclick = () => { if (state.animFps < 60) { state.animFps++;
+
+  const metaFpsMinus = $('metaFpsMinus');
+  const metaFpsPlus = $('metaFpsPlus');
+  if (metaFpsMinus) metaFpsMinus.onclick = () => { if (state.animFps > 1) { state.animFps--; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); } };
+  if (metaFpsPlus) metaFpsPlus.onclick = () => { if (state.animFps < 60) { state.animFps++; animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); } };
+
+  const hiddenFps = document.querySelector('.hidden-fps-input');
+  if (hiddenFps) {
+    hiddenFps.onchange = () => {
+       let val = parseInt(hiddenFps.value, 10);
+       state.animFps = Math.max(1, Math.min(60, val));
+       animFpsInput.value = state.animFps;
+       hiddenFps.value = state.animFps;
+       if (state.isPlaying) restartAnimation();
+       updateMetaAnimFps();
+    };
+  }
+ animFpsInput.value = state.animFps; if (state.isPlaying) restartAnimation(); updateMetaAnimFps(); } };
   animDirectionSelect.onchange = () => { state.animDirection = animDirectionSelect.value; if (state.animDirection === 'random') { state.animDirShuffleSeed = null; state.animDirShuffle = null; state.animDirShuffleFrames = 0; } updateAnimSeedUI(); updateMetaLayoutInfo(); if (state.isPlaying) restartAnimation(); else updateAllCells(); };
   animPatternSelect.onchange = () => { state.animPattern = animPatternSelect.value; updateAnimSeedUI(); state.animRandomStartsSeed = null; updateMetaLayoutInfo(); if (state.isPlaying) restartAnimation(); else updateAllCells(); };
   const btnFlipX = $('btnFlipX');
@@ -4976,7 +5192,57 @@ function fitToSingleFrame() {
   
   // FIX v0.16: updateAllCells uses state.currentTick, updates BOTH img elements
   
-    function updateOnionForItem(item, frameIdx) {
+  
+  // Chronophoto DOM update
+  function updateChronoForItem(item, baseIdx) {
+    const xform = item.querySelector('.frame-media-xform');
+    if (!xform) return;
+
+    // Clear existing chrono images
+    const existing = xform.querySelectorAll('.frame-chrono');
+    existing.forEach(el => el.remove());
+
+    if (!state.chronoEnabled || !state.frames.length) return;
+
+    const depth = state.chronoDepth || 1;
+    const blendMode = state.chronoBlend || 'screen';
+    const alphaBase = state.chronoOpacity || 0.4;
+    const n = state.frames.length;
+
+    // We only want to look FORWARD in time for the chronological trail!
+    // But maybe we want an option? Let's just make it look forward (i.e. older frames trail behind, or future frames show ahead).
+    // Actually, chronophotography usually shows the PAST trail of where the object was.
+    // So we should take frames from `baseIdx - depth` to `baseIdx - 1`.
+
+    // For difference/exclusion mode, drawing multiple transparent layers over each other gets muddy quickly.
+
+    for (let offset = -depth; offset < 0; offset++) {
+      let nIdx = baseIdx + offset;
+
+      // Loop if needed? Or just cap it? We can wrap around (loop) using modulo so the trail never cuts off at the start of video.
+      nIdx = ((nIdx % n) + n) % n;
+
+      const frame = state.frames[nIdx];
+      if (frame) {
+        const dist = Math.abs(offset);
+        const img = document.createElement('img');
+        img.className = 'frame-chrono';
+        img.src = frame.dataUrl;
+        img.style.position = 'absolute';
+        img.style.inset = '0';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        img.style.pointerEvents = 'none';
+        img.style.zIndex = '1';
+        img.style.mixBlendMode = blendMode;
+        img.style.opacity = state.chronoCascade ? (alphaBase * (1.0 / dist)).toFixed(3) : alphaBase.toFixed(3);
+        xform.appendChild(img);
+      }
+    }
+  }
+
+  function updateOnionForItem(item, frameIdx) {
     const cnv = item.querySelector('canvas.frame-onion');
     if (!cnv) return;
 
@@ -5197,6 +5463,7 @@ function updateAllCells() {
       const mainImg = item.querySelector('.frame-main-img');
       if (mainImg) mainImg.src = frame.dataUrl;
       updateOnionForItem(item, frameIdx);
+      updateChronoForItem(item, frameIdx);
 
       const tc = item.querySelector('.frame-timecode');
       if (tc && computeShowTimecode()) {
@@ -5645,7 +5912,7 @@ let isDrawing = false;
   }
 
   // ====================================
-  //  DRAW UNDO v0.25.20 STEP3 (stable)
+  //  DRAW UNDO v0.25.40 STEP3 (stable)
   //  - target-only snapshots
   //  - FRM captures per-tile snapshots
   //  - undo never clears layers when snapshot is missing
@@ -6319,6 +6586,7 @@ function compositeAllLayers() {
       if (templateFrame && templateFrame.classList.contains('visible')) renderTemplateFramePreview();
 
       // Per-frame drawings (should follow the frame as it animates)
+      
       renderFrameDrawingsOnCanvas();
 
       if (state.bgLayerAboveDrawings) {
@@ -6428,6 +6696,7 @@ function compositeAllLayers() {
   }
 
   
+
   function renderFrameDrawingsOnCanvas() {
     // Per-frame sheet: each visible cell gets the slice for its current frameIdx
     if (!frameSheetCanvas.width || !frameSheetCanvas.height) return;
@@ -9580,7 +9849,7 @@ function renderMp4GridFrame(ctx, w, h, frameImages, tick, cellOrder, rows, frame
       const animFrameIdx = resolveDirectionFrame(tick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
       const frame = state.frames[animFrameIdx];
       const img = frameImages ? frameImages[animFrameIdx] : null;
-      if (!drawingsOnly && img) drawFrameCell(ctx, img, x, y, frameW, frameH);
+      if (!drawingsOnly && img) drawFrameCell(ctx, img, x, y, frameW, frameH, animFrameIdx);
       _cells.push({ c, uiC, x, y, frameW, frameH, animFrameIdx, frame });
     }
 
@@ -9830,7 +10099,59 @@ function drawExportBgLayer(ctx, dstX, dstY, dstW, dstH, mode = 'grid') {
     }
   }
 
-function drawFrameCell(ctx, img, x, y, w, h) {
+
+  // Renders a stack of Chronophoto overlays for a specific base frame
+  function drawChronophotoStack(ctx, baseIdx, x, y, w, h) {
+    if (!state.chronoEnabled || !state.frames.length) return;
+    const depth = state.chronoDepth || 1;
+    const blendMode = state.chronoBlend || 'screen';
+    const alphaBase = state.chronoOpacity || 0.4;
+    const n = state.frames.length;
+
+    ctx.save();
+    ctx.globalCompositeOperation = blendMode;
+
+    for (let offset = -depth; offset < 0; offset++) {
+      let nIdx = baseIdx + offset;
+      nIdx = ((nIdx % n) + n) % n; // Loop
+
+      const frame = state.frames[nIdx];
+      if (!frame) continue;
+      const src = getFrameDataUrl(frame);
+      if (src) {
+         const img = frame.img || (frame.img = new Image());
+         if (img.src !== src) img.src = src;
+         if (img.naturalWidth) {
+           const dist = Math.abs(offset);
+           ctx.globalAlpha = state.chronoCascade ? (alphaBase * (1.0 / dist)) : alphaBase;
+
+           const s = Number(state.frameImgScale) || 1;
+           const ox = (Number(state.frameImgOffX) || 0) * 0.01 * w;
+           const oy = (Number(state.frameImgOffY) || 0) * 0.01 * h;
+           const srcW = img.videoWidth || img.naturalWidth || img.width || 1;
+           const srcH = img.videoHeight || img.naturalHeight || img.height || 1;
+           const contain = Math.min(w / Math.max(1,srcW), h / Math.max(1,srcH));
+           const dw = srcW * contain * s;
+           const dh = srcH * contain * s;
+           const dx = x + (w - dw) / 2 + ox;
+           const dy = y + (h - dh) / 2 + oy;
+
+           ctx.save();
+           ctx.beginPath();
+           ctx.rect(x, y, w, h);
+           ctx.clip();
+           ctx.translate(dx + dw/2, dy + dh/2);
+           ctx.rotate((Number(state.frameImgRot) || 0) * Math.PI / 180);
+           ctx.drawImage(img, -dw/2, -dh/2, dw, dh);
+           ctx.restore();
+         }
+      }
+    }
+
+    ctx.restore();
+  }
+
+function drawFrameCell(ctx, img, x, y, w, h, baseIdx) {
     if (!img) return;
 
     const s = Number(state.frameImgScale) || 1;
@@ -9881,8 +10202,11 @@ const dx = x + (w - dw) / 2 + ox;
     ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
     ctx.globalAlpha = 1;
 
+
     ctx.imageSmoothingEnabled = _smPrev;
     ctx.restore();
+
+    if (baseIdx !== undefined) drawChronophotoStack(ctx, baseIdx, x, y, w, h);
   }
 
   function drawExportRefFrame(ctx, x, y, w, h) {
@@ -9958,7 +10282,7 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, layout,
     }
     if (!state.bgLayerAboveDrawings) drawExportBgLayer(ctx, 0, outHeaderH, w, bodyH, 'single');
     drawExportBgPattern(ctx, 0, outHeaderH, w, bodyH, 'single');
-    if (!drawingsOnly && img) drawFrameCell(ctx, img, innerX, innerY, innerW, innerH);
+    if (!drawingsOnly && img) drawFrameCell(ctx, img, innerX, innerY, innerW, innerH, frameIdx);
 
     if (state.refFrameAboveDrawings) {
       drawExportDrawings(ctx, innerX, innerY, innerW, innerH, frameIdx);
@@ -10280,14 +10604,14 @@ async function exportPngSeqDrawings() {
       if (state.isSingleImage) {
         const url = state.frames[i]?.dataUrl || '';
         const img = await loadImgCached(url);
-        if (img) drawFrameCell(tmpCtx, img, 0, 0, outW, outH);
+        if (img) drawFrameCell(tmpCtx, img, 0, 0, outW, outH, i);
       } else {
         const time = state.frames[i]?.time || 0;
         await seekVideo(time);
 
         // Always export the base frame. Drawings are optional overlay.
         try {
-          drawFrameCell(tmpCtx, videoElement, 0, 0, outW, outH);
+          drawFrameCell(tmpCtx, videoElement, 0, 0, outW, outH, i);
         } catch (e) {
           // If drawImage fails (rare on iOS), leave frame blank.
         }
@@ -11055,12 +11379,13 @@ const canvas = document.createElement('canvas');
     const src = getFrameDataUrl(frame);
     if (src) {
       const img = frame.img || (frame.img = new Image());
+           if (img.src !== src) img.src = src;
       if (img.src !== src) img.src = src;
       if (!(img.complete && img.naturalWidth)) {
         await ensureImageReady(img);
       }
       if (img.naturalWidth) {
-        drawFrameCell(ctx, img, x, y, sFrameW, sFrameH);
+        drawFrameCell(ctx, img, x, y, sFrameW, sFrameH, frameIdx);
       } else {
         // Best-effort: draw placeholder
         ctx.fillStyle = '#111';
@@ -11319,12 +11644,13 @@ const canvas = document.createElement('canvas');
     const src = getFrameDataUrl(frame);
     if (src) {
       const img = frame.img || (frame.img = new Image());
+           if (img.src !== src) img.src = src;
       if (img.src !== src) img.src = src;
       if (!(img.complete && img.naturalWidth)) {
         await ensureImageReady(img);
       }
       if (img.naturalWidth) {
-        drawFrameCell(ctx, img, dx, dy, frameW, frameH);
+        drawFrameCell(ctx, img, dx, dy, frameW, frameH, frameIdx);
       } else {
         ctx.fillStyle = '#111';
         ctx.fillRect(dx, dy, frameW, frameH);
@@ -11673,14 +11999,12 @@ const canvas = document.createElement('canvas');
       }
       if (code === 'ArrowLeft') {
          e.preventDefault();
-         // Ctrl/Cmd + Left = Cell Size Minus
-         const btn = document.getElementById('cellMinus'); if (btn) btn.click();
+         const btn = document.getElementById('colsMinus'); if (btn) btn.click();
          return;
       }
       if (code === 'ArrowRight') {
          e.preventDefault();
-         // Ctrl/Cmd + Right = Cell Size Plus
-         const btn = document.getElementById('cellPlus'); if (btn) btn.click();
+         const btn = document.getElementById('colsPlus'); if (btn) btn.click();
          return;
       }
       return;
@@ -11815,14 +12139,11 @@ const canvas = document.createElement('canvas');
     else if (code === 'ArrowUp') {
       e.preventDefault();
       if (e.shiftKey) {
-        // Shift+ArrowUp: Plus columns
-        const btn = document.getElementById('colsPlus'); if (btn) btn.click();
+        const btn = document.getElementById('loopPlus'); if (btn) btn.click();
       } else {
-        // ArrowUp: Cycle Direction Prev
         const sel = document.getElementById('animDirection');
         if (sel && sel.options.length > 0) {
-           let idx = sel.selectedIndex - 1;
-           if (idx < 0) idx = sel.options.length - 1;
+           let idx = (sel.selectedIndex + 1) % sel.options.length; // Inverted to Next
            sel.selectedIndex = idx;
            sel.onchange();
         }
@@ -11831,13 +12152,12 @@ const canvas = document.createElement('canvas');
     else if (code === 'ArrowDown') {
       e.preventDefault();
       if (e.shiftKey) {
-        // Shift+ArrowDown: Minus columns
-        const btn = document.getElementById('colsMinus'); if (btn) btn.click();
+        const btn = document.getElementById('loopMinus'); if (btn) btn.click();
       } else {
-        // ArrowDown: Cycle Direction Next
         const sel = document.getElementById('animDirection');
         if (sel && sel.options.length > 0) {
-           let idx = (sel.selectedIndex + 1) % sel.options.length;
+           let idx = sel.selectedIndex - 1; // Inverted to Prev
+           if (idx < 0) idx = sel.options.length - 1;
            sel.selectedIndex = idx;
            sel.onchange();
         }
@@ -12864,6 +13184,67 @@ function audioInitUI() {
 
 })();
   
+
+
+  // Hold-to-repeat and Ctrl-to-multiply for +/- buttons
+  let _btnRepeatTimer = null;
+  let _btnRepeatInterval = null;
+
+  document.addEventListener('pointerdown', (e) => {
+    const btn = e.target.closest('.menu-input-btn');
+    if (!btn) return;
+
+    const isCtrl = e.ctrlKey || e.metaKey;
+
+    _btnRepeatTimer = setTimeout(() => {
+      _btnRepeatInterval = setInterval(() => {
+        btn.click();
+      }, 120);
+    }, 400);
+
+    if (isCtrl) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (btn.id === 'cellMinus' || btn.id === 'cellPlus') return;
+      const isPlus = btn.id.endsWith('Plus') || btn.textContent.includes('+');
+      const isMinus = btn.id.endsWith('Minus') || btn.textContent.includes('−') || btn.textContent.includes('-');
+      if (!isPlus && !isMinus) return;
+      const group = btn.closest('.menu-input-group');
+      if (group) {
+        const input = group.querySelector('input[type="number"], input[type="text"]');
+        if (input) {
+          let val = parseInt(input.value, 10);
+          if (!isNaN(val) && val > 0) {
+            if (isPlus) val *= 2;
+            else val = Math.max(1, Math.floor(val / 2));
+            if (input.max) val = Math.min(parseInt(input.max, 10), val);
+            if (input.min) val = Math.max(parseInt(input.min, 10), val);
+            input.value = val;
+            if (typeof input.onchange === 'function') input.onchange();
+            else input.dispatchEvent(new Event('change'));
+          }
+        }
+      }
+      return;
+    }
+  });
+
+  const stopBtnRepeat = () => {
+    if (_btnRepeatTimer) clearTimeout(_btnRepeatTimer);
+    if (_btnRepeatInterval) clearInterval(_btnRepeatInterval);
+    _btnRepeatTimer = null;
+    _btnRepeatInterval = null;
+  };
+
+  document.addEventListener('pointerup', stopBtnRepeat);
+  document.addEventListener('pointerleave', stopBtnRepeat, true);
+  document.addEventListener('pointercancel', stopBtnRepeat);
+  document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.menu-input-btn')) {
+      e.preventDefault();
+      stopBtnRepeat();
+    }
+  });
 
 </script>
 </body>
