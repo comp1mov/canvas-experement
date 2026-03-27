@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.26.15                                        ║
+║      FRAMEGRID v0.26.43                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.26.15</title>
+  <title>FRAMEGRID v0.26.43</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
@@ -134,7 +134,7 @@
       position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
     }
     .menu-toggle:hover { background: rgba(255,255,255,0.1); }
-    .menu-toggle.active { background: rgba(53, 242, 163, 0.2); border-color: var(--fg-accent, #35f2a3); }
+    .menu-toggle.active { background: color-mix(in srgb, var(--fg-accent, #35f2a3) 20%, transparent); border-color: var(--fg-accent, #35f2a3); }
     .menu-toggle span { width: 12px; height: 1px; background: rgba(255,255,255,0.8); }
     @media (max-width: 1100px) {
       .metadata-gap { width: 32px; min-width: 32px; }
@@ -239,11 +239,6 @@
     .frame-timecode.hidden { display: none; }
 
     /* INFO CARD */
-    .info-card {
-      background: #000; display: flex; flex-direction: column;
-      padding: 8%; aspect-ratio: var(--video-aspect, 16/9);
-      justify-content: center; border: 1px solid rgba(255,255,255,0.2);
-    }
     .info-card-title { font-size: clamp(8px, 2.5vw, 18px); font-weight: 700; color: var(--fg-accent, #35f2a3); margin-bottom: 0.6em; }
     .info-card-row { font-size: clamp(6px, 2vw, 14px); color: rgba(255,255,255,0.7); margin-bottom: 0.3em; }
 
@@ -346,10 +341,10 @@
     .menu-row:last-child { margin-bottom: 0; }
     .menu-label { font-size: 11px; color: rgba(255,255,255,0.75); }
     .menu-hint {
-      font-size: 10px; color: rgba(53, 242, 163, 0.9); margin-top: 8px;
-      padding: 12px 10px; background: rgba(53, 242, 163, 0.1); border-radius: 2px; line-height: 1.4;
+      font-size: 10px; color: color-mix(in srgb, var(--fg-accent, #35f2a3) 90%, transparent); margin-top: 8px;
+      padding: 12px 10px; background: color-mix(in srgb, var(--fg-accent, #35f2a3) 10%, transparent); border-radius: 2px; line-height: 1.4;
     }
-    .menu-hint.hint-good { color: rgba(53, 242, 163, 0.95); background: rgba(53, 242, 163, 0.10); }
+    .menu-hint.hint-good { color: color-mix(in srgb, var(--fg-accent, #35f2a3) 95%, transparent); background: color-mix(in srgb, var(--fg-accent, #35f2a3) 10%, transparent); }
     .menu-hint.hint-warn { color: rgba(255, 179, 71, 0.98); background: rgba(255, 179, 71, 0.10); }
     .menu-hint.hint-bad { color: rgba(255, 98, 98, 0.98); background: rgba(255, 98, 98, 0.10); }
 
@@ -394,7 +389,7 @@
       display: flex; align-items: center; justify-content: center;
     }
     .quick-btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
-    .quick-btn:active, .quick-btn.active { background: rgba(53,242,163,0.3); border-color: var(--fg-accent, #35f2a3); color: var(--fg-accent, #35f2a3); }
+    .quick-btn:active, .quick-btn.active { background: color-mix(in srgb, var(--fg-accent, #35f2a3) 30%, transparent); border-color: var(--fg-accent, #35f2a3); color: var(--fg-accent, #35f2a3); }
     .quick-btn svg { width: 18px; height: 18px; fill: currentColor; }
     @media (max-width: 768px) {
       .quick-toolbar { top: 44px; }
@@ -450,7 +445,7 @@
     .menu-btn.primary { background: var(--fg-accent, #35f2a3); border-color: var(--fg-accent, #35f2a3); color: #000; }
     .menu-btn.primary:hover { background: #4df7b5; }
 
-    .menu-btn.active-toggle { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.8); color: #fff; }
+    .menu-btn.active-toggle { background: color-mix(in srgb, var(--fg-accent, #35f2a3) 15%, transparent); border-color: var(--fg-accent, #35f2a3); color: #fff; }
 
     .menu-color-input {
       width: 36px; height: 28px; padding: 2px; background: #111;
@@ -827,7 +822,7 @@
     }
     .template-frame.visible { display: flex; flex-direction: column; }
     .template-frame-header {
-      background: rgba(53,242,163,0.8);
+      background: color-mix(in srgb, var(--fg-accent, #35f2a3) 80%, transparent);
       color: #000;
       font-size: 9px;
       font-weight: 700;
@@ -853,7 +848,7 @@
       width: 20px;
       height: 20px;
       cursor: nwse-resize;
-      background: linear-gradient(135deg, transparent 50%, rgba(53,242,163,0.6) 50%);
+      background: linear-gradient(135deg, transparent 50%, color-mix(in srgb, var(--fg-accent, #35f2a3) 60%, transparent) 50%);
     }
     .template-frame-canvas-wrap {
       position: relative;
@@ -1092,7 +1087,20 @@
       opacity: 0.85;
     }
 
-</style>
+
+  @keyframes regen-pulse {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.45; }
+    100% { opacity: 1; }
+  }
+  #generateBtn.pending {
+    background: #666 !important;
+    color: #ccc !important;
+    animation: regen-pulse 1.4s ease-in-out infinite;
+    box-shadow: none !important;
+  }
+
+  </style>
 </head>
 <body>
 <div class="app" id="app">
@@ -1104,7 +1112,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.26.15</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.26.43</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1298,26 +1306,6 @@
         <div class="menu-section-title">Frame Selection</div>
         <div class="menu-section-content">
           <div class="menu-row">
-            <span class="menu-label">Mode</span>
-            <select class="menu-select" id="selectionMode">
-              <option value="count" selected>Fixed Count</option>
-              <option value="seconds">Every N Sec</option>
-              <option value="frames">Every N Frames</option>
-            </select>
-          </div>
-          <div class="menu-row" id="countRow">
-            <span class="menu-label">Frame Count</span>
-            <div class="menu-input-group">
-              <button class="menu-input-btn" id="countMinus">−</button>
-              <input type="text" class="menu-input menu-input-narrow" id="frameCount" value="24" inputmode="decimal">
-              <button class="menu-input-btn" id="countPlus">+</button>
-            </div>
-          </div>
-          <div class="menu-row" id="intervalRow" style="display:none;">
-            <span class="menu-label" id="intervalLabel">Seconds</span>
-            <input type="number" class="menu-input" id="intervalValue" value="3" min="1">
-          </div>
-          <div class="menu-row">
             <span class="menu-label">Start Frame</span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="startMinus">−</button>
@@ -1333,7 +1321,53 @@
               <button class="menu-input-btn" id="endPlus">+</button>
             </div>
           </div>
-
+          <div class="menu-row" style="height:6px;"></div>
+          <div class="menu-row">
+            <span class="menu-label">Mode</span>
+            <select class="menu-select" id="selectionMode">
+              <option value="count" selected>Fixed Count</option>
+              <option value="seconds">Every N Sec</option>
+              <option value="frames">Every N Frames</option>
+              <option value="scene">Scene</option>
+            </select>
+          </div>
+          <div class="menu-row" id="countRow">
+            <span class="menu-label">Frame Count</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="countMinus">−</button>
+              <input type="text" class="menu-input menu-input-narrow" id="frameCount" value="24" inputmode="decimal">
+              <button class="menu-input-btn" id="countPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row" id="intervalRow" style="display:none;">
+            <span class="menu-label" id="intervalLabel">Seconds</span>
+            <input type="number" class="menu-input" id="intervalValue" value="3" min="1">
+          </div>
+          <div class="menu-row" id="sceneCountRow" style="display:none;">
+            <span class="menu-label">Scenes</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="sceneCountMinus">−</button>
+              <input type="number" class="menu-input menu-input-narrow" id="sceneCountInput" value="5" min="1" max="200">
+              <button class="menu-input-btn" id="sceneCountPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row" id="sceneDepthRow" style="display:none;">
+            <span class="menu-label">Depth</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="sceneDepthMinus">−</button>
+              <input type="number" class="menu-input menu-input-narrow" id="sceneDepthInput" value="8" min="1" max="200">
+              <button class="menu-input-btn" id="sceneDepthPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row" id="sceneDistanceRow" style="display:none;">
+            <span class="menu-label">Distance</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="sceneDistanceMinus">−</button>
+              <input type="number" class="menu-input menu-input-narrow" id="sceneDistanceInput" value="1" min="1" max="500">
+              <button class="menu-input-btn" id="sceneDistancePlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row" style="height:6px;"></div>
           <div class="menu-row">
             <span class="menu-label">Quality</span>
             <select class="menu-select" id="qualitySelect">
@@ -1497,11 +1531,19 @@
             <div class="menu-toggle-switch" id="toggleSequenceMode"></div>
           </div>
           <div class="menu-row">
-            <span class="menu-label">Loop Phases</span>
+            <span class="menu-label">Phase Spread</span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="loopMinus">-</button>
               <span id="loopPhasesLabel" style="min-width:44px;text-align:center;font-size:11px;color:#fff;">1</span>
               <button class="menu-input-btn" id="loopPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Loop after N</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="loopNMinus">-</button>
+              <input type="number" class="menu-input menu-input-narrow" id="loopNInput" value="0" min="0" max="9999" style="width:52px;">
+              <button class="menu-input-btn" id="loopNPlus">+</button>
             </div>
           </div>
           <div class="menu-row" style="display:none;">
@@ -1564,21 +1606,12 @@
       <div class="menu-section collapsed">
         <div class="menu-section-title">Display</div>
         <div class="menu-section-content">
-          <div class="menu-row">
-            <span class="menu-label">TC: Index</span>
-            <div class="menu-toggle-switch" id="toggleTcIndex"></div>
-          </div>
-          <div class="menu-row">
-            <span class="menu-label">TC: Sec</span>
-            <div class="menu-toggle-switch" id="toggleTcTime"></div>
-          </div>
-          <div class="menu-row">
-            <span class="menu-label">TC: Fr</span>
-            <div class="menu-toggle-switch active" id="toggleTcFrame"></div>
-          </div>
-          <div class="menu-row">
-            <span class="menu-label">TC: Text</span>
-            <div class="menu-toggle-switch" id="toggleTcText"></div>
+          <div class="menu-subtitle" style="margin-bottom:8px;">Timecode Visibility</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <button class="menu-btn" id="toggleTcIndex" style="margin:0;">Index</button>
+            <button class="menu-btn" id="toggleTcTime" style="margin:0;">Sec</button>
+            <button class="menu-btn active-toggle" id="toggleTcFrame" style="margin:0;">Frame</button>
+            <button class="menu-btn" id="toggleTcText" style="margin:0;">Text</button>
           </div>
           <div class="menu-row" id="tcCustomTextRow" style="display:none;">
             <span class="menu-label">Text</span>
@@ -1838,7 +1871,7 @@
             <span class="menu-label">S1<span class="fg-audio-sample-name" id="audioName1">no file</span></span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="audioLoad1" title="Load sample S1">⤓</button>
-              <input type="color" class="fg-audio-color" id="audioColor1" value="var(--fg-accent, #35f2a3)" title="S1 color">
+              <input type="color" class="fg-audio-color" id="audioColor1" value="#35f2a3" title="S1 color">
               <button class="menu-input-btn" id="audioTest1" title="Test S1">▶</button>
               <button class="menu-input-btn" id="audioRec1" title="Record mic to S1">●</button>
               <button class="menu-input-btn" id="audioClearSlot1" title="Clear mappings for S1">⌫</button>
@@ -1967,9 +2000,8 @@
             <span class="menu-label">Visible</span>
             <div class="menu-toggle-switch" id="toggleRefFrameVisible"></div>
           </div>
-
           <div class="menu-row">
-            <span class="menu-label">Follow Frame Transform</span>
+            <span class="menu-label">Follow Transform</span>
             <div class="menu-toggle-switch" id="toggleRefFrameFollow"></div>
           </div>
           <div class="menu-row">
@@ -1977,42 +2009,53 @@
             <div class="menu-toggle-switch" id="toggleRefFrameAbove"></div>
           </div>
 
-
           <div class="menu-row">
-            <span class="menu-label">Opacity</span>
+            <span class="menu-label">Link Scale</span>
+            <div class="menu-toggle-switch active" id="toggleRefScaleLink"></div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Scale X</span>
             <div class="menu-slider-row">
-              <input type="range" class="menu-slider" id="refFrameOpacity" min="0" max="100" step="1" value="100">
-              <span class="menu-slider-value" id="refFrameOpacityValue">100%</span>
+              <input type="range" class="menu-slider" id="refFrameScaleX" min="0.1" max="4.0" step="0.01" value="1">
+              <input type="number" class="menu-slider-input" id="refFrameScaleNumX" min="0.1" max="4" step="0.01" value="1.00" inputmode="decimal">
             </div>
           </div>
+          <div class="menu-row">
+            <span class="menu-label">Scale Y</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="refFrameScaleY" min="0.1" max="4.0" step="0.01" value="1">
+              <input type="number" class="menu-slider-input" id="refFrameScaleNumY" min="0.1" max="4" step="0.01" value="1.00" inputmode="decimal">
+            </div>
+          </div>
+
           <div class="menu-row">
             <span class="menu-label">Offset X</span>
             <div class="menu-slider-row">
-              <input type="range" class="menu-slider" id="refFrameOffX" min="-50" max="100" step="1" value="0">
-              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="refFrameOffXNum" min="-50" max="100" step="1" value="0" inputmode="decimal"><span class="menu-slider-unit">%</span></div>
+              <input type="range" class="menu-slider" id="refFrameOffX" min="-50" max="50" step="1" value="0">
+              <input type="number" class="menu-slider-input" id="refFrameOffXNum" min="-50" max="50" step="1" value="0" inputmode="decimal">
             </div>
           </div>
-
           <div class="menu-row">
             <span class="menu-label">Offset Y</span>
             <div class="menu-slider-row">
-              <input type="range" class="menu-slider" id="refFrameOffY" min="-50" max="100" step="1" value="0">
-              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="refFrameOffYNum" min="-50" max="100" step="1" value="0" inputmode="decimal"><span class="menu-slider-unit">%</span></div>
+              <input type="range" class="menu-slider" id="refFrameOffY" min="-50" max="50" step="1" value="0">
+              <input type="number" class="menu-slider-input" id="refFrameOffYNum" min="-50" max="50" step="1" value="0" inputmode="decimal">
             </div>
           </div>
+
           <div class="menu-row">
             <span class="menu-label">Rotation</span>
             <div class="menu-slider-row">
               <input type="range" class="menu-slider" id="refFrameRot" min="-360" max="360" step="0.1" value="0">
-              <div class="menu-slider-numwrap"><input type="number" class="menu-slider-input" id="refFrameRotNum" min="-360" max="360" step="0.1" value="0.0" inputmode="decimal"><span class="menu-slider-unit">°</span></div>
+              <input type="number" class="menu-slider-input" id="refFrameRotNum" min="-360" max="360" step="0.1" value="0.0" inputmode="decimal">
             </div>
           </div>
 
           <div class="menu-row">
-            <span class="menu-label">Scale</span>
+            <span class="menu-label">Opacity</span>
             <div class="menu-slider-row">
-              <input type="range" class="menu-slider" id="refFrameScale" min="0.5" max="4.0" step="0.01" value="1">
-              <input type="number" class="menu-slider-input" id="refFrameScaleNum" min="0.5" max="4" step="0.01" value="1.00" inputmode="decimal">
+              <input type="range" class="menu-slider" id="refFrameOpacity" min="0" max="1" step="0.01" value="1">
+              <input type="number" class="menu-slider-input" id="refFrameOpacityNum" min="0" max="1" step="0.01" value="1.00" inputmode="decimal">
             </div>
           </div>
 
@@ -2156,10 +2199,8 @@
                <div>Composite: <span id="infoCompositeMs">—</span></div>
           </div>
 
-            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
-              <button class="debug-toggle" id="debugToggle" title="Toggle debug" style="position:relative;bottom:auto;left:auto;">DBG</button>
-</div>
-            <div class="debug-console" id="debugConsole"></div>
+            
+            
         </div>
       </div>
 
@@ -2169,7 +2210,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.26.15</div>
+          <div class="about-version">Version v0.26.43</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
@@ -2247,8 +2288,17 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.26.15';
+  const APP_VERSION = 'v0.26.43';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
+
+  const EXPORT_CONF = {
+    RES: { low: 540, medium: 720, hd: 1080, high: 2160, max: Infinity },
+    MR_BITS: { low: 2000000, medium: 3500000, hd: 6000000, high: 10000000, max: 12000000 },
+    VE_BITS_CAP: { low: 8000000, medium: 12000000, hd: 18000000, high: 25000000, max: 30000000 },
+    VE_BITS_MIN: { low: 6000000, medium: 8000000, hd: 10000000, high: 15000000, max: 20000000 },
+    STILL_MAX: 8192,
+    STILL_PREV: 2048
+  };
 
   // Global Event Delegation for dynamic header elements
   document.addEventListener('click', (e) => {
@@ -2271,13 +2321,8 @@
   });
 
   // Sync document/UI labels
-  try { document.title = APP_LABEL; } catch (e) {}
-  try {
-    const logoTextEl = document.getElementById('fgLogoText') || document.querySelector('.metadata-logo-text');
-    if (logoTextEl) logoTextEl.textContent = APP_LABEL;
-    const aboutVerEl = document.querySelector('.about-version');
-    if (aboutVerEl) aboutVerEl.textContent = `Version ${APP_VERSION}`;
-  } catch (e) {}
+  document.title = APP_LABEL;
+  const logoTextEl = document.getElementById('fgLogoText') || document.querySelector('.metadata-logo-text'); if (logoTextEl) logoTextEl.textContent = APP_LABEL; const aboutVerEl = document.querySelector('.about-version'); if (aboutVerEl) aboutVerEl.textContent = `Version ${APP_VERSION}`;
 
   // Prevent browser zoom on the entire page (especially important for iOS)
   document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
@@ -2304,11 +2349,13 @@
     imageUrls: [],
     imageFiles: [],
     videoWidth: 0, videoHeight: 0, videoFps: 30, videoDate: null,
-    frames: [], frameCount: 24, gridCols: 6,
+    frames: [], frameCount: 24,
+    sceneCount: 5,
+    sceneDepth: 8,
+    sceneDistance: 1, gridCols: 6,
     selectionMode: 'count', intervalValue: 3, quality: 0.5,
     startFrame: 0, endFrame: 0, // Frame range
-    showMetadata: true, showInfoCard: false,
-    // Timecode format options
+    showMetadata: true, // Timecode format options
     tcShowIndex: false,
     tcShowTime: false,
     tcShowFrame: true, // Original frame number, shown as F0001
@@ -2344,6 +2391,13 @@
     viewMode: 'grid', // 'grid' or 'single'
     cellSize: 1, // frames per cell (1, 2, 4, 8...)
         gridLoops: 1, // 1-5: how many distinct phase offsets are used across grid cells
+    loopAfterN: 0, // 0=disabled, N=cycle each cell within its N-frame window
+
+    // Scene sampling mode
+    sceneMode: 0, // 0=disabled, 1=enabled
+    sceneCount: 5, // number of scenes to sample
+    sceneDepth: 3, // frames around each scene anchor
+    sceneSpacing: 10, // min frames between scene anchors
 exportQuality: 'hd', // low, medium, high, max
     exportPaddingPx: 160, // padding around export content (px, applied only when BG export is ON)
     showExportGuides: false, // overlay guides for export padding in the main viewport
@@ -2382,7 +2436,7 @@ exportQuality: 'hd', // low, medium, high, max
     refFrameOpacity: 1,
     refFrameOffX: 0, // percent of cell width
     refFrameOffY: 0, // percent of cell height
-    refFrameScale: 1,
+    refFrameScaleX: 1, refFrameScaleY: 1, refFrameScaleLink: true,
     refFrameRot: 0,
     refFrameIncludeInExport: false,
     refFrameAboveDrawings: false, // ref frame layer position relative to drawings
@@ -2479,6 +2533,10 @@ function getTargetFrameOutputDims() {
   const selectionModeSelect = $('selectionMode'), frameCountInput = $('frameCount');
   const countMinus = $('countMinus'), countPlus = $('countPlus');
   const intervalValueInput = $('intervalValue'), qualitySelect = $('qualitySelect');
+  const sceneCountInput = $('sceneCountInput'), sceneDepthInput = $('sceneDepthInput'), sceneDistanceInput = $('sceneDistanceInput');
+  const sceneCountMinus = $('sceneCountMinus'), sceneCountPlus = $('sceneCountPlus');
+  const sceneDepthMinus = $('sceneDepthMinus'), sceneDepthPlus = $('sceneDepthPlus');
+  const sceneDistanceMinus = $('sceneDistanceMinus'), sceneDistancePlus = $('sceneDistancePlus');
   const startFrameInput = $('startFrame'), endFrameInput = $('endFrame');
   const cutColsInput = $('cutCols'), cutRowsInput = $('cutRows'), cutTotalInput = $('cutTotal'), sliceFirstImageBtn = $('sliceFirstImageBtn');
   // Frame image transform (preview + export)
@@ -2565,8 +2623,8 @@ function getTargetFrameOutputDims() {
 
     // Focus/select
     requestAnimationFrame(() => {
-      try { input.focus({ preventScroll: true }); } catch(e) { try { input.focus(); } catch(e2) {} }
-      try { input.select(); } catch(e) {}
+      input.focus();
+      input.select();
     });
 
     const commit = (apply) => {
@@ -2620,7 +2678,7 @@ function getTargetFrameOutputDims() {
     const frameCount = Math.max(1, state.frames.length || 1);
     const cellCount = Math.ceil(frameCount / Math.max(1, state.cellSize || 1));
     const totalCells = state.showInfoCard ? cellCount + 1 : cellCount;
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
     const animCellCount = cellCount; 
 
     // Safety check
@@ -2644,7 +2702,7 @@ function getTargetFrameOutputDims() {
       const cellOffset = Math.floor(cellOrderIdx * frameCount * phaseCount / Math.max(1, animCellCount)) % frameCount;
       const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[c] ?? 0) : cellOffset;
 
-      const frameIdx = resolveDirectionFrame(t, baseOffset, frameCount, dir, state.animDirShuffle);
+      const frameIdx = applyLoopAfterN(t, baseOffset, frameCount, dir, state.animDirShuffle);
 
       // We look for where the playhead is currently hitting frame 0.
       if (frameIdx === 0) {
@@ -2693,10 +2751,12 @@ function getTargetFrameOutputDims() {
   const toggleRefFrameFollow = $('toggleRefFrameFollow');
   const toggleRefFrameAbove = $('toggleRefFrameAbove');
   const refFrameOpacitySlider = $('refFrameOpacity');
-    const refFrameOpacityValue = $('refFrameOpacityValue');  const refFrameOffXSlider = $('refFrameOffX');  const refFrameOffXNum = $('refFrameOffXNum');
+    const refFrameOpacityNum = $('refFrameOpacityNum');  const refFrameOffXSlider = $('refFrameOffX');  const refFrameOffXNum = $('refFrameOffXNum');
   const refFrameOffYSlider = $('refFrameOffY');  const refFrameOffYNum = $('refFrameOffYNum');
   const refFrameRotSlider = $('refFrameRot');  const refFrameRotNum = $('refFrameRotNum');
-  const refFrameScaleSlider = $('refFrameScale');  const refFrameScaleNum = $('refFrameScaleNum');
+  const refFrameScaleSliderX = $('refFrameScaleX'); const refFrameScaleNumX = $('refFrameScaleNumX');
+  const refFrameScaleSliderY = $('refFrameScaleY'); const refFrameScaleNumY = $('refFrameScaleNumY');
+  const toggleRefScaleLink = $('toggleRefScaleLink');
   
   // Column +/- buttons
   const colsMinus = $('colsMinus'), colsPlus = $('colsPlus');
@@ -2710,6 +2770,27 @@ function getTargetFrameOutputDims() {
     };
   }
   const loopPhasesLabel = $('loopPhasesLabel'), loopMinus = $('loopMinus'), loopPlus = $('loopPlus');
+  const loopNInput = $('loopNInput'), loopNMinus = $('loopNMinus'), loopNPlus = $('loopNPlus');
+
+  if (loopNInput) {
+    loopNInput.onchange = () => {
+      state.loopAfterN = Math.max(0, parseInt(loopNInput.value) || 0);
+      loopNInput.value = state.loopAfterN;
+      updateAllCells();
+    };
+    loopNMinus.onclick = () => {
+      if (state.loopAfterN > 0) {
+        state.loopAfterN = Math.max(0, state.loopAfterN - 1);
+        loopNInput.value = state.loopAfterN;
+        updateAllCells();
+      }
+    };
+    loopNPlus.onclick = () => {
+      state.loopAfterN = (state.loopAfterN || 0) + 1;
+      loopNInput.value = state.loopAfterN;
+      updateAllCells();
+    };
+  }
   
   // Quick toolbar
   const qMode = $('qMode'), qReset = $('qReset'), qPrev = $('qPrev'), qPlay = $('qPlay'), qNext = $('qNext'), qDraw = $('qDraw'), qFit = $('qFit');
@@ -2729,14 +2810,14 @@ function getTargetFrameOutputDims() {
 
   // MENU
   function openMenu() {
-    if (typeof dbg === 'function') dbg('openMenu');
+    
     state.menuOpen = true;
     sideMenu.classList.add('open');
     menuToggleBtn.classList.add('active');
     canvasArea.classList.add('has-menu');
   }
   function closeMenu() {
-    if (typeof dbg === 'function') dbg('closeMenu');
+    
     state.menuOpen = false;
     sideMenu.classList.remove('open');
     menuToggleBtn.classList.remove('active');
@@ -2771,10 +2852,10 @@ function getTargetFrameOutputDims() {
     if (state.imageUrls && state.imageUrls.length) {
       for (const u of state.imageUrls) {
         if (!u) continue;
-        try { URL.revokeObjectURL(u); } catch(e) {}
+        if (u) URL.revokeObjectURL(u);
       }
     } else if (state.imageUrl) {
-      try { URL.revokeObjectURL(state.imageUrl); } catch(e) {}
+      if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
     }
     state.imageUrls = [];
     state.imageFiles = [];
@@ -2819,7 +2900,7 @@ function getTargetFrameOutputDims() {
     // Try a quick play/pause to enable frame seeking after the user gesture.
     const p = videoElement.play();
     if (p && p.catch) p.catch(()=>{});
-    setTimeout(() => { try { videoElement.pause(); } catch(e) {} }, 80);
+    setTimeout(() => { try { videoElement.pause(); } catch (e) {} }, 80);
     dropZone.classList.add('hidden');
     loadingOverlay.classList.add('visible');
   }
@@ -2867,10 +2948,10 @@ function handleImageFiles(files, importMode = "loop") {
     updateIntervalUI();
 
     // Clear any existing video source
-    try { videoElement.pause(); } catch(e) {}
-    try { videoElement.removeAttribute('src'); videoElement.load(); } catch(e) {}
+    try { videoElement.pause(); } catch (e) {}
+    try { videoElement.removeAttribute('src'); videoElement.load(); } catch (e) {}
     if (state.videoUrl) {
-      try { URL.revokeObjectURL(state.videoUrl); } catch(e) {}
+      if (state.videoUrl) URL.revokeObjectURL(state.videoUrl);
       state.videoUrl = null;
     }
 
@@ -2894,14 +2975,14 @@ function handleImageFiles(files, importMode = "loop") {
     // If the sequence is very large, also switch to Single view and disable auto-fit (avoids auto-centering jumps).
     if (imgCount > 100) {
       state.quality = 0.25;
-      try { qualitySelect.value = '0.25'; } catch(e) {}
+      if (qualitySelect) qualitySelect.value = '0.25';
     }
     if (imgCount > 500) {
       state.viewMode = 'single';
       state.gridCols = 1;
-      try { gridColsInput.value = 1; } catch(e) {}
+      if (gridColsInput) gridColsInput.value = 1;
       state.autoFit = false;
-      try { toggleAutoFit.classList.toggle('active', state.autoFit); } catch(e) {}
+      if (toggleAutoFit) toggleAutoFit.classList.toggle('active', state.autoFit);
     }
 state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
     state.imageUrl = state.imageUrls[0] || null;
@@ -3132,8 +3213,16 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
 
   function syncGridAspectMode() {
     state.autoFit = state.canvasAspect !== 'custom';
-    try { if (toggleAutoFit) toggleAutoFit.classList.toggle('active', state.autoFit); } catch(e) {}
-    try { if (canvasAspectSelect) canvasAspectSelect.value = state.canvasAspect || 'auto'; } catch(e) {}
+    if (typeof toggleAutoFit !== 'undefined' && toggleAutoFit) toggleAutoFit.classList.toggle('active', state.autoFit);
+    if (typeof canvasAspectSelect !== 'undefined' && canvasAspectSelect) canvasAspectSelect.value = state.canvasAspect || 'auto';
+    if (typeof loopNInput !== 'undefined' && loopNInput) loopNInput.value = state.loopAfterN || 0;
+
+    const scInput = document.getElementById('sceneCountInput');
+    const sdInput = document.getElementById('sceneDepthInput');
+    const sdistInput = document.getElementById('sceneDistanceInput');
+    if (scInput) scInput.value = state.sceneCount || 5;
+    if (sdInput) sdInput.value = state.sceneDepth || 8;
+    if (sdistInput) sdistInput.value = state.sceneDistance || 1;
   }
 
   function getVisibleGridCellCount() {
@@ -3322,7 +3411,7 @@ for (let i = 0; i < times.length; i++) {
       let dataUrl = await captureFrame(time);
       if (!dataUrl) {
         // iOS/Safari occasional blank frame: retry once after a tiny delay.
-        await new Promise(r => setTimeout(r, 60));
+        await new Promise(r => queueMicrotask(r));
         dataUrl = await captureFrame(time);
       }
       if (!dataUrl) dataUrl = '';
@@ -3340,7 +3429,7 @@ for (let i = 0; i < times.length; i++) {
     setViewMode(state.viewMode);
       updateGridHint();
     if (state.autoFit) { requestFitToActiveView(); }
-    if (!state.isSingleImage) setTimeout(generateVideoPalette, 100); // auto-generate palette from video
+    if (!state.isSingleImage) queueMicrotask(generateVideoPalette); // auto-generate palette from video
   }
 
 
@@ -3369,6 +3458,19 @@ for (let i = 0; i < times.length; i++) {
         for (let t = startTime; t < endTime && times.length < max; t += state.intervalValue) {
           times.push(Math.min(t, endTime - 0.01));
         }
+      } else if (state.selectionMode === 'scene') {
+        const scenes = Math.max(1, state.sceneCount || 5);
+        const depth  = Math.max(1, state.sceneDepth || 8);
+        const dist   = Math.max(1, state.sceneDistance || 1);
+        const step   = dist / fps;
+        const spacing = rangeDuration / (scenes + 1);
+        for (let s = 0; s < scenes; s++) {
+          const anchor = startTime + spacing * (s + 1);
+          for (let d = 0; d < depth && times.length < max; d++) {
+            const t = anchor + d * step;
+            if (t <= endTime) times.push(clampTime(t));
+          }
+        }
       } else {
         for (let f = state.startFrame; f < state.endFrame && times.length < max; f += state.intervalValue) {
           times.push(Math.min(f / fps, endTime - 0.01));
@@ -3393,6 +3495,19 @@ for (let i = 0; i < times.length; i++) {
         pushUnique(t);
       }
       if (times.length < max) pushUnique(endTime);
+    } else if (state.selectionMode === 'scene') {
+      const scenes = Math.max(1, state.sceneCount || 5);
+      const depth  = Math.max(1, state.sceneDepth || 8);
+      const dist   = Math.max(1, state.sceneDistance || 1);
+      const step   = dist / fps;
+      const spacing = rangeDuration / (scenes + 1);
+      for (let s = 0; s < scenes; s++) {
+        const anchor = startTime + spacing * (s + 1);
+        for (let d = 0; d < depth && times.length < max; d++) {
+          const t = anchor + d * step;
+          if (t <= endTime) pushUnique(t);
+        }
+      }
     } else {
       for (let f = state.startFrame; f <= state.endFrame && times.length < max; f += state.intervalValue) {
         pushUnique(f / fps);
@@ -3467,7 +3582,11 @@ for (let i = 0; i < times.length; i++) {
     perfectCounts.sort((a, b) => a.diff - b.diff);
     const uniqueCounts = [...new Set(perfectCounts.slice(0, 6).map(p => p.count))];
 
-    const sourceFrames = Math.max(1, state.frames.length || state.frameCount || 1);
+    let _estFrameCount = state.frameCount || 1;
+    if (state.selectionMode === 'scene') {
+      _estFrameCount = Math.max(1, (state.sceneCount || 5) * (state.sceneDepth || 8));
+    }
+    const sourceFrames = Math.max(1, state.frames.length || _estFrameCount);
     const visibleCells = getVisibleGridCellCount();
     gridHint.classList.remove('hint-good', 'hint-warn', 'hint-bad');
     if (!sourceFrames) {
@@ -3750,7 +3869,7 @@ function getViewportExportPadForElement(el, mode = 'grid') {
       const baseFrameW = Math.max(1, Math.round(dims.w));
       const baseFrameH = Math.max(1, Math.round(dims.h));
       const cellCount = Math.ceil(state.frames.length / state.cellSize);
-      const total = cellCount + (state.showInfoCard ? 1 : 0);
+      const total = cellCount + (0);
       const rows = Math.ceil(total / state.gridCols);
       const gap = getExportScaledGap(baseFrameW);
       dstContentW = state.gridCols * baseFrameW + Math.max(0, state.gridCols - 1) * gap;
@@ -3774,7 +3893,7 @@ function getPreviewExportGeometry(mode = 'grid') {
     let el = null;
     if (mode === 'single') {
       const items = framesGrid.querySelectorAll('.frame-item');
-      const offset = state.showInfoCard ? 1 : 0;
+      const offset = 0;
       el = items[offset] || null;
     } else {
       el = framesGrid;
@@ -3873,8 +3992,7 @@ function getDeterministicVideoExportLayout(mode, rows) {
   const frameW = Math.max(2, Math.round(dims.w));
   const gapBase = getExportScaledGap(frameW);
   const padPx = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
-  const qualityMap = { low: 540, medium: 720, hd: 1080, high: 2160, max: Infinity };
-  const qualityCap = qualityMap[state.exportQuality] || 1080;
+  const qualityCap = EXPORT_CONF.RES[state.exportQuality] || 1080;
 
   let logicalCanvasW = 0;
   let logicalCanvasH = 0;
@@ -4088,9 +4206,7 @@ function schedulePostGridSync() {
         }
 
         updateExportGuidesOverlay();
-      } catch (e) {
-        console.warn('schedulePostGridSync failed', e);
-      }
+      } catch (e) {}
     });
   });
 }
@@ -4183,7 +4299,7 @@ const tc = document.createElement('div');
     if (_infoRaf) return;
     _infoRaf = requestAnimationFrame(() => {
       _infoRaf = 0;
-      try { updateInfoPanel(); } catch (e) {}
+      updateInfoPanel();
     });
   }
 
@@ -4363,7 +4479,7 @@ canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale
   }
 
   function fitToScreen() {
-    if (typeof dbg === 'function') dbg('fitToScreen SAFE');
+    
     if (!state.frames.length) return;
 
     const MIN_VIEW_SCALE = VIEW_SCALE_MIN;
@@ -4396,7 +4512,7 @@ canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale
       if (!Number.isFinite(scaleCandidate)) {
         if (typeof dbg === 'function') {
         }
-        if (tries < MAX_TRIES) return setTimeout(attempt, 140);
+        if (tries < MAX_TRIES) return queueMicrotask(attempt);
         return;
       }
 
@@ -4406,7 +4522,7 @@ canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale
       state.panX = (rect.width - gridW * state.scale) / 2 - off.x * state.scale;
       state.panY = (rect.height - gridH * state.scale) / 2 - off.y * state.scale;
 
-      if (typeof dbg === 'function') dbg(`fitToScreen OK: scale=${state.scale.toFixed(3)}, pan=${state.panX.toFixed(0)},${state.panY.toFixed(0)}`);
+      
 
       updateTransform();
 
@@ -4432,7 +4548,7 @@ canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale
 
       if (state.viewMode === 'single') {
         const items = framesGrid.querySelectorAll('.frame-item');
-        const offset = state.showInfoCard ? 1 : 0;
+        const offset = 0;
         const firstFrame = items[offset];
         if (!firstFrame) return;
 
@@ -4469,7 +4585,7 @@ function fitToSingleFrame() {
 
     // Find first frame item (skip info card if present)
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
     const firstFrame = items[offset];
     if (!firstFrame) return;
 
@@ -4524,7 +4640,7 @@ function fitToSingleFrame() {
     qMode.textContent = mode === 'grid' ? 'GRID' : '1';
     qMode.classList.toggle('active', mode === 'single');
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
     items.forEach((item, i) => {
       if (i < offset) return;
       if (mode === 'single') {
@@ -4566,37 +4682,67 @@ function fitToSingleFrame() {
     }
   };
 
-  selectionModeSelect.onchange = () => { state.selectionMode = selectionModeSelect.value; updateIntervalUI(); };
+  selectionModeSelect.onchange = () => { state.selectionMode = selectionModeSelect.value; updateIntervalUI(); markRegenPending(); };
+
+  if (sceneCountInput) {
+    const syncScene = () => {
+      state.sceneCount = Math.max(1, parseInt(sceneCountInput.value) || 5);
+      state.sceneDepth = Math.max(1, parseInt(sceneDepthInput.value) || 8);
+      state.sceneDistance = Math.max(1, parseInt(sceneDistanceInput.value) || 1);
+      sceneCountInput.value = state.sceneCount;
+      sceneDepthInput.value = state.sceneDepth;
+      sceneDistanceInput.value = state.sceneDistance;
+      updateGridHint();
+      markRegenPending();
+    };
+    sceneCountInput.onchange = sceneDepthInput.onchange = sceneDistanceInput.onchange = syncScene;
+    sceneCountMinus.onclick = () => { if (state.sceneCount > 1) { state.sceneCount--; sceneCountInput.value = state.sceneCount; updateGridHint(); } };
+    sceneCountPlus.onclick = () => { state.sceneCount = (state.sceneCount || 5) + 1; sceneCountInput.value = state.sceneCount; updateGridHint(); };
+    sceneDepthMinus.onclick = () => { if (state.sceneDepth > 1) { state.sceneDepth--; sceneDepthInput.value = state.sceneDepth; updateGridHint(); } };
+    sceneDepthPlus.onclick = () => { state.sceneDepth = (state.sceneDepth || 8) + 1; sceneDepthInput.value = state.sceneDepth; updateGridHint(); };
+    sceneDistanceMinus.onclick = () => { if (state.sceneDistance > 1) { state.sceneDistance--; sceneDistanceInput.value = state.sceneDistance; updateGridHint(); } };
+    sceneDistancePlus.onclick = () => { state.sceneDistance = (state.sceneDistance || 1) + 1; sceneDistanceInput.value = state.sceneDistance; updateGridHint(); };
+  }
   frameCountInput.onchange = () => {
     state.frameCount = resolveIntMenuValue(frameCountInput, state.frameCount || 24, 1, 3000);
     frameCountInput.value = state.frameCount;
     updateGridHint();
+    markRegenPending();
   };
   
   // Frame count +/-
-  countMinus.onclick = () => { if (state.frameCount > 1) { state.frameCount--; frameCountInput.value = state.frameCount; updateGridHint(); } };
-  countPlus.onclick = () => { if (state.frameCount < 2000) { state.frameCount++; frameCountInput.value = state.frameCount; updateGridHint(); } };
+  countMinus.onclick = () => { if (state.frameCount > 1) { state.frameCount--; frameCountInput.value = state.frameCount; updateGridHint(); }   markRegenPending();
+  };
+  countPlus.onclick = () => { if (state.frameCount < 2000) { state.frameCount++; frameCountInput.value = state.frameCount; updateGridHint(); }   markRegenPending();
+  };
   
-  intervalValueInput.onchange = () => { state.intervalValue = Math.max(1, parseInt(intervalValueInput.value) || 1); intervalValueInput.value = state.intervalValue; };
+  intervalValueInput.onchange = () => { state.intervalValue = Math.max(1, parseInt(intervalValueInput.value) || 1); intervalValueInput.value = state.intervalValue;   markRegenPending();
+  };
   
   // Start/End frame inputs
   const frameStep = 10;
   if (startFrameInput) startFrameInput.min = '1';
   if (endFrameInput) endFrameInput.min = '1';
-  startMinus.onclick = () => { state.startFrame = Math.max(0, state.startFrame - frameStep); syncFrameRangeInputs(); };
-  startPlus.onclick = () => { state.startFrame = Math.min(state.endFrame - 1, state.startFrame + frameStep); syncFrameRangeInputs(); };
-  endMinus.onclick = () => { state.endFrame = Math.max(state.startFrame + 1, state.endFrame - frameStep); syncFrameRangeInputs(); };
-  endPlus.onclick = () => { const maxFrame = getMaxFrameIndex(); state.endFrame = Math.min(maxFrame, state.endFrame + frameStep); syncFrameRangeInputs(); };
+  startMinus.onclick = () => { state.startFrame = Math.max(0, state.startFrame - frameStep); syncFrameRangeInputs();   markRegenPending();
+  };
+  startPlus.onclick = () => { state.startFrame = Math.min(state.endFrame - 1, state.startFrame + frameStep); syncFrameRangeInputs();   markRegenPending();
+  };
+  endMinus.onclick = () => { state.endFrame = Math.max(state.startFrame + 1, state.endFrame - frameStep); syncFrameRangeInputs();   markRegenPending();
+  };
+  endPlus.onclick = () => { const maxFrame = getMaxFrameIndex(); state.endFrame = Math.min(maxFrame, state.endFrame + frameStep); syncFrameRangeInputs();   markRegenPending();
+  };
   startFrameInput.onchange = () => {
     const startUser = resolveIntMenuValue(startFrameInput, (state.startFrame || 0) + 1, 1, Math.max(1, state.endFrame || 1));
     state.startFrame = Math.max(0, Math.min(state.endFrame - 1, startUser - 1));
     syncFrameRangeInputs();
+    markRegenPending();
   };
   endFrameInput.onchange = () => {
     const maxFrame = getMaxFrameIndex();
     const endUser = resolveIntMenuValue(endFrameInput, (state.endFrame || 0) + 1, 1, maxFrame + 1);
     state.endFrame = Math.max(state.startFrame + 1, Math.min(maxFrame, endUser - 1));
     syncFrameRangeInputs();
+    markRegenPending();
   };
 
   if (cutColsInput) cutColsInput.onchange = () => {
@@ -4639,11 +4785,21 @@ function fitToSingleFrame() {
     generateFrames();
   };
   
-  qualitySelect.onchange = () => { state.quality = parseFloat(qualitySelect.value); };
+  qualitySelect.onchange = () => { state.quality = parseFloat(qualitySelect.value);   markRegenPending();
+  };
 
   function updateIntervalUI() {
-    if (state.selectionMode === 'count') { countRow.style.display = 'flex'; intervalRow.style.display = 'none'; }
-    else { countRow.style.display = 'none'; intervalRow.style.display = 'flex'; intervalLabel.textContent = state.selectionMode === 'seconds' ? 'Seconds' : 'Frames'; }
+    const isScene = state.selectionMode === 'scene';
+    const isCount = state.selectionMode === 'count';
+    countRow.style.display = isCount ? 'flex' : 'none';
+    intervalRow.style.display = (!isCount && !isScene) ? 'flex' : 'none';
+    if (!isCount && !isScene) intervalLabel.textContent = state.selectionMode === 'seconds' ? 'Seconds' : 'Frames';
+    const sceneDisplay = isScene ? 'flex' : 'none';
+    if ($('sceneCountRow')) {
+      $('sceneCountRow').style.display = sceneDisplay;
+      $('sceneDepthRow').style.display = sceneDisplay;
+      $('sceneDistanceRow').style.display = sceneDisplay;
+    }
   }
 
   // Metadata bar is always visible in the UI; export metadata is controlled separately.
@@ -4748,7 +4904,7 @@ function fitToSingleFrame() {
   
   function updateAllTimecodes() {
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
     items.forEach((item, i) => {
       if (i < offset) return;
@@ -4764,13 +4920,13 @@ function fitToSingleFrame() {
     updateTimecodeVisibility();
   }
   
-  if (toggleTcIndex) toggleTcIndex.onclick = () => { state.tcShowIndex = !state.tcShowIndex; toggleTcIndex.classList.toggle('active', state.tcShowIndex); updateAllTimecodes(); updateTimecodeVisibility(); };
-  if (toggleTcTime) toggleTcTime.onclick = () => { state.tcShowTime = !state.tcShowTime; toggleTcTime.classList.toggle('active', state.tcShowTime); updateAllTimecodes(); updateTimecodeVisibility(); };
-  if (toggleTcFrame) toggleTcFrame.onclick = () => { state.tcShowFrame = !state.tcShowFrame; toggleTcFrame.classList.toggle('active', state.tcShowFrame); updateAllTimecodes(); updateTimecodeVisibility(); };
+  if (toggleTcIndex) toggleTcIndex.onclick = () => { state.tcShowIndex = !state.tcShowIndex; toggleTcIndex.classList.toggle('active-toggle', state.tcShowIndex); updateAllTimecodes(); updateTimecodeVisibility(); };
+  if (toggleTcTime) toggleTcTime.onclick = () => { state.tcShowTime = !state.tcShowTime; toggleTcTime.classList.toggle('active-toggle', state.tcShowTime); updateAllTimecodes(); updateTimecodeVisibility(); };
+  if (toggleTcFrame) toggleTcFrame.onclick = () => { state.tcShowFrame = !state.tcShowFrame; toggleTcFrame.classList.toggle('active-toggle', state.tcShowFrame); updateAllTimecodes(); updateTimecodeVisibility(); };
   
   if (toggleTcText) toggleTcText.onclick = () => {
     state.tcShowText = !state.tcShowText;
-    toggleTcText.classList.toggle('active', state.tcShowText);
+    toggleTcText.classList.toggle('active-toggle', state.tcShowText);
     if (tcCustomTextRow) tcCustomTextRow.style.display = state.tcShowText ? 'flex' : 'none';
     updateAllTimecodes();
     updateTimecodeVisibility();
@@ -4894,6 +5050,46 @@ function fitToSingleFrame() {
       updateBgAppearance();
     };
   }
+    // Helper for dual slider+number inputs
+  function bindDualInput(stateKey, sliderEl, numEl, min, max, decimals, callback, syncCallback) {
+    if (!sliderEl && !numEl) return;
+
+    const formatVal = (v) => decimals > 0 ? v.toFixed(decimals) : String(Math.round(v));
+
+    if (sliderEl) {
+      sliderEl.oninput = () => {
+        let v = parseFloat(sliderEl.value);
+        if (isNaN(v)) return;
+        v = Math.max(min, Math.min(max, v));
+        state[stateKey] = v;
+        if (numEl) numEl.value = formatVal(v);
+        if (syncCallback) syncCallback(v);
+        if (callback) callback();
+      };
+    }
+    if (numEl) {
+      numEl.oninput = () => {
+        let v = parseFloat(numEl.value);
+        if (isNaN(v)) return;
+        v = Math.max(min, Math.min(max, v));
+        state[stateKey] = v;
+        if (sliderEl) sliderEl.value = String(v);
+        if (syncCallback) syncCallback(v);
+        if (callback) callback();
+      };
+      numEl.onchange = () => {
+        let v = parseFloat(numEl.value);
+        if (isNaN(v)) v = min;
+        v = Math.max(min, Math.min(max, v));
+        state[stateKey] = v;
+        numEl.value = formatVal(v);
+        if (sliderEl) sliderEl.value = String(v);
+        if (syncCallback) syncCallback(v);
+        if (callback) callback();
+      };
+    }
+  }
+
   if (frameBgColorInput) {
     frameBgColorInput.oninput = () => {
       state.frameBgColor = frameBgColorInput.value || '#111111';
@@ -4990,7 +5186,6 @@ function fitToSingleFrame() {
     toggleScaleLink.onclick = () => {
       state.frameImgScaleLink = !state.frameImgScaleLink;
       toggleScaleLink.classList.toggle('active', state.frameImgScaleLink);
-      // When linking is turned on, copy X to Y immediately to sync them
       if (state.frameImgScaleLink) {
         state.frameImgScaleY = state.frameImgScaleX;
         if (frameImgScaleSliderY) frameImgScaleSliderY.value = String(state.frameImgScaleY);
@@ -5007,7 +5202,6 @@ function fitToSingleFrame() {
       if (frameImgScaleNumY) frameImgScaleNumY.value = val.toFixed(2);
     }
   };
-
   const syncScaleX = (val) => {
     if (state.frameImgScaleLink) {
       state.frameImgScaleX = val;
@@ -5016,127 +5210,14 @@ function fitToSingleFrame() {
     }
   };
 
-  if (frameImgScaleSliderX) {
-    frameImgScaleSliderX.oninput = () => {
-      const v = Math.max(0.1, Math.min(4.0, parseFloat(frameImgScaleSliderX.value) || 1));
-      state.frameImgScaleX = v;
-      if (frameImgScaleNumX) frameImgScaleNumX.value = v.toFixed(2);
-      syncScaleY(v);
-      applyFrameImgTransform();
-    };
-  }
-  if (frameImgScaleNumX) {
-    frameImgScaleNumX.oninput = () => {
-      const v = parseFloat(frameImgScaleNumX.value);
-      if (!Number.isFinite(v)) return;
-      const c = Math.max(0.1, Math.min(4.0, v));
-      state.frameImgScaleX = c;
-      frameImgScaleNumX.value = c.toFixed(2);
-      if (frameImgScaleSliderX) frameImgScaleSliderX.value = String(c);
-      syncScaleY(c);
-      applyFrameImgTransform();
-    };
-  }
+  bindDualInput('frameImgScaleX', frameImgScaleSliderX, frameImgScaleNumX, 0.1, 4.0, 2, applyFrameImgTransform, syncScaleY);
+  bindDualInput('frameImgScaleY', frameImgScaleSliderY, frameImgScaleNumY, 0.1, 4.0, 2, applyFrameImgTransform, syncScaleX);
+  bindDualInput('frameImgOffX', frameImgOffXSlider, frameImgOffXNum, -50, 50, 0, applyFrameImgTransform);
+  bindDualInput('frameImgOffY', frameImgOffYSlider, frameImgOffYNum, -50, 50, 0, applyFrameImgTransform);
+  bindDualInput('frameImgRot', frameImgRotSlider, frameImgRotNum, -360, 360, 1, applyFrameImgTransform);
 
-  if (frameImgScaleSliderY) {
-    frameImgScaleSliderY.oninput = () => {
-      const v = Math.max(0.1, Math.min(4.0, parseFloat(frameImgScaleSliderY.value) || 1));
-      state.frameImgScaleY = v;
-      if (frameImgScaleNumY) frameImgScaleNumY.value = v.toFixed(2);
-      syncScaleX(v);
-      applyFrameImgTransform();
-    };
-  }
-  if (frameImgScaleNumY) {
-    frameImgScaleNumY.oninput = () => {
-      const v = parseFloat(frameImgScaleNumY.value);
-      if (!Number.isFinite(v)) return;
-      const c = Math.max(0.1, Math.min(4.0, v));
-      state.frameImgScaleY = c;
-      frameImgScaleNumY.value = c.toFixed(2);
-      if (frameImgScaleSliderY) frameImgScaleSliderY.value = String(c);
-      syncScaleX(c);
-      applyFrameImgTransform();
-    };
-  }
-if (frameImgOffXSlider) {
-    frameImgOffXSlider.oninput = () => {
-      state.frameImgOffX = parseInt(frameImgOffXSlider.value) || 0;
-      if (frameImgOffXNum) frameImgOffXNum.value = String(state.frameImgOffX);
-      applyFrameImgTransform();
-    };
-  }
-
-  if (frameImgOffXNum) {
-    frameImgOffXNum.oninput = () => {
-      const v = parseFloat(frameImgOffXNum.value);
-      if (!Number.isFinite(v)) return;
-      state.frameImgOffX = Math.max(-50, Math.min(50, Math.round(v)));
-      frameImgOffXNum.value = String(state.frameImgOffX);
-      if (frameImgOffXSlider) frameImgOffXSlider.value = String(state.frameImgOffX);
-      applyFrameImgTransform();
-    };
-  }
-  if (frameImgOffYSlider) {
-    frameImgOffYSlider.oninput = () => {
-      state.frameImgOffY = parseInt(frameImgOffYSlider.value) || 0;
-      if (frameImgOffYNum) frameImgOffYNum.value = String(state.frameImgOffY);
-      applyFrameImgTransform();
-    };
-  }
-
-
-  if (frameImgOffYNum) {
-    frameImgOffYNum.oninput = () => {
-      const v = parseFloat(frameImgOffYNum.value);
-      if (!Number.isFinite(v)) return;
-      state.frameImgOffY = Math.max(-50, Math.min(50, Math.round(v)));
-      frameImgOffYNum.value = String(state.frameImgOffY);
-      if (frameImgOffYSlider) frameImgOffYSlider.value = String(state.frameImgOffY);
-      applyFrameImgTransform();
-    };
-  }
-
-  if (frameImgRotSlider) {
-    frameImgRotSlider.oninput = () => {
-      state.frameImgRot = parseFloat(frameImgRotSlider.value) || 0;
-      if (frameImgRotNum) frameImgRotNum.value = state.frameImgRot.toFixed(1);
-      applyFrameImgTransform();
-    };
-  }
-
-  if (frameImgRotNum) {
-    frameImgRotNum.oninput = () => {
-      const v = parseFloat(frameImgRotNum.value);
-      if (!Number.isFinite(v)) return;
-      state.frameImgRot = Math.max(-360, Math.min(360, v));
-      frameImgRotNum.value = state.frameImgRot.toFixed(1);
-      if (frameImgRotSlider) frameImgRotSlider.value = String(state.frameImgRot);
-      applyFrameImgTransform();
-    };
-  }
-
-  if (frameImgOpacitySlider) {
-    frameImgOpacitySlider.oninput = () => {
-      const v = parseFloat(frameImgOpacitySlider.value);
-      state.frameImgOpacity = isNaN(v) ? 1 : v;
-      if (frameImgOpacityNum) frameImgOpacityNum.value = state.frameImgOpacity.toFixed(2);
-      applyFrameImgTransform();
-      requestComposite();
-    };
-  }
-
-  if (frameImgOpacityNum) {
-    frameImgOpacityNum.oninput = () => {
-      const v = parseFloat(frameImgOpacityNum.value);
-      if (!Number.isFinite(v)) return;
-      state.frameImgOpacity = Math.max(0, Math.min(1, v));
-      frameImgOpacityNum.value = state.frameImgOpacity.toFixed(2);
-      if (frameImgOpacitySlider) frameImgOpacitySlider.value = String(state.frameImgOpacity);
-      applyFrameImgTransform();
-      requestComposite();
-    };
-  }
+  const compositeCallback = () => { applyFrameImgTransform(); requestComposite(); };
+  bindDualInput('frameImgOpacity', frameImgOpacitySlider, frameImgOpacityNum, 0, 1, 2, compositeCallback);
 
   if (resetFrameTransformBtn) {
     resetFrameTransformBtn.addEventListener('click', () => {
@@ -5178,8 +5259,8 @@ if (frameImgOffXSlider) {
   }
 
   generateBtn.onclick = () => {
-    // If animation is running, pause first to avoid flicker and race conditions during rebuild
     if (state.isPlaying) stopAnimation();
+    markRegenDone();
     generateFrames();
   };
 
@@ -5270,8 +5351,8 @@ if (frameImgOffXSlider) {
     qPlay.textContent = state.isPlaying ? '■' : '▶';
     qPlay.classList.toggle('active', state.isPlaying);
   }
-  exportSmallBtn.onclick = () => exportImage('jpeg', 2048).catch(e => console.error(e));
-  exportFullBtn.onclick = () => exportImage('png', 8192).catch(e => console.error(e));
+  exportSmallBtn.onclick = () => exportImage('jpeg', EXPORT_CONF.STILL_PREV).catch(e => console.error(e));
+  exportFullBtn.onclick = () => exportImage('png', EXPORT_CONF.STILL_MAX).catch(e => console.error(e));
   exportMp4GridBtn.onclick = () => {
     if (state.exportAudioLayer) recordAudioSeqAV('grid');
     else exportMp4('grid');
@@ -5609,7 +5690,7 @@ function ensureAnimRandomStarts(totalCells) {
 
 function updateAllCells() {
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
     const totalCells = items.length - offset;
     const frameCount = state.frames.length;
     if (!frameCount) return;
@@ -5639,7 +5720,7 @@ function updateAllCells() {
       const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[cellIdx] ?? 0) : cellOffset;
 
       ensureAnimDirShuffle(frameCount);
-      let frameIdx = resolveDirectionFrame(state.currentTick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
+      let frameIdx = applyLoopAfterN(state.currentTick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
 
       const frame = state.frames[frameIdx];
       if (!frame) return;
@@ -5761,6 +5842,49 @@ function updateAllCells() {
       updateLogoFromTick();
       updateAllCells();
     }, interval);
+  }
+
+  
+  // Apply loopAfterN cycle limiter: each cell stays within its own N-frame window
+  // baseOffset determines the window start; direction/pattern work normally inside
+  function applyLoopAfterN(t, baseOffset, frameCount, dir, animDirShuffle) {
+    const loopN = (state.loopAfterN > 0 && state.loopAfterN < frameCount) ? state.loopAfterN : frameCount;
+    const loopStart = Math.floor(baseOffset / loopN) * loopN;
+    const localOffset = baseOffset % loopN;
+    const localT = t % loopN;
+    const localFrame = resolveDirectionFrame(localT, localOffset, loopN, dir, animDirShuffle);
+    return Math.min(loopStart + localFrame, frameCount - 1);
+  }
+
+
+  
+  // Batch-load frame images with progress and auto-pause
+  async function loadFrameImagesWithProgress(label) {
+    if (state.isPlaying) stopAnimation();
+    const frames = state.frames;
+    const total = frames.length;
+    const BATCH = 30;
+    const images = new Array(total);
+    for (let i = 0; i < total; i += BATCH) {
+      const end = Math.min(i + BATCH, total);
+      loadingProgress.textContent = `${label} ${i}/${total}...`;
+      await Promise.all(frames.slice(i, end).map((f, j) => new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => { images[i + j] = img; resolve(); };
+        img.onerror = () => { images[i + j] = null; resolve(); };
+        img.src = f.dataUrl || getFrameDataUrl(f);
+      })));
+      await new Promise(r => queueMicrotask(r));
+    }
+    return images;
+  }
+
+  
+  function markRegenPending() {
+    if (generateBtn) generateBtn.classList.add('pending');
+  }
+  function markRegenDone() {
+    if (generateBtn) generateBtn.classList.remove('pending');
   }
 
   function generateCellOrder(totalCells, cols) {
@@ -5885,7 +6009,7 @@ function updateAllCells() {
     const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[cellIdx] ?? 0) : offset;
 
     ensureAnimDirShuffle(frameCount);
-    return resolveDirectionFrame(tick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
+    return applyLoopAfterN(tick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
   }
 
   // Update all cells to show frames at current tick
@@ -6096,7 +6220,7 @@ let isDrawing = false;
   }
 
   // ====================================
-  //  DRAW UNDO v0.26.15 STEP3 (stable)
+  //  DRAW UNDO v0.26.26 STEP3 (stable)
   //  - target-only snapshots
   //  - FRM captures per-tile snapshots
   //  - undo never clears layers when snapshot is missing
@@ -6356,7 +6480,7 @@ let isDrawing = false;
   function updateTemplateCanvasSize() {
     // Make template canvas match a single frame cell in drawCanvas coordinates
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
     const first = items[offset];
     if (!first) return;
     const innerRect = canvasInner.getBoundingClientRect();
@@ -6485,7 +6609,7 @@ function resizeDrawCanvas() {
 
   function getTemplateBaseRect() {
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
     const firstFrame = items[offset];
     const headerH = 24;
     if (!firstFrame) return { ok: false, headerH };
@@ -6777,7 +6901,7 @@ function compositeAllLayers() {
     if (!state.refFrameSource || !state.refFrameVisible) return;
 
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
 
     const drawRect = drawCanvas.getBoundingClientRect();
     if (!drawRect.width || !drawRect.height) return;
@@ -6795,12 +6919,14 @@ function compositeAllLayers() {
     srcH = Math.max(1, Number(srcH) || 1);
 
     const follow = !!state.refFrameFollowFrameTransform;
-    const mainScale = follow ? (Number(state.frameImgScale) || 1) : 1;
+    const mainScaleX = follow ? (Number(state.frameImgScaleX) || Number(state.frameImgScale) || 1) : 1;
+    const mainScaleY = follow ? (Number(state.frameImgScaleY) || Number(state.frameImgScale) || 1) : 1;
     const mainOffXPct = follow ? (Number(state.frameImgOffX) || 0) : 0;
     const mainOffYPct = follow ? (Number(state.frameImgOffY) || 0) : 0;
     const mainRot = follow ? (Number(state.frameImgRot) || 0) : 0;
 
-    const s = (Number(state.refFrameScale) || 1) * mainScale;
+    const sx = (Number(state.refFrameScaleX) || Number(state.refFrameScale) || 1) * mainScaleX;
+    const sy = (Number(state.refFrameScaleY) || Number(state.refFrameScale) || 1) * mainScaleY;
     const rot = (Number(state.refFrameRot) || 0) + mainRot;
     const alpha = Math.max(0, Math.min(1, Number(state.refFrameOpacity) || 0));
 
@@ -6815,8 +6941,8 @@ function compositeAllLayers() {
       const ox = ((Number(state.refFrameOffX) || 0) + mainOffXPct) * 0.01 * w;
       const oy = ((Number(state.refFrameOffY) || 0) + mainOffYPct) * 0.01 * h;
       const contain = Math.min(w / srcW, h / srcH);
-      const dw = srcW * contain * s;
-      const dh = srcH * contain * s;
+      const dw = srcW * contain * sx;
+      const dh = srcH * contain * sy;
       const dx = x + (w - dw) / 2 + ox;
       const dy = y + (h - dh) / 2 + oy;
 
@@ -6842,7 +6968,7 @@ function compositeAllLayers() {
     if (!tplCanvas.width || !tplCanvas.height) return;
 
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
 
     const drawRect = drawCanvas.getBoundingClientRect();
     if (!drawRect.width || !drawRect.height) return;
@@ -6868,7 +6994,7 @@ function compositeAllLayers() {
     // Per-frame sheet: each visible cell gets the slice for its current frameIdx
     if (!frameSheetCanvas.width || !frameSheetCanvas.height) return;
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
 
     const drawRect = drawCanvas.getBoundingClientRect();
     if (!drawRect.width || !drawRect.height) return;
@@ -6939,7 +7065,7 @@ function compositeAllLayers() {
   // Find which frame cell a point is over (returns null if on background)
   function getFrameAtPoint(point) {
     const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = state.showInfoCard ? 1 : 0;
+    const offset = 0;
     const drawRect = drawCanvas.getBoundingClientRect();
     const scaleX = drawCanvas.width / Math.max(1, drawRect.width);
     const scaleY = drawCanvas.height / Math.max(1, drawRect.height);
@@ -7335,7 +7461,7 @@ ctx.beginPath();
             const px = tmpCtx2.getImageData(0, 0, 1, 1).data;
             const hex = '#' + [px[0],px[1],px[2]].map(c => c.toString(16).padStart(2,'0')).join('');
             setDrawColor(hex);
-          } catch(ex) {}
+          } catch (e) {}
         }
       }
       eyedropperActive = false;
@@ -7908,7 +8034,7 @@ function stampLongStrokeFrame(frameIdx) {
   // It also frees snapshot memory immediately and prevents "late" restores overwriting new strokes.
   function bakeLongStrokeTrailNow() {
     // Stop any decay loop (we are committing, not fading out)
-    try { stopLongStrokeDecayTimer(); } catch(e) {}
+    stopLongStrokeDecayTimer();
 
     // Ensure the last touched frame is rendered one last time
     try {
@@ -7916,7 +8042,7 @@ function stampLongStrokeFrame(frameIdx) {
       if (tf > 0 && typeof longStrokeLastFrame === 'number' && longStrokeLastFrame >= 0) {
         renderLongStrokeFrame(longStrokeLastFrame);
       }
-    } catch(e) {}
+    } catch (e) {}
 
     // Keep current pixels on frameSheetCanvas and drop bookkeeping
     longStrokePath = [];
@@ -7974,7 +8100,7 @@ function stampLongStrokeFrame(frameIdx) {
   // Defined here to ensure it is in the same scope as endStroke().
   var bakeLongStrokeTrailNow = function() {
     // Commit Long Stroke trail into FRM sheet on release
-    try { stopLongStrokeDecayTimer(); } catch(e) {}
+    stopLongStrokeDecayTimer();
 
     const tf = getLongStrokeTrailFrames();
     if (tf <= 0) {
@@ -7987,7 +8113,7 @@ function stampLongStrokeFrame(frameIdx) {
       longStrokeActiveFrames = new Set();
       longStrokeTouchedFrames = new Set();
       longStrokeEndTick = null;
-      try { requestComposite(); } catch(e) {}
+      requestComposite();
       return;
     }
 
@@ -8004,7 +8130,7 @@ function stampLongStrokeFrame(frameIdx) {
           renderLongStrokeFrameAtTick(frameIdx, t);
         }
       }
-    } catch(e) {}
+    } catch (e) {}
 
     // Drop bookkeeping so nothing can restore over committed pixels later
     longStrokePath = [];
@@ -8018,7 +8144,7 @@ function stampLongStrokeFrame(frameIdx) {
     longStrokeTouchedFrames = new Set();
     longStrokeEndTick = null;
 
-    try { requestComposite(); } catch(e) {}
+    requestComposite();
   };
 
   function endStroke() {
@@ -8092,7 +8218,7 @@ function stampLongStrokeFrame(frameIdx) {
     }
     if (suppressDrawTouchUntilRelease) return;
 
-    if (typeof dbg === 'function') dbg(`Touch start: ${e.touches.length} touches, target=${state.drawTarget}`);
+    
     e.preventDefault();
     // Save undo state (stable, target-only)
     beginUndoCaptureForDrawTarget();
@@ -8109,7 +8235,7 @@ function stampLongStrokeFrame(frameIdx) {
       if (!hit) {
         isDrawing = false;
         lastPoint = null;
-        if (typeof dbg === 'function') dbg('Touch: no hit');
+        
         return;
       }
       holdStampLastFrame = hit.frameIdx;
@@ -8137,7 +8263,7 @@ function stampLongStrokeFrame(frameIdx) {
           longStrokeActiveFrames.add(hit.frameIdx);
           renderLongStrokeFrame(hit.frameIdx);
           requestComposite();
-          if (typeof dbg === 'function') dbg(`Touch frame: idx=${hit.frameIdx}`);
+          
           return;
         }
 
@@ -8152,7 +8278,7 @@ function stampLongStrokeFrame(frameIdx) {
       captureUndoFrameTile(hit.frameIdx);
       drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
       requestComposite();
-      if (typeof dbg === 'function') dbg(`Touch frame: idx=${hit.frameIdx}`);
+      
       return;
     }
 
@@ -8311,7 +8437,7 @@ function stampLongStrokeFrame(frameIdx) {
       state.recentColors = state.recentColors.filter(c => (c || '').toLowerCase() !== norm);
       state.recentColors.unshift(norm);
       if (state.recentColors.length > 5) state.recentColors.length = 5;
-      try { localStorage.setItem('fg_recentColors', JSON.stringify(state.recentColors)); } catch(e) {}
+      try { localStorage.setItem('fg_recentColors', JSON.stringify(state.recentColors)); } catch (e) {}
       renderRecentColors();
     } else {
       state._skipRecentCapture = false;
@@ -8356,7 +8482,7 @@ function stampLongStrokeFrame(frameIdx) {
   try {
     const saved = JSON.parse(localStorage.getItem('fg_recentColors') || '[]');
     if (Array.isArray(saved)) state.recentColors = saved.slice(0, 5);
-  } catch(e) {}
+  } catch (e) {}
 
   function renderRecentColors() {
     const row = document.getElementById('recentColorsRow');
@@ -8400,7 +8526,7 @@ function stampLongStrokeFrame(frameIdx) {
         for (let p = 0; p < data.length; p += 16) { // sample every 4th pixel
           pixels.push([data[p], data[p+1], data[p+2]]);
         }
-      } catch(e) {}
+      } catch (e) {}
     }
     if (!pixels.length) return;
 
@@ -8767,16 +8893,17 @@ function renderVideoPalette() {
       toggleRefFrameAbove.style.pointerEvents = hasRef ? 'auto' : 'none';
       toggleRefFrameAbove.style.opacity = hasRef ? '1' : '0.35';
     }
-    if (refFrameOpacitySlider && refFrameOpacityValue) {
-      refFrameOpacitySlider.value = String(Math.round((Number(state.refFrameOpacity) || 0) * 100));
-      refFrameOpacityValue.textContent = `${Math.round((Number(state.refFrameOpacity) || 0) * 100)}%`;
-    }
+    if (refFrameOpacitySlider) refFrameOpacitySlider.value = String(state.refFrameOpacity !== undefined ? state.refFrameOpacity : 1);
+    if (refFrameOpacityNum) refFrameOpacityNum.value = (state.refFrameOpacity !== undefined ? state.refFrameOpacity : 1).toFixed(2);
     if (refFrameOffXSlider) refFrameOffXSlider.value = String(Number(state.refFrameOffX) || 0);
     if (refFrameOffXNum) refFrameOffXNum.value = String(Number(state.refFrameOffX) || 0);
     if (refFrameOffYSlider) refFrameOffYSlider.value = String(Number(state.refFrameOffY) || 0);
     if (refFrameOffYNum) refFrameOffYNum.value = String(Number(state.refFrameOffY) || 0);
-    if (refFrameScaleSlider) refFrameScaleSlider.value = String(Number(state.refFrameScale) || 1);
-    if (refFrameScaleNum) refFrameScaleNum.value = (Number(state.refFrameScale) || 1).toFixed(2);
+    if (refFrameScaleSliderX) refFrameScaleSliderX.value = String(Number(state.refFrameScaleX) || 1);
+    if (refFrameScaleNumX) refFrameScaleNumX.value = (Number(state.refFrameScaleX) || 1).toFixed(2);
+    if (refFrameScaleSliderY) refFrameScaleSliderY.value = String(Number(state.refFrameScaleY) || 1);
+    if (refFrameScaleNumY) refFrameScaleNumY.value = (Number(state.refFrameScaleY) || 1).toFixed(2);
+    if (toggleRefScaleLink) toggleRefScaleLink.classList.toggle('active', !!state.refFrameScaleLink);
 if (toggleExportRefFrame) {
       toggleExportRefFrame.classList.toggle('active', !!state.refFrameIncludeInExport);
       toggleExportRefFrame.style.pointerEvents = hasRef ? 'auto' : 'none';
@@ -8789,11 +8916,13 @@ if (toggleExportRefFrame) {
     if (refFrameOpacitySlider) refFrameOpacitySlider.disabled = !hasRef;
 if (refFrameOffXSlider) refFrameOffXSlider.disabled = !hasRef;
     if (refFrameOffYSlider) refFrameOffYSlider.disabled = !hasRef;
-    if (refFrameScaleSlider) refFrameScaleSlider.disabled = !hasRef;
+    if (refFrameScaleSliderX) refFrameScaleSliderX.disabled = !hasRef;
+    if (refFrameScaleSliderY) refFrameScaleSliderY.disabled = !hasRef;
 
     if (refFrameOffXNum) refFrameOffXNum.disabled = !hasRef;
     if (refFrameOffYNum) refFrameOffYNum.disabled = !hasRef;
-    if (refFrameScaleNum) refFrameScaleNum.disabled = !hasRef;
+    if (refFrameScaleNumX) refFrameScaleNumX.disabled = !hasRef;
+    if (refFrameScaleNumY) refFrameScaleNumY.disabled = !hasRef;
     if (toggleRefFrameVisible) {
       toggleRefFrameVisible.style.pointerEvents = hasRef ? 'auto' : 'none';
       toggleRefFrameVisible.style.opacity = hasRef ? '1' : '0.35';
@@ -8831,7 +8960,8 @@ if (refFrameOffXSlider) refFrameOffXSlider.disabled = !hasRef;
     if (!state.refFrameSource) return;
     state.refFrameOffX = 0;
     state.refFrameOffY = 0;
-    state.refFrameScale = 1;
+    state.refFrameScaleX = 1;
+    state.refFrameScaleY = 1;
     state.refFrameRot = 0;
     updateRefFrameUI();
     compositeAllLayers();
@@ -8839,10 +8969,7 @@ if (refFrameOffXSlider) refFrameOffXSlider.disabled = !hasRef;
 
   function clearRefFrame() {
     // Dispose previous bitmap to free memory (safe no-op for HTMLImageElement)
-    try {
-      const prev = state.refFrameSource;
-      if (prev && typeof prev.close === 'function') prev.close();
-    } catch (e) {}
+    const prev = state.refFrameSource; if (prev && typeof prev.close === "function") prev.close();
     state.refFrameSource = null;
     state.refFrameVisible = true;
     resizeDrawCanvas();
@@ -8853,18 +8980,13 @@ if (refFrameOffXSlider) refFrameOffXSlider.disabled = !hasRef;
     if (!file) return;
 
     // Dispose previous bitmap before replacing
-    try {
-      const prev = state.refFrameSource;
-      if (prev && typeof prev.close === 'function') prev.close();
-    } catch (e) {}
+    const prev = state.refFrameSource; if (prev && typeof prev.close === "function") prev.close();
 
     // Reset first to avoid stale UI
     state.refFrameSource = null;
     state.refFrameVisible = true;
 
-    if (typeof dbg === 'function') {
-      const kb = Math.round((Number(file.size) || 0) / 1024);
-    }
+    
 
     const url = URL.createObjectURL(file);
     try {
@@ -8872,10 +8994,10 @@ if (refFrameOffXSlider) refFrameOffXSlider.disabled = !hasRef;
         try {
           const bmp = await createImageBitmap(file);
           state.refFrameSource = bmp;
-          if (typeof dbg === 'function') dbg(`RefFrame: createImageBitmap OK: ${bmp.width}x${bmp.height}`);
+          
         } catch (e) {
           // Some browsers fail createImageBitmap(file) for certain formats or large images.
-          if (typeof dbg === 'function') dbg(`RefFrame: createImageBitmap FAIL: ${e && e.message ? e.message : e}`);
+          
           state.refFrameSource = null;
         }
       }
@@ -8905,25 +9027,26 @@ if (refFrameOffXSlider) refFrameOffXSlider.disabled = !hasRef;
         state.refFrameSource = img;
         const iw = img.naturalWidth || img.width || 0;
         const ih = img.naturalHeight || img.height || 0;
-        if (typeof dbg === 'function') dbg(`RefFrame: Image OK: ${iw}x${ih}`);
+        
       }
     } catch (e) {
-      console.warn('Ref Frame load failed', e);
-      if (typeof dbg === 'function') dbg(`RefFrame: FAILED: ${e && e.message ? e.message : e}`);
+      
+      
       state.refFrameSource = null;
     } finally {
-      try { URL.revokeObjectURL(url); } catch (e) {}
+      if (url) URL.revokeObjectURL(url);
     }
 
     // Defaults on successful load
     if (state.refFrameSource) {
       state.refFrameOpacity = 1;
-state.refFrameOffX = 0;
+      state.refFrameOffX = 0;
       state.refFrameOffY = 0;
-      state.refFrameScale = 1;
-      if (typeof dbg === 'function') dbg('RefFrame: ready');
+      state.refFrameScaleX = 1;
+      state.refFrameScaleY = 1;
+      
     } else {
-      if (typeof dbg === 'function') dbg('RefFrame: no source after load');
+      
     }
 
     updateRefFrameUI();
@@ -8933,14 +9056,14 @@ state.refFrameOffX = 0;
 
   if (refFrameLoadBtn && refFrameInput) {
     refFrameLoadBtn.onclick = () => {
-      if (typeof dbg === 'function') dbg('RefFrame: open picker');
+      
       refFrameInput.click();
     };
   }
   if (refFrameInput) {
     refFrameInput.onchange = () => {
       const f = refFrameInput.files && refFrameInput.files[0];
-      if (typeof dbg === 'function') dbg(`RefFrame: picker change: ${f ? f.name : 'none'}`);
+      
       if (f) loadRefFrameFromFile(f);
       refFrameInput.value = '';
     };
@@ -8969,90 +9092,42 @@ state.refFrameOffX = 0;
       compositeAllLayers();
     };
   }
-  if (refFrameOpacitySlider) {
-    refFrameOpacitySlider.oninput = () => {
-      state.refFrameOpacity = Math.max(0, Math.min(1, (parseFloat(refFrameOpacitySlider.value) || 0) / 100));
-      if (refFrameOpacityValue) refFrameOpacityValue.textContent = `${Math.round(state.refFrameOpacity * 100)}%`;
-      compositeAllLayers();
-    };
-  }
-if (refFrameOffXSlider) {
-    refFrameOffXSlider.oninput = () => {
-      state.refFrameOffX = parseFloat(refFrameOffXSlider.value) || 0;
-      if (refFrameOffXNum) refFrameOffXNum.value = String(state.refFrameOffX);
-      compositeAllLayers();
-    };
-  }
-
-  if (refFrameOffXNum) {
-    refFrameOffXNum.oninput = () => {
+      if (toggleRefScaleLink) {
+    toggleRefScaleLink.onclick = () => {
       if (!state.refFrameSource) return;
-      const v = parseFloat(refFrameOffXNum.value);
-      if (!Number.isFinite(v)) return;
-      state.refFrameOffX = Math.max(-50, Math.min(50, Math.round(v)));
-      refFrameOffXNum.value = String(state.refFrameOffX);
-      if (refFrameOffXSlider) refFrameOffXSlider.value = String(state.refFrameOffX);
-      compositeAllLayers();
-    };
-  }
-  if (refFrameOffYSlider) {
-    refFrameOffYSlider.oninput = () => {
-      state.refFrameOffY = parseFloat(refFrameOffYSlider.value) || 0;
-      if (refFrameOffYNum) refFrameOffYNum.value = String(state.refFrameOffY);
-      compositeAllLayers();
+      state.refFrameScaleLink = !state.refFrameScaleLink;
+      toggleRefScaleLink.classList.toggle('active', state.refFrameScaleLink);
+      if (state.refFrameScaleLink) {
+        state.refFrameScaleY = state.refFrameScaleX;
+        if (refFrameScaleSliderY) refFrameScaleSliderY.value = String(state.refFrameScaleY);
+        if (refFrameScaleNumY) refFrameScaleNumY.value = state.refFrameScaleY.toFixed(2);
+        compositeAllLayers();
+      }
     };
   }
 
-  if (refFrameOffYNum) {
-    refFrameOffYNum.oninput = () => {
-      if (!state.refFrameSource) return;
-      const v = parseFloat(refFrameOffYNum.value);
-      if (!Number.isFinite(v)) return;
-      state.refFrameOffY = Math.max(-50, Math.min(50, Math.round(v)));
-      refFrameOffYNum.value = String(state.refFrameOffY);
-      if (refFrameOffYSlider) refFrameOffYSlider.value = String(state.refFrameOffY);
-      compositeAllLayers();
-    };
-  }
+  const syncRefScaleY = (val) => {
+    if (state.refFrameScaleLink) {
+      state.refFrameScaleY = val;
+      if (refFrameScaleSliderY) refFrameScaleSliderY.value = String(val);
+      if (refFrameScaleNumY) refFrameScaleNumY.value = val.toFixed(2);
+    }
+  };
+  const syncRefScaleX = (val) => {
+    if (state.refFrameScaleLink) {
+      state.refFrameScaleX = val;
+      if (refFrameScaleSliderX) refFrameScaleSliderX.value = String(val);
+      if (refFrameScaleNumX) refFrameScaleNumX.value = val.toFixed(2);
+    }
+  };
 
-  if (refFrameRotSlider) {
-    refFrameRotSlider.oninput = () => {
-      state.refFrameRot = parseFloat(refFrameRotSlider.value) || 0;
-      if (refFrameRotNum) refFrameRotNum.value = state.refFrameRot.toFixed(1);
-      compositeAllLayers();
-    };
-  }
+  bindDualInput('refFrameScaleX', refFrameScaleSliderX, refFrameScaleNumX, 0.1, 4.0, 2, compositeAllLayers, syncRefScaleY);
+  bindDualInput('refFrameScaleY', refFrameScaleSliderY, refFrameScaleNumY, 0.1, 4.0, 2, compositeAllLayers, syncRefScaleX);
+  bindDualInput('refFrameOffX', refFrameOffXSlider, refFrameOffXNum, -50, 50, 0, compositeAllLayers);
+  bindDualInput('refFrameOffY', refFrameOffYSlider, refFrameOffYNum, -50, 50, 0, compositeAllLayers);
+  bindDualInput('refFrameRot', refFrameRotSlider, refFrameRotNum, -360, 360, 1, compositeAllLayers);
+  bindDualInput('refFrameOpacity', refFrameOpacitySlider, refFrameOpacityNum, 0, 1, 2, compositeAllLayers);
 
-  if (refFrameRotNum) {
-    refFrameRotNum.oninput = () => {
-      if (!state.refFrameSource) return;
-      const v = parseFloat(refFrameRotNum.value);
-      if (!Number.isFinite(v)) return;
-      state.refFrameRot = Math.max(-360, Math.min(360, v));
-      refFrameRotNum.value = state.refFrameRot.toFixed(1);
-      if (refFrameRotSlider) refFrameRotSlider.value = String(state.refFrameRot);
-      compositeAllLayers();
-    };
-  }
-  if (refFrameScaleSlider) {
-    refFrameScaleSlider.oninput = () => {
-      state.refFrameScale = Math.max(0.1, Math.min(4.0, parseFloat(refFrameScaleSlider.value) || 1));
-      if (refFrameScaleNum) refFrameScaleNum.value = state.refFrameScale.toFixed(2);
-      compositeAllLayers();
-    };
-  }
-
-  if (refFrameScaleNum) {
-    refFrameScaleNum.oninput = () => {
-      if (!state.refFrameSource) return;
-      const v = parseFloat(refFrameScaleNum.value);
-      if (!Number.isFinite(v)) return;
-      state.refFrameScale = Math.max(0.1, Math.min(4.0, v));
-      refFrameScaleNum.value = state.refFrameScale.toFixed(2);
-      if (refFrameScaleSlider) refFrameScaleSlider.value = String(state.refFrameScale);
-      compositeAllLayers();
-    };
-  }
   if (toggleExportRefFrame) {
     toggleExportRefFrame.onclick = () => {
       state.refFrameIncludeInExport = !state.refFrameIncludeInExport;
@@ -9081,17 +9156,17 @@ if (refFrameOffXSlider) {
       const ctx = getActiveBgCtx();
       ctx.clearRect(0, 0, cnv.width, cnv.height);
       setActiveBgDrawing(null);
-      if (typeof dbg === 'function') dbg('Cleared BG');
+      
     } else if (state.drawTarget === 'template') {
       tplCtx.clearRect(0, 0, tplCanvas.width, tplCanvas.height);
       state.templateDrawing = null;
       renderTemplateFramePreview();
-      if (typeof dbg === 'function') dbg('Cleared TPL');
+      
     } else if (state.drawTarget === 'frame') {
       frameSheetCtx.clearRect(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
       state.frameDrawings = {};
       state.frameSheetDrawing = null;
-      if (typeof dbg === 'function') dbg('Cleared FRM');
+      
     }
     drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
     requestComposite();
@@ -9585,7 +9660,7 @@ async function exportResampledVideo(forceMode = null) {
 
     const frameAspect = getEffectiveFrameAspect();
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
-    const total = cellCount + (state.showInfoCard ? 1 : 0);
+    const total = cellCount + (0);
     const rows = Math.ceil(total / state.gridCols);
 
     const videoLayout = getDeterministicVideoExportLayout(mode, rows);
@@ -9595,12 +9670,7 @@ async function exportResampledVideo(forceMode = null) {
 
     loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Preparing resampled export...';
-    const frameImages = await Promise.all(state.frames.map(f => new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = f.dataUrl;
-    })));
+    const frameImages = await loadFrameImagesWithProgress('Loading frames');
 
     let sequence = [];
     const frameCount = state.frames.length;
@@ -9633,8 +9703,7 @@ async function exportResampledVideo(forceMode = null) {
     const stream = new MediaStream(tracks);
 
     const requestedMime = pickBestMediaRecorderMime();
-    const bitsMap = { low: 2000000, medium: 3500000, hd: 6000000, high: 10000000, max: 12000000 };
-    const videoBits = bitsMap[state.exportQuality] || 6000000;
+    const videoBits = EXPORT_CONF.MR_BITS[state.exportQuality] || 6000000;
 
     let recorder;
     try {
@@ -9745,12 +9814,11 @@ async function exportResampledVideo(forceMode = null) {
 
     const frameAspect = getEffectiveFrameAspect();
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
-    const total = cellCount + (state.showInfoCard ? 1 : 0);
+    const total = cellCount + (0);
     const rows = Math.ceil(total / state.gridCols);
     const gapBase = Math.max(0, Number(state.spacing) || 0);
     const padPx = state.exportBgLayer ? clampExportPaddingPx(state.exportPaddingPx || 0) : 0;
-    const qualityMap = { low: 540, medium: 720, hd: 1080, high: 2160, max: Infinity };
-    const qualityCap = qualityMap[state.exportQuality] || 1080;
+    const qualityCap = EXPORT_CONF.RES[state.exportQuality] || 1080;
 
     let logicalCanvasW = 0;
     let logicalCanvasH = 0;
@@ -9815,11 +9883,7 @@ async function exportResampledVideo(forceMode = null) {
     }
 
     loadingProgress.textContent = drawingsOnly ? 'Preparing drawings export...' : 'Loading frames...';
-    const frameImages = drawingsOnly ? null : await Promise.all(state.frames.map(f => new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.src = f.dataUrl;
-    })));
+    const frameImages = drawingsOnly ? null : await loadFrameImagesWithProgress('Loading frames');
 
     const frameCount = state.frames.length;
     const cycleLen = getAnimDirectionCycleLength(frameCount, state.animDirection);
@@ -9935,7 +9999,7 @@ Alternatively, use PNG sequence export.`);
       return;
     }
 
-    try { audioExportReset(); } catch (e) {}
+    audioExportReset();
     state._audioExportDoTrigger = false;
 
     for (let tick = 0; tick < totalTicks; tick++) {
@@ -9952,7 +10016,7 @@ Alternatively, use PNG sequence export.`);
       const videoFrame = new VideoFrame(canvas, { timestamp: tick * frameDuration, duration: frameDuration });
       encoder.encode(videoFrame, { keyFrame: tick % 30 === 0 });
       videoFrame.close();
-      if (tick % 5 === 0) await new Promise(r => setTimeout(r, 0));
+      if (tick % 5 === 0) await new Promise(r => queueMicrotask(r));
     }
 
     loadingProgress.textContent = 'Finalizing MP4...';
@@ -10013,7 +10077,7 @@ function renderMp4GridFrame(ctx, w, h, frameImages, tick, cellOrder, rows, frame
       const cellDrawW = (gapX > 0) ? Math.ceil(frameW) : (exactX2 - exactX1 + 1);
       const cellDrawH = (gapY > 0) ? Math.ceil(frameH) : (exactY2 - exactY1 + 1);
 
-      const uiC = c + (state.showInfoCard ? 1 : 0);
+      const uiC = c + (0);
       const cellOrderIdx = cellOrder.indexOf(c);
       const phaseCount = Math.max(1, state.gridLoops || 1);
       let cellOffset;
@@ -10024,7 +10088,7 @@ function renderMp4GridFrame(ctx, w, h, frameImages, tick, cellOrder, rows, frame
       }
       const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[c] ?? 0) : cellOffset;
       ensureAnimDirShuffle(frameCount);
-      const animFrameIdx = resolveDirectionFrame(tick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
+      const animFrameIdx = applyLoopAfterN(tick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
       const frame = state.frames[animFrameIdx];
       const img = frameImages ? frameImages[animFrameIdx] : null;
 
@@ -10409,18 +10473,20 @@ function drawFrameCell(ctx, img, x, y, w, h) {
     srcH = Math.max(1, Number(srcH) || 1);
 
     const follow = !!state.refFrameFollowFrameTransform;
-    const mainScale = follow ? (Number(state.frameImgScale) || 1) : 1;
+    const mainScaleX = follow ? (Number(state.frameImgScaleX) || Number(state.frameImgScale) || 1) : 1;
+    const mainScaleY = follow ? (Number(state.frameImgScaleY) || Number(state.frameImgScale) || 1) : 1;
     const mainOffXPct = follow ? (Number(state.frameImgOffX) || 0) : 0;
     const mainOffYPct = follow ? (Number(state.frameImgOffY) || 0) : 0;
     const mainRot = follow ? (Number(state.frameImgRot) || 0) : 0;
 
-    const s = (Number(state.refFrameScale) || 1) * mainScale;
+    const sx = (Number(state.refFrameScaleX) || Number(state.refFrameScale) || 1) * mainScaleX;
+    const sy = (Number(state.refFrameScaleY) || Number(state.refFrameScale) || 1) * mainScaleY;
     const rot = (Number(state.refFrameRot) || 0) + mainRot;
     const alpha = Math.max(0, Math.min(1, Number(state.refFrameOpacity) || 0));
 
     const contain = Math.min(w / srcW, h / srcH);
-    const dw = srcW * contain * s;
-    const dh = srcH * contain * s;
+    const dw = srcW * contain * sx;
+    const dh = srcH * contain * sy;
     const ox = ((Number(state.refFrameOffX) || 0) + mainOffXPct) * 0.01 * w;
     const oy = ((Number(state.refFrameOffY) || 0) + mainOffYPct) * 0.01 * h;
     const dx = x + (w - dw) / 2 + ox;
@@ -10500,7 +10566,7 @@ async function recordAudioSeqAV(mode = 'grid') {
     }
 
     const wasPlaying = !!state.isPlaying;
-    if (wasPlaying) { try { togglePlay(); } catch (e) {} }
+    if (wasPlaying) { togglePlay(); }
 
     // Auto-reset tick if enabled
     if (state.exportResetPlay) {
@@ -10537,7 +10603,7 @@ async function recordAudioSeqAV(mode = 'grid') {
 
     const frameAspect = getEffectiveFrameAspect();
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
-    const total = cellCount + (state.showInfoCard ? 1 : 0);
+    const total = cellCount + (0);
     const rows = Math.ceil(total / state.gridCols);
     const videoLayout = getDeterministicVideoExportLayout(mode, rows);
     const canvasW = videoLayout.canvasW;
@@ -10546,12 +10612,7 @@ async function recordAudioSeqAV(mode = 'grid') {
 
     loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Preparing AV recording...';
-    const frameImages = await Promise.all(state.frames.map(f => new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = getFrameDataUrl(f);
-    })));
+    const frameImages = await loadFrameImagesWithProgress('Loading frames');
 
     const cellOrder = generateCellOrder(cellCount, state.gridCols);
     const r = parseInt(state.tcBgColor.slice(1,3), 16);
@@ -10601,7 +10662,7 @@ async function recordAudioSeqAV(mode = 'grid') {
     const ext = (mimeType && mimeType.indexOf('mp4') >= 0) ? 'mp4' : 'webm';
     const filename = makeExportFilename({ mode: (mode === 'grid' ? 'grid' : 'single'), ext, frames: state.frames.length, fps: state.animFps, extra: 'AV_AudioSeq' });
 
-    try { audioExportReset(); } catch (e) {}
+    audioExportReset();
     state._audioExportDoTrigger = true;
 
     try {
@@ -10659,7 +10720,7 @@ async function recordAudioSeqAV(mode = 'grid') {
           loadingProgress.textContent = `Recording ${tick}/${totalTicks}`;
         } catch (e) {
           clearInterval(timer);
-          try { recorder.stop(); } catch (err) {}
+          try { recorder.stop(); } catch (e) {}
           resolve();
         }
       }, stepMs);
@@ -10672,10 +10733,10 @@ async function recordAudioSeqAV(mode = 'grid') {
 
     state._audioExportDoTrigger = false;
     loadingOverlay.classList.remove('visible');
-    if (wasPlaying) { try { togglePlay(); } catch (e) {} }
+    if (wasPlaying) { togglePlay(); }
 
   } catch (e) {
-    try { state._audioExportDoTrigger = false; } catch (err) {}
+    if (state) state._audioExportDoTrigger = false;
     loadingOverlay.classList.remove('visible');
     alert('AV recording failed: ' + (e && e.message ? e.message : e));
   }
@@ -11350,14 +11411,7 @@ function drawExportMetadataBar(ctx, w, headerH, metaInput, opts = {}) {
 
 
 function getStillExportMaxSize(explicitMaxSize = null) {
-  const qualityMap = {
-    low: 540,
-    medium: 720,
-    hd: 1080,
-    high: 2160,
-    max: Infinity
-  };
-  const uiCap = qualityMap[state.exportQuality] || 1080;
+  const uiCap = EXPORT_CONF.RES[state.exportQuality] || 1080;
   const argCap = Number.isFinite(explicitMaxSize) && explicitMaxSize > 0 ? explicitMaxSize : Infinity;
   const cap = Math.min(uiCap, argCap);
   return Number.isFinite(cap) ? Math.max(2, Math.round(cap)) : Infinity;
@@ -11381,7 +11435,7 @@ async function exportImage(format, maxSize) {
 
   const frameAspect = baseFrameW / baseFrameH;
   const cellCount = Math.ceil(state.frames.length / state.cellSize);
-  const total = cellCount + (state.showInfoCard ? 1 : 0);
+  const total = cellCount + (0);
   const rows = Math.ceil(total / state.gridCols);
   const gap = getExportScaledGap(baseFrameW);
   const rawGridW = state.gridCols * baseFrameW + Math.max(0, state.gridCols - 1) * gap;
@@ -11463,12 +11517,12 @@ const canvas = document.createElement('canvas');
   drawExportBgPattern(ctx, 0, sHeaderH, canvasW, canvasH - sHeaderH, 'grid', stillScaleGrid);
 
   // Draw frames
-  const offset = state.showInfoCard ? 1 : 0;
+  const offset = 0;
   const __exportCells = [];
 
   // Pass 1: base frames only
   for (let i = 0; i < total; i++) {
-    if ((i % 24) === 0) { await new Promise(r => setTimeout(r, 0)); }
+    if ((i % 24) === 0) { await new Promise(r => queueMicrotask(r)); }
     const row = Math.floor(i / state.gridCols);
     const col = i % state.gridCols;
 
@@ -11691,7 +11745,7 @@ const canvas = document.createElement('canvas');
   function formatTime(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
 
   // Export current frame (Single) as still image (PNG/JPEG)
-  async function exportSingleStill(format = 'png', maxSize = 2048) {
+  async function exportSingleStill(format = 'png', maxSize = EXPORT_CONF.STILL_PREV) {
     if (!state.frames.length) return;
 
     
@@ -12009,11 +12063,11 @@ const canvas = document.createElement('canvas');
       const el = e && e.target ? e.target : null;
       if (!el || !el.tagName) return;
       const tag = el.tagName.toLowerCase();
-      if (tag === 'select') { try { el.blur(); } catch (err) {} }
+      if (tag === 'select') { if (el) el.blur(); }
       if (tag === 'input') {
         const t = (el.type || '').toLowerCase();
         // blur range/checkbox to restore hotkeys, keep text-like inputs focused
-        if (t === 'range' || t === 'checkbox' || t === 'color') { try { el.blur(); } catch (err) {} }
+        if (t === 'range' || t === 'checkbox' || t === 'color') { if (el) el.blur(); }
       }
     }, true);
 
@@ -12023,7 +12077,7 @@ const canvas = document.createElement('canvas');
       const tag = el.tagName.toLowerCase();
       if (tag === 'input') {
         const t = (el.type || '').toLowerCase();
-        if (t === 'range') { try { el.blur(); } catch (err) {} }
+        if (t === 'range') { if (el) el.blur(); }
       }
     }, true);
   }
@@ -12228,8 +12282,8 @@ const canvas = document.createElement('canvas');
     }
     else if (code === 'Digit9' || code === 'Numpad9') {
       e.preventDefault();
-      if (state.viewMode === 'grid') exportImage('jpeg', 2048).catch(e => console.error(e));
-      else exportSingleStill('jpeg', 2048).catch(e => console.error(e));
+      if (state.viewMode === 'grid') exportImage('jpeg', EXPORT_CONF.STILL_PREV).catch(e => console.error(e));
+      else exportSingleStill('jpeg', EXPORT_CONF.STILL_PREV).catch(e => console.error(e));
     }
     else if (code === 'Digit1' || code === 'Numpad1') {
       e.preventDefault();
@@ -12428,36 +12482,6 @@ const canvas = document.createElement('canvas');
   
   // toggleDrawMode brush cursor logic now integrated directly
 
-  var debugConsole = document.getElementById('debugConsole');
-  const debugToggle = document.getElementById('debugToggle');
-  let debugVisible = false;
-  
-  function dbg(msg) {
-    if (!debugConsole) return;
-    const line = document.createElement('div');
-    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    debugConsole.appendChild(line);
-    debugConsole.scrollTop = debugConsole.scrollHeight;
-    // Keep only last 50 lines
-    while (debugConsole.children.length > 50) {
-      debugConsole.removeChild(debugConsole.firstChild);
-    }
-  }
-  
-  if (debugToggle) {
-    debugToggle.onclick = () => {
-      debugVisible = !debugVisible;
-      debugConsole.classList.toggle('visible', debugVisible);
-    };
-  }
-  
-  // Log important events
-  
-  const origError = console.error;
-  console.error = function(...args) {
-    origError.apply(console, args);
-  };
-  
   // ==================== AUDIO COLLISION SEQ (MVP UI FIX) ====================
   // Frames move (by animation), playheads stay (static cells). If a NEW frame enters a playhead cell, it triggers the frame's assigned sample.
 
@@ -12472,7 +12496,7 @@ const canvas = document.createElement('canvas');
     playheads: [], // cellIdx[]
     frameMap: {},  // frameIdx(string) -> { slot, vel, prob }
     samples: [null, null, null, null], // slot -> { buffer, name }
-    colors: ['var(--fg-accent, #35f2a3)', '#ff4fd8', '#ffd54a', '#4aa3ff'] // slot -> hex
+    colors: ['#35f2a3', '#ff4fd8', '#ffd54a', '#4aa3ff'] // slot -> hex
   };
 
   // Backward compat: ensure colors exist
@@ -12482,7 +12506,7 @@ const canvas = document.createElement('canvas');
   if (typeof state.audioSeq.flashIntensity !== 'number') state.audioSeq.flashIntensity = 0.85;
   if (!state.audioSeq.velSteps || !Array.isArray(state.audioSeq.velSteps) || state.audioSeq.velSteps.length < 2) state.audioSeq.velSteps = [0.25, 0.5, 0.75, 1];
   if (!state.audioSeq.colors || !Array.isArray(state.audioSeq.colors) || state.audioSeq.colors.length < 4) {
-    state.audioSeq.colors = ['var(--fg-accent, #35f2a3)', '#ff4fd8', '#ffd54a', '#4aa3ff'];
+    state.audioSeq.colors = ['#35f2a3', '#ff4fd8', '#ffd54a', '#4aa3ff'];
   }
 
   function audioColorForSlot(slot) {
@@ -12791,7 +12815,7 @@ function audioAssignFrame(frameIdx) {
     } catch (e) {}
   }
 
-  window.addEventListener('beforeunload', () => { try { audioReleaseMic(); } catch (e) {} });
+  window.addEventListener('beforeunload', () => { audioReleaseMic(); });
 
 async function audioStartRecord(slotIdx) {
     try {
@@ -12927,7 +12951,7 @@ async function audioStartRecord(slotIdx) {
       try {
         // keep mic alive on errors as well; user can release manually by disabling AudioSeq
 
-      } catch (err) {}
+      } catch (e) {}
       state._audioRec = { isRecording: false, requesting: false, holdActive: false, cancelRequested: false, slot: 0, stream: null, src: null, proc: null, chunks: [], sampleRate: 0, maxSec: 10 };
       audioUpdateRecButtons();
       if (!silent) audioSetStatus('REC failed');
@@ -13016,7 +13040,7 @@ function audioInitUI() {
           audioPrimePlayheads();
           audioSetStatus('enabled');
         } else {
-          try { audioReleaseMic(); } catch (e) {}
+          audioReleaseMic();
           audioSetStatus('disabled');
         }
       });
@@ -13158,17 +13182,17 @@ function audioInitUI() {
       if (btn.dataset && btn.dataset.recBound === '1') return;
       if (btn.dataset) btn.dataset.recBound = '1';
       const startHold = async (e) => {
-        try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+        if(e && e.preventDefault) { e.preventDefault(); e.stopPropagation(); }
         if (!state._audioRec) state._audioRec = { isRecording: false, requesting: false, holdActive: false, cancelRequested: false, slot: 0, stream: null, src: null, proc: null, chunks: [], sampleRate: 0, maxSec: 10 };
         state._audioRec.holdActive = true;
         state._audioRec.cancelRequested = false;
         state._audioRec.slot = i;
-        try { if (btn.setPointerCapture && e.pointerId != null) btn.setPointerCapture(e.pointerId); } catch (err) {}
+        try { if (btn.setPointerCapture && e.pointerId != null) btn.setPointerCapture(e.pointerId); } catch (e) {}
         await audioStartRecord(i);
       };
 
       const endHold = async (e) => {
-        try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+        if(e && e.preventDefault) { e.preventDefault(); e.stopPropagation(); }
         if (!state._audioRec) return;
         state._audioRec.holdActive = false;
         if (state._audioRec.requesting && !state._audioRec.isRecording) state._audioRec.cancelRequested = true;
@@ -13187,7 +13211,7 @@ function audioInitUI() {
         try {
           if (state._audioRec && state._audioRec.isRecording && (state._audioRec.slot|0) === i) audioStopRecord(true);
           if (state._audioRec) { state._audioRec.holdActive = false; state._audioRec.cancelRequested = true; }
-        } catch (err) {}
+        } catch (e) {}
       });
 });
 
@@ -13275,14 +13299,14 @@ function audioInitUI() {
   renderGrid = function() {
     _fgOrigRenderGrid();
     try { audioSyncPlayheads(); } catch (e) {}
-    try { audioUpdateChips(); } catch (e) {}
+    audioUpdateChips();
     try { syncBgUnderlayPreview(); } catch (e) {}
   };
 
   const _fgOrigUpdateAllCells = updateAllCells;
   updateAllCells = function() {
     _fgOrigUpdateAllCells();
-    try { audioUpdateChips(); } catch (e) {}
+    audioUpdateChips();
     try { audioSeqTick(); } catch (e) {}
   };
 
