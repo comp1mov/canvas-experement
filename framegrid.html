@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.26.43                                        ║
+║      FRAMEGRID v0.26.67                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.26.43</title>
+  <title>FRAMEGRID v0.26.67</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
@@ -1094,10 +1094,127 @@
     100% { opacity: 1; }
   }
   #generateBtn.pending {
-    background: #666 !important;
-    color: #ccc !important;
+    background: #444 !important;
+    color: #999 !important;
+    border: 1px solid #666 !important;
     animation: regen-pulse 1.4s ease-in-out infinite;
     box-shadow: none !important;
+  }
+
+  
+  /* TC Align / Position button groups */
+  .tc-btn-group {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+  }
+  .tc-btn-group .menu-btn {
+    flex: 1;
+    margin: 0;
+    padding: 4px 2px;
+    font-size: 10px;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+  .tc-btn-group .menu-btn.active-toggle {
+    opacity: 1;
+  }
+
+  /* TC Color buttons */
+  .tc-color-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .tc-color-btn {
+    position: relative;
+    border-radius: 4px;
+    border: 1px solid #444;
+    padding: 0;
+    cursor: pointer;
+    overflow: hidden;
+    height: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .tc-color-btn input[type="color"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+  }
+  .tc-color-btn .tc-color-label {
+    position: relative;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    mix-blend-mode: difference;
+    color: #fff;
+    pointer-events: none;
+    text-transform: uppercase;
+    z-index: 1;
+    text-align: center;
+    width: 100%;
+  }
+
+  
+  /* Meta tap-to-pick */
+  .meta-cycle {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .meta-cycle-label {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.9);
+    padding: 3px 5px;
+    border-radius: 3px;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .meta-cycle:hover .meta-cycle-label,
+  .meta-cycle.open .meta-cycle-label { background: rgba(255,255,255,0.08); }
+
+  /* Floating pick list */
+  .meta-pick-popup {
+    position: fixed;
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    padding: 4px 0;
+    z-index: 9999;
+    min-width: 150px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.9);
+    overflow: hidden;
+  }
+  .meta-pick-popup button {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    text-align: left;
+    padding: 8px 14px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .meta-pick-popup button:hover,
+  .meta-pick-popup button.active {
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.95);
   }
 
   </style>
@@ -1112,7 +1229,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.26.43</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.26.67</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1132,8 +1249,16 @@
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group" id="metaAnimSettingsGroup" style="display:none;">
-          <div class="metadata-item" id="metaDirection"></div>
-          <div class="metadata-item" id="metaPattern"></div>
+          <div class="metadata-item" id="metaDirection">
+            <div class="meta-cycle" id="metaDirCycle">
+              <span class="meta-cycle-label" id="metaDirLabel">—</span>
+            </div>
+          </div>
+          <div class="metadata-item" id="metaPattern">
+            <div class="meta-cycle" id="metaPtnCycle">
+              <span class="meta-cycle-label" id="metaPtnLabel">—</span>
+            </div>
+          </div>
         </div>
         <div class="metadata-gap" id="metaAnimSettingsGap" style="display:none;"></div>
         <div class="metadata-group">
@@ -1299,7 +1424,10 @@
     <div class="side-menu" id="sideMenu">
       <div class="side-menu-header">
         <span>Settings</span>
-        <button class="menu-close-btn" id="menuCloseBtn">✕</button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="menu-close-btn" id="menuCollapseBtn" title="Collapse / expand all (N)">◀</button>
+          <button class="menu-close-btn" id="menuCloseBtn">✕</button>
+        </div>
       </div>
 
       <div class="menu-section">
@@ -1329,6 +1457,7 @@
               <option value="seconds">Every N Sec</option>
               <option value="frames">Every N Frames</option>
               <option value="scene">Scene</option>
+              <option value="slice">Slice</option>
             </select>
           </div>
           <div class="menu-row" id="countRow">
@@ -1367,6 +1496,32 @@
               <button class="menu-input-btn" id="sceneDistancePlus">+</button>
             </div>
           </div>
+
+          <div class="menu-row" id="sliceColsRow" style="display:none;">
+            <span class="menu-label">Cols</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="sliceColsMinus">−</button>
+              <input type="number" class="menu-input menu-input-narrow" id="cutCols" value="3" min="1" max="64" inputmode="decimal">
+              <button class="menu-input-btn" id="sliceColsPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row" id="sliceRowsRow" style="display:none;">
+            <span class="menu-label">Rows</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="sliceRowsMinus">−</button>
+              <input type="number" class="menu-input menu-input-narrow" id="cutRows" value="3" min="1" max="64" inputmode="decimal">
+              <button class="menu-input-btn" id="sliceRowsPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row" id="sliceTotalRow" style="display:none;">
+            <span class="menu-label">Total Cells</span>
+            <span id="cutTotalText" style="font-size:11px;color:#aaa;">9</span>
+            <input type="hidden" id="cutTotal" value="9">
+          </div>
+          <div id="sliceBtnsRow" style="display:none; flex-direction:column; gap:6px;">
+            <button class="menu-btn" id="sliceFirstImageBtn" style="width:100%;">Slice Current Image</button>
+            <button class="menu-btn" id="loadNewImageBtn" style="width:100%;">Load New Image</button>
+          </div>
           <div class="menu-row" style="height:6px;"></div>
           <div class="menu-row">
             <span class="menu-label">Quality</span>
@@ -1385,35 +1540,8 @@
             </select>
           </div>
 
+          <div id="regenFrameHint" style="text-align:left;font-size:10px;color:#ccc;margin-bottom:4px;letter-spacing:0.04em;min-height:14px;padding-left:2px;"></div>
           <button class="menu-btn primary" id="generateBtn">Regenerate Grid</button>
-        </div>
-      </div>
-<div class="menu-section collapsed" id="sliceSection">
-        <div class="menu-section-title">SLICE FRAME</div>
-        <div class="menu-section-content">
-          <div class="menu-row">
-            <span class="menu-label">Cols</span>
-            <div class="menu-input-group">
-              <button class="menu-input-btn" id="sliceColsMinus">−</button>
-              <input type="number" class="menu-input menu-input-narrow" id="cutCols" value="3" min="1" max="64" inputmode="decimal">
-              <button class="menu-input-btn" id="sliceColsPlus">+</button>
-            </div>
-          </div>
-          <div class="menu-row">
-            <span class="menu-label">Rows</span>
-            <div class="menu-input-group">
-              <button class="menu-input-btn" id="sliceRowsMinus">−</button>
-              <input type="number" class="menu-input menu-input-narrow" id="cutRows" value="3" min="1" max="64" inputmode="decimal">
-              <button class="menu-input-btn" id="sliceRowsPlus">+</button>
-            </div>
-          </div>
-          <div class="menu-row">
-            <span class="menu-label">Total Cells</span>
-            <span id="cutTotalText" style="font-size:11px;color:#aaa;">9</span>
-            <input type="hidden" id="cutTotal" value="9">
-          </div>
-          <button class="menu-btn" id="sliceFirstImageBtn" style="margin-bottom: 8px;">Slice Current Image</button>
-          <button class="menu-btn" id="loadNewImageBtn">Load New Image</button>
         </div>
       </div>
 
@@ -1604,10 +1732,65 @@
       </div>
 
       <div class="menu-section collapsed">
-        <div class="menu-section-title">Display</div>
+        <div class="menu-section-title">Animation Preview</div>
         <div class="menu-section-content">
-          <div class="menu-subtitle" style="margin-bottom:8px;">Timecode Visibility</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+          <div class="menu-row">
+            <span class="menu-label">FPS</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="fpsMinus">−</button>
+              <input type="number" class="menu-input menu-input-narrow" id="animFps" value="14" min="1" max="60" inputmode="decimal">
+              <button class="menu-input-btn" id="fpsPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label">Direction</span>
+            <select class="menu-select" id="animDirection">
+              <option value="forward">Forward</option>
+              <option value="backward">Backward</option>
+              <option value="pingpong">Ping-pong</option>
+              <option value="bounce-offset">Bounce Offset</option>
+              <option value="stutter">Stutter (Glitch)</option>
+              <option value="holdskip">Hold & Skip</option>
+              <option value="shuffleloop">Shuffle Loop</option>
+              <option value="sync">Sync (all same)</option>
+              <option value="random">Random (Chaos)</option>
+            </select>
+          </div>
+          <div class="menu-row" id="animSeedRow">
+            <span class="menu-label">Seed</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="animSeedRand" title="Randomize seed">↻</button>
+              <input type="number" class="menu-input menu-input-narrow" id="animSeed" value="1" min="0" max="999999999" inputmode="decimal">
+            </div>
+          </div>
+
+          <div class="menu-row">
+            <span class="menu-label">Pattern</span>
+            <select class="menu-select" id="animPattern">
+              <option value="sequential">Sequential</option>
+              <option value="center">Center-out</option>
+              <option value="snake">Snake</option>
+              <option value="vertical">Vertical</option>
+              <option value="vertical-snake">Vertical Snake</option>
+              <option value="spiral">Spiral</option>
+              <option value="checkerboard">Checkerboard</option>
+              <option value="random">Random</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:8px; margin-top: 8px; margin-bottom: 8px;">
+            <button class="menu-btn" id="btnFlipX" style="flex:1; margin-top:0;">FLIP X</button>
+            <button class="menu-btn" id="btnFlipY" style="flex:1; margin-top:0;">FLIP Y</button>
+          </div>
+          <button class="menu-btn primary" id="playBtn">▶ Play Animation</button>
+          <button class="menu-btn" id="stopBtn" style="display:none;">■ Stop</button>
+        </div>
+      </div>
+
+      
+      <div class="menu-section collapsed">
+        <div class="menu-section-title">Timecode</div>
+        <div class="menu-section-content">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
             <button class="menu-btn" id="toggleTcIndex" style="margin:0;">Index</button>
             <button class="menu-btn" id="toggleTcTime" style="margin:0;">Sec</button>
             <button class="menu-btn active-toggle" id="toggleTcFrame" style="margin:0;">Frame</button>
@@ -1617,31 +1800,42 @@
             <span class="menu-label">Text</span>
             <input type="text" class="menu-input" id="tcCustomTextInput" placeholder="Enter label" value="">
           </div>
-</div>
-      </div>
 
-      
-      
-            <div class="menu-section collapsed">
-        <div class="menu-section-title">Style</div>
-        <div class="menu-section-content">
-          <div class="menu-row">
-                      <span class="menu-label">TC Text</span>
-                      <input type="color" class="menu-color-input" id="tcTextColor" value="#ffffff">
-                    </div>
-          <div class="menu-row">
-                      <span class="menu-label">TC BG</span>
-                      <input type="color" class="menu-color-input" id="tcBgColor" value="#000000">
-                    </div>
-          <div class="menu-row">
-                      <span class="menu-label">TC Opacity</span>
-                      <div class="menu-slider-row">
-                        <input type="range" class="menu-slider" id="tcOpacitySlider" min="0" max="100" value="70">
-                        <span class="menu-slider-value" id="tcOpacityValue">70%</span>
-                      </div>
-                    </div>
+          <div style="margin-bottom:6px;">
+            <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Align</div>
+            <div class="tc-btn-group" id="tcAlignGroup">
+              <button class="menu-btn active-toggle" data-val="left">Left</button>
+              <button class="menu-btn" data-val="center">Center</button>
+              <button class="menu-btn" data-val="right">Right</button>
+            </div>
+          </div>
+          <div style="margin-bottom:4px;">
+            <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Position</div>
+            <div class="tc-btn-group" id="tcPositionGroup">
+              <button class="menu-btn active-toggle" data-val="top">Top</button>
+              <button class="menu-btn" data-val="center">Center</button>
+              <button class="menu-btn" data-val="bottom">Bottom</button>
+            </div>
+          </div>
 
+          <div class="tc-color-grid" style="margin-top:10px;margin-bottom:10px;">
+            <div class="tc-color-btn" id="tcTextColorBtn" style="background:#ffffff;">
+              <input type="color" id="tcTextColor" value="#ffffff">
+              <span class="tc-color-label">Text</span>
+            </div>
+            <div class="tc-color-btn" id="tcBgColorBtn" style="background:#000000;">
+              <input type="color" id="tcBgColor" value="#000000">
+              <span class="tc-color-label">BG</span>
+            </div>
+          </div>
 
+          <div class="menu-row">
+            <span class="menu-label">TC Opacity</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="tcOpacitySlider" min="0" max="100" value="70">
+              <span class="menu-slider-value" id="tcOpacityValue">70%</span>
+            </div>
+          </div>
           <div class="menu-row">
             <span class="menu-label">Font Size</span>
             <div class="menu-slider-row">
@@ -1649,40 +1843,25 @@
               <span class="menu-slider-value" id="fontSizeValue">10px</span>
             </div>
           </div>
-          
-          
-          
           <div class="menu-row">
-                      <span class="menu-label">TC Box Pad</span>
-                      <div class="menu-slider-row">
-                        <input type="range" class="menu-slider" id="tcPaddingSlider" min="0" max="30" value="0">
-                        <span class="menu-slider-value" id="tcPaddingValue">0px</span>
-                      </div>
-                    </div>
+            <span class="menu-label">TC Box Pad</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="tcPaddingSlider" min="0" max="30" value="0">
+              <span class="menu-slider-value" id="tcPaddingValue">0px</span>
+            </div>
+          </div>
           <div class="menu-row">
-                      <span class="menu-label">TC Margin</span>
-                      <div class="menu-slider-row">
-                        <input type="range" class="menu-slider" id="tcMarginSlider" min="0" max="30" value="0">
-                        <span class="menu-slider-value" id="tcMarginValue">0px</span>
-                      </div>
-                    </div>
-          <div class="menu-row">
-                      <span class="menu-label">TC Align</span>
-                      <select class="menu-select" id="tcAlign">
-                        <option value="left" selected>Left</option>
-                        <option value="center">Center</option>
-                        <option value="right">Right</option>
-                      </select>
-                    </div>
-          <div class="menu-row">
-                      <span class="menu-label">TC Position</span>
-                      <select class="menu-select" id="tcPosition">
-                        <option value="top" selected>Top</option>
-                        <option value="center">Center</option>
-                        <option value="bottom">Bottom</option>
-                      </select>
-                    </div>
-        </div>
+            <span class="menu-label">TC Margin</span>
+            <div class="menu-slider-row">
+              <input type="range" class="menu-slider" id="tcMarginSlider" min="0" max="30" value="0">
+              <span class="menu-slider-value" id="tcMarginValue">0px</span>
+            </div>
+          </div>
+          <!-- keep hidden selects for JS compatibility -->
+          <select id="tcAlign" style="display:none;"><option value="left" selected>Left</option><option value="center">Center</option><option value="right">Right</option></select>
+          <select id="tcPosition" style="display:none;"><option value="top" selected>Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select>
+
+          </div>
       </div>
 
 <div class="menu-section collapsed">
@@ -1762,63 +1941,7 @@
           </div>
         </div>
       </div>
-<div class="menu-section collapsed">
-        <div class="menu-section-title">Animation Preview</div>
-        <div class="menu-section-content">
-          <div class="menu-row">
-            <span class="menu-label">FPS</span>
-            <div class="menu-input-group">
-              <button class="menu-input-btn" id="fpsMinus">−</button>
-              <input type="number" class="menu-input menu-input-narrow" id="animFps" value="14" min="1" max="60" inputmode="decimal">
-              <button class="menu-input-btn" id="fpsPlus">+</button>
-            </div>
-          </div>
-          <div class="menu-row">
-            <span class="menu-label">Direction</span>
-            <select class="menu-select" id="animDirection">
-              <option value="forward">Forward</option>
-              <option value="backward">Backward</option>
-              <option value="pingpong">Ping-pong</option>
-              <option value="bounce-offset">Bounce Offset</option>
-              <option value="stutter">Stutter (Glitch)</option>
-              <option value="holdskip">Hold & Skip</option>
-              <option value="shuffleloop">Shuffle Loop</option>
-              <option value="sync">Sync (all same)</option>
-              <option value="random">Random (Chaos)</option>
-            </select>
-          </div>
-          <div class="menu-row" id="animSeedRow">
-            <span class="menu-label">Seed</span>
-            <div class="menu-input-group">
-              <button class="menu-input-btn" id="animSeedRand" title="Randomize seed">↻</button>
-              <input type="number" class="menu-input menu-input-narrow" id="animSeed" value="1" min="0" max="999999999" inputmode="decimal">
-            </div>
-          </div>
-
-          <div class="menu-row">
-            <span class="menu-label">Pattern</span>
-            <select class="menu-select" id="animPattern">
-              <option value="sequential">Sequential</option>
-              <option value="center">Center-out</option>
-              <option value="snake">Snake</option>
-              <option value="vertical">Vertical</option>
-              <option value="vertical-snake">Vertical Snake</option>
-              <option value="spiral">Spiral</option>
-              <option value="checkerboard">Checkerboard</option>
-              <option value="random">Random</option>
-            </select>
-          </div>
-          <div style="display:flex; gap:8px; margin-top: 8px; margin-bottom: 8px;">
-            <button class="menu-btn" id="btnFlipX" style="flex:1; margin-top:0;">FLIP X</button>
-            <button class="menu-btn" id="btnFlipY" style="flex:1; margin-top:0;">FLIP Y</button>
-          </div>
-          <button class="menu-btn primary" id="playBtn">▶ Play Animation</button>
-          <button class="menu-btn" id="stopBtn" style="display:none;">■ Stop</button>
-        </div>
-      </div>
-
-      
-      <div class="menu-section collapsed" id="audioSeqSection">
+<div class="menu-section collapsed" id="audioSeqSection">
         <div class="menu-section-title">Audio Collision Seq</div>
         <div class="menu-section-content">
 
@@ -2178,6 +2301,9 @@
 
           <div class="menu-subtitle">System</div>
           <button class="menu-btn" id="newVideoBtn">Load New Video</button>
+          <div style="margin-top:10px; border-top:1px solid #333; padding-top:10px;">
+            <button class="menu-btn" id="resetMemoryBtn" style="width:100%;color:#f88;border-color:#633;">Reset Memory &amp; Grid</button>
+          </div>
         </div>
       </div>
 
@@ -2210,7 +2336,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.26.43</div>
+          <div class="about-version">Version v0.26.67</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
@@ -2288,7 +2414,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.26.43';
+  const APP_VERSION = 'v0.26.67';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   const EXPORT_CONF = {
@@ -2912,6 +3038,7 @@ function getTargetFrameOutputDims() {
     if (state.isSingleImage || !state.videoUrl) return;
 
     state.videoDuration = videoElement.duration || 0;
+    if (typeof updateRegenHint === 'function') updateRegenHint();
     state.videoWidth = videoElement.videoWidth || 1;
     state.videoHeight = videoElement.videoHeight || 1;
     state._frameTileDims = null; // recalculate for new source
@@ -3054,12 +3181,14 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
     } else {
        if (mGrp) mGrp.style.display = 'flex';
        if (mGap) mGap.style.display = 'block';
-       if (mDir) mDir.innerHTML = `<span>${String(state.animDirection || 'forward')}</span>`;
-              let ptnStr = String(state.animPattern || 'sequential');
+       const mDirLabel = document.getElementById('metaDirLabel');
+       const mPtnLabel = document.getElementById('metaPtnLabel');
+       if (mDirLabel) mDirLabel.textContent = String(state.animDirection || 'forward');
+       let ptnStr = String(state.animPattern || 'sequential');
        if (state.flipPatternX && state.flipPatternY) ptnStr += ' flipXY';
        else if (state.flipPatternX) ptnStr += ' flipX';
        else if (state.flipPatternY) ptnStr += ' flipY';
-       if (mPtn) mPtn.innerHTML = `<span>${ptnStr}</span>`;
+       if (mPtnLabel) mPtnLabel.textContent = ptnStr;
     }
 
     if (metaGridShape) {
@@ -3149,7 +3278,11 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
     state.cutRows = clampCutValue(state.cutRows, 3);
     if (cutColsInput) cutColsInput.value = state.cutCols;
     if (cutRowsInput) cutRowsInput.value = state.cutRows;
-    if (cutTotalInput) cutTotalInput.value = String(getCutTotal());
+    const tot = getCutTotal();
+    if (cutTotalInput) cutTotalInput.value = String(tot);
+    const totEl = document.getElementById('cutTotalText');
+    if (totEl) totEl.textContent = String(tot);
+    if (state.selectionMode === 'slice') markRegenPending();
   }
 
   function saveCutSettings() {
@@ -3433,6 +3566,44 @@ for (let i = 0; i < times.length; i++) {
   }
 
 
+
+  function calcSceneTimes(startTime, endTime, fps, hasEdges, max) {
+    const times = [];
+    const scenes = Math.max(1, state.sceneCount || 5);
+    const depth  = Math.max(1, state.sceneDepth  || 8);
+    const dist   = Math.max(1, state.sceneDistance || 1);
+    const step   = dist / fps;
+    const range  = endTime - startTime;
+
+    // Anchor positions:
+    // DEFAULT (no explicit start/end): match fixed-count formula → (range/(n+1)) * (i+1)
+    //   depth=1 gives IDENTICAL positions to fixed count mode
+    // EXPLICIT start/end: edge-inclusive → range/(n-1) * i  (first=start, last=end)
+    const anchors = [];
+    if (!hasEdges) {
+      const innerSpacing = range / (scenes + 1);
+      for (let s = 0; s < scenes; s++) anchors.push(startTime + innerSpacing * (s + 1));
+    } else {
+      const spacing = scenes > 1 ? range / (scenes - 1) : 0;
+      for (let s = 0; s < scenes; s++) anchors.push(startTime + spacing * s);
+    }
+
+    for (let s = 0; s < scenes && times.length < max; s++) {
+      // Shift anchor backward so full depth window fits — guarantees exactly `depth` unique frames
+      let anchor = Math.min(anchors[s], endTime - (depth - 1) * step);
+      anchor = Math.max(anchor, startTime);
+      for (let d = 0; d < depth && times.length < max; d++) {
+        const t  = anchor + d * step;
+        const ct = Math.max(0, Math.min(t, endTime));
+        if (!times.length || Math.abs(times[times.length - 1] - ct) > (0.25 / fps)) {
+          times.push(ct);
+        }
+      }
+    }
+    return times;
+  }
+
+
   function calculateFrameTimes() {
     const times = [], max = 2000;
     const fps = Math.max(1, state.videoFps || 1);
@@ -3459,18 +3630,7 @@ for (let i = 0; i < times.length; i++) {
           times.push(Math.min(t, endTime - 0.01));
         }
       } else if (state.selectionMode === 'scene') {
-        const scenes = Math.max(1, state.sceneCount || 5);
-        const depth  = Math.max(1, state.sceneDepth || 8);
-        const dist   = Math.max(1, state.sceneDistance || 1);
-        const step   = dist / fps;
-        const spacing = rangeDuration / (scenes + 1);
-        for (let s = 0; s < scenes; s++) {
-          const anchor = startTime + spacing * (s + 1);
-          for (let d = 0; d < depth && times.length < max; d++) {
-            const t = anchor + d * step;
-            if (t <= endTime) times.push(clampTime(t));
-          }
-        }
+        calcSceneTimes(startTime, endTime, fps, false, max).forEach(t => times.push(t));
       } else {
         for (let f = state.startFrame; f < state.endFrame && times.length < max; f += state.intervalValue) {
           times.push(Math.min(f / fps, endTime - 0.01));
@@ -3496,18 +3656,7 @@ for (let i = 0; i < times.length; i++) {
       }
       if (times.length < max) pushUnique(endTime);
     } else if (state.selectionMode === 'scene') {
-      const scenes = Math.max(1, state.sceneCount || 5);
-      const depth  = Math.max(1, state.sceneDepth || 8);
-      const dist   = Math.max(1, state.sceneDistance || 1);
-      const step   = dist / fps;
-      const spacing = rangeDuration / (scenes + 1);
-      for (let s = 0; s < scenes; s++) {
-        const anchor = startTime + spacing * (s + 1);
-        for (let d = 0; d < depth && times.length < max; d++) {
-          const t = anchor + d * step;
-          if (t <= endTime) pushUnique(t);
-        }
-      }
+        calcSceneTimes(startTime, endTime, fps, true, max).forEach(t => pushUnique(t));
     } else {
       for (let f = state.startFrame; f <= state.endFrame && times.length < max; f += state.intervalValue) {
         pushUnique(f / fps);
@@ -3611,10 +3760,12 @@ for (let i = 0; i < times.length; i++) {
     else if (Math.abs(gridAspect - 4/3) < 0.15) aspectLabel = '~4:3';
     else aspectLabel = `~${gridAspect.toFixed(2)}:1`;
 
+    const cs = Math.max(1, state.cellSize || 1);
+
     let html;
-    if (state.cellSize > 1) {
-      html = `${visibleCells} cells (${state.cellSize}f each) → ${state.gridCols}×${rows}`;
-      if (empty > 0) html += ` (${empty} empty)`;
+    if (cs > 1) {
+      html = `${visibleCells} cells (×${cs}) → ${state.gridCols}×${rows}`;
+      if (empty > 0) html += ` (+${empty} empty)`;
     } else {
       html = empty === 0
         ? `✓ ${state.gridCols}×${rows} = ${visibleCells}f (${aspectLabel})`
@@ -3624,10 +3775,28 @@ for (let i = 0; i < times.length; i++) {
     if (state.canvasAspect !== 'auto' && state.canvasAspect !== 'custom') html += `<br>Target: ${state.canvasAspect} · Current: ${gridAspect.toFixed(2)}:1`;
     if (state.canvasAspect === 'auto') html += `<br>Target: auto · Current: ${gridAspect.toFixed(2)}:1`;
     if (state.canvasAspect === 'custom') html += `<br>Target: custom · Current: ${gridAspect.toFixed(2)}:1`;
-    if (divisors.length && empty > 0 && state.cellSize === 1) html += `<br>Perfect cols: ${divisors.slice(0,5).join(', ')}`;
+    if (divisors.length && empty > 0 && cs === 1) html += `<br>Perfect cols: ${divisors.slice(0,5).join(', ')}`;
     if (uniqueCounts.length) {
-      html += `<br>Ideal frames: ${uniqueCounts.slice(0, 4).join(', ')}`;
-      if (uniqueCounts.length > 4) html += `<br>Next ideal: ${uniqueCounts.slice(4, 8).join(', ')}`;
+      if (cs > 1) {
+        // Show ideal SOURCE frame counts (cell count × cellSize)
+        const idealSrc = uniqueCounts.slice(0, 6).map(c => c * cs);
+        // Group: ≤ current source count and above
+        const srcCount = state.frames.length || sourceFrames;
+        const below = idealSrc.filter(n => n <= srcCount * 1.2).slice(0, 3);
+        const above = idealSrc.filter(n => n > srcCount * 1.2).slice(0, 3);
+        if (below.length)  html += `<br>≈ Perfect sources: ${below.join(', ')}`;
+        if (above.length)  html += `<br>↑ Next perfect: ${above.join(', ')}`;
+        // Scene mode: show how many scenes needed at current depth
+        if (state.selectionMode === 'scene') {
+          const depth = Math.max(1, state.sceneDepth || 8);
+          const allSrc = [...new Set([...below, ...above])];
+          const sceneNums = allSrc.map(n => Math.ceil(n / depth)).filter(n => n > 0).slice(0, 4);
+          if (sceneNums.length) html += `<br>Scenes (depth ${depth}): ${sceneNums.join(', ')}`;
+        }
+      } else {
+        html += `<br>Ideal frames: ${uniqueCounts.slice(0, 4).join(', ')}`;
+        if (uniqueCounts.length > 4) html += `<br>Next ideal: ${uniqueCounts.slice(4, 8).join(', ')}`;
+      }
     }
 
     if (state.canvasAspect === 'auto' || state.canvasAspect === 'custom' || aspectDiffCurrent < 0.045) {
@@ -4214,6 +4383,8 @@ function schedulePostGridSync() {
 
   
   function renderGrid() {
+    invalidateCellCaches();
+    framesGrid._cellCount = 0;
     framesGrid.innerHTML = '';
     framesGrid.classList.toggle('onion-off', !state.drawOnion);
     framesGrid.style.setProperty('--cell-w', `${state.previewCellW || 240}px`);
@@ -4283,6 +4454,7 @@ const tc = document.createElement('div');
 
 
     updateTimecodeVisibility();
+    framesGrid._cellCount = framesGrid.querySelectorAll('.frame-item').length;
 
     // Sync drawing geometry after grid build (deferred so layout is stable)
     schedulePostGridSync();
@@ -4657,6 +4829,7 @@ function fitToSingleFrame() {
   syncGridAspectMode();
   gridColsInput.onchange = () => {
     state.gridCols = resolveIntMenuValue(gridColsInput, state.gridCols || 6, 1, 100);
+    invalidateCellCaches();
     gridColsInput.value = state.gridCols;
     state.canvasAspect = 'custom';
     syncGridAspectMode();
@@ -4682,7 +4855,16 @@ function fitToSingleFrame() {
     }
   };
 
-  selectionModeSelect.onchange = () => { state.selectionMode = selectionModeSelect.value; updateIntervalUI(); markRegenPending(); };
+  selectionModeSelect.onchange = () => {
+    const prev = state.selectionMode;
+    state.selectionMode = selectionModeSelect.value;
+    // Copy frame count → scene count when switching to scene mode
+    if (state.selectionMode === 'scene' && prev === 'count' && state.frameCount > 0) {
+      state.sceneCount = state.frameCount;
+      const scInput = document.getElementById('sceneCountInput');
+      if (scInput) scInput.value = state.sceneCount;
+    }
+    updateIntervalUI(); markRegenPending(); };
 
   if (sceneCountInput) {
     const syncScene = () => {
@@ -4696,12 +4878,12 @@ function fitToSingleFrame() {
       markRegenPending();
     };
     sceneCountInput.onchange = sceneDepthInput.onchange = sceneDistanceInput.onchange = syncScene;
-    sceneCountMinus.onclick = () => { if (state.sceneCount > 1) { state.sceneCount--; sceneCountInput.value = state.sceneCount; updateGridHint(); } };
-    sceneCountPlus.onclick = () => { state.sceneCount = (state.sceneCount || 5) + 1; sceneCountInput.value = state.sceneCount; updateGridHint(); };
-    sceneDepthMinus.onclick = () => { if (state.sceneDepth > 1) { state.sceneDepth--; sceneDepthInput.value = state.sceneDepth; updateGridHint(); } };
-    sceneDepthPlus.onclick = () => { state.sceneDepth = (state.sceneDepth || 8) + 1; sceneDepthInput.value = state.sceneDepth; updateGridHint(); };
-    sceneDistanceMinus.onclick = () => { if (state.sceneDistance > 1) { state.sceneDistance--; sceneDistanceInput.value = state.sceneDistance; updateGridHint(); } };
-    sceneDistancePlus.onclick = () => { state.sceneDistance = (state.sceneDistance || 1) + 1; sceneDistanceInput.value = state.sceneDistance; updateGridHint(); };
+    sceneCountMinus.onclick = () => { if (state.sceneCount > 1) { state.sceneCount--; sceneCountInput.value = state.sceneCount; updateGridHint(); markRegenPending(); } };
+    sceneCountPlus.onclick = () => { state.sceneCount = (state.sceneCount || 5) + 1; sceneCountInput.value = state.sceneCount; updateGridHint(); markRegenPending(); };
+    sceneDepthMinus.onclick = () => { if (state.sceneDepth > 1) { state.sceneDepth--; sceneDepthInput.value = state.sceneDepth; updateGridHint(); markRegenPending(); } };
+    sceneDepthPlus.onclick = () => { state.sceneDepth = (state.sceneDepth || 8) + 1; sceneDepthInput.value = state.sceneDepth; updateGridHint(); markRegenPending(); };
+    sceneDistanceMinus.onclick = () => { if (state.sceneDistance > 1) { state.sceneDistance--; sceneDistanceInput.value = state.sceneDistance; updateGridHint(); markRegenPending(); } };
+    sceneDistancePlus.onclick = () => { state.sceneDistance = (state.sceneDistance || 1) + 1; sceneDistanceInput.value = state.sceneDistance; updateGridHint(); markRegenPending(); };
   }
   frameCountInput.onchange = () => {
     state.frameCount = resolveIntMenuValue(frameCountInput, state.frameCount || 24, 1, 3000);
@@ -4791,15 +4973,24 @@ function fitToSingleFrame() {
   function updateIntervalUI() {
     const isScene = state.selectionMode === 'scene';
     const isCount = state.selectionMode === 'count';
+    const isSlice = state.selectionMode === 'slice';
     countRow.style.display = isCount ? 'flex' : 'none';
-    intervalRow.style.display = (!isCount && !isScene) ? 'flex' : 'none';
-    if (!isCount && !isScene) intervalLabel.textContent = state.selectionMode === 'seconds' ? 'Seconds' : 'Frames';
+    intervalRow.style.display = (!isCount && !isScene && !isSlice) ? 'flex' : 'none';
+    if (!isCount && !isScene && !isSlice) intervalLabel.textContent = state.selectionMode === 'seconds' ? 'Seconds' : 'Frames';
     const sceneDisplay = isScene ? 'flex' : 'none';
     if ($('sceneCountRow')) {
       $('sceneCountRow').style.display = sceneDisplay;
       $('sceneDepthRow').style.display = sceneDisplay;
       $('sceneDistanceRow').style.display = sceneDisplay;
     }
+    const sliceDisplay = isSlice ? 'flex' : 'none';
+    if ($('sliceColsRow')) {
+      $('sliceColsRow').style.display = sliceDisplay;
+      $('sliceRowsRow').style.display = sliceDisplay;
+      $('sliceTotalRow').style.display = sliceDisplay;
+      $('sliceBtnsRow').style.display = isSlice ? 'flex' : 'none';
+    }
+    updateRegenHint();
   }
 
   // Metadata bar is always visible in the UI; export metadata is controlled separately.
@@ -5261,6 +5452,7 @@ function fitToSingleFrame() {
   generateBtn.onclick = () => {
     if (state.isPlaying) stopAnimation();
     markRegenDone();
+    invalidateCellCaches();
     generateFrames();
   };
 
@@ -5272,7 +5464,7 @@ function fitToSingleFrame() {
       gridColsInput.value = state.gridCols;
       state.canvasAspect = 'custom';
       syncGridAspectMode();
-      if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
+      if (state.frames.length) updateGridColsOnly();
     }
   };
   colsPlus.onclick = () => {
@@ -5295,7 +5487,7 @@ function fitToSingleFrame() {
         state.gridCols = calculateOptimalColumns(cellCount);
         gridColsInput.value = state.gridCols;
       }
-      if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
+      if (state.frames.length) debouncedRenderGrid();
     }
   };
   cellPlus.onclick = () => {
@@ -5309,7 +5501,7 @@ function fitToSingleFrame() {
         gridColsInput.value = state.gridCols;
       }
       updateMetaLayoutInfo();
-      if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
+      if (state.frames.length) debouncedRenderGrid();
     }
   };
   
@@ -5459,28 +5651,35 @@ function fitToSingleFrame() {
     const xform = item.querySelector('.frame-media-xform');
     if (!xform) return;
 
-    // Clear existing chrono images
-    const existing = xform.querySelectorAll('.frame-chrono');
-    existing.forEach(el => el.remove());
+    if (!state.chronoEnabled || !state.frames.length) {
+      xform.querySelectorAll('.frame-chrono').forEach(el => el.remove());
+      return;
+    }
 
-    if (!state.chronoEnabled || !state.frames.length) return;
-
-    const depth = state.chronoDepth || 3;
+    const depth     = state.chronoDepth || 3;
     const blendMode = state.chronoBlend || 'screen';
     const alphaBase = (state.chronoOpacity !== undefined) ? state.chronoOpacity : 1.0;
-    const n = state.frames.length;
+    const n         = state.frames.length;
 
-    // We go backwards in time to show the past trail
+    // Reuse existing imgs — only append new ones if needed
+    const imgArr = Array.from(xform.querySelectorAll('.frame-chrono'));
+
+    let slot = 0;
     for (let offset = -depth; offset < 0; offset++) {
-      let nIdx = baseIdx + offset;
-      // Loop around properly
-      nIdx = ((nIdx % n) + n) % n;
+      const nIdx = (((baseIdx + offset) % n) + n) % n;
       const frame = state.frames[nIdx];
-      if (frame) {
-        const dist = Math.abs(offset);
-        const img = document.createElement('img');
+      if (!frame) continue;
+
+      const dist = Math.abs(offset);
+      let finalOpacity = alphaBase;
+      if (state.chronoCascade) {
+        finalOpacity = alphaBase * (1.0 - (dist / depth));
+      }
+
+      let img = imgArr[slot];
+      if (!img) {
+        img = document.createElement('img');
         img.className = 'frame-chrono';
-        img.src = frame.dataUrl;
         img.style.position = 'absolute';
         img.style.inset = '0';
         img.style.width = '100%';
@@ -5488,17 +5687,19 @@ function fitToSingleFrame() {
         img.style.objectFit = 'contain';
         img.style.pointerEvents = 'none';
         img.style.zIndex = '1';
-        img.style.mixBlendMode = blendMode;
-
-        let finalOpacity = alphaBase;
-        if (state.chronoCascade) {
-            finalOpacity = alphaBase * (1.0 - (dist / depth));
-        }
-
-        img.style.opacity = finalOpacity.toFixed(3);
         xform.appendChild(img);
+        imgArr.push(img);
       }
+
+      img.src = frame.dataUrl;
+      img.style.display = '';
+      img.style.mixBlendMode = blendMode;
+      img.style.opacity = finalOpacity.toFixed(3);
+      slot++;
     }
+
+    // Remove surplus (depth changed)
+    for (let i = slot; i < imgArr.length; i++) imgArr[i].remove();
   }
 
   function updateOnionForItem(item, frameIdx) {
@@ -5689,54 +5890,60 @@ function ensureAnimRandomStarts(totalCells) {
   }
 
 function updateAllCells() {
-    const items = framesGrid.querySelectorAll('.frame-item');
-    const offset = 0;
-    const totalCells = items.length - offset;
     const frameCount = state.frames.length;
     if (!frameCount) return;
+
+    // Rebuild DOM cache if null or stale (checked via framesGrid._cellCount, not DOM query)
+    const _expectedCount = (framesGrid && framesGrid._cellCount) || 0;
+    if (!_cellDOMCache || _cellDOMCache.length !== _expectedCount) buildCellDOMCache();
+    const cells = _cellDOMCache;
+    const totalCells = cells.length;
+    if (!totalCells) return;
+
     if (state.animPattern === 'random') ensureAnimRandomStarts(totalCells);
-    const cellOrder = generateCellOrder(totalCells, state.gridCols);
-    const pingPongCycle = frameCount > 1 ? (frameCount - 1) * 2 : 1;
-    
-    // Pre-compute reverse mapping for O(1) lookup instead of O(n) indexOf
-    const cellOrderMap = new Map();
-    cellOrder.forEach((cell, idx) => cellOrderMap.set(cell, idx));
 
-    items.forEach((item, i) => {
-      if (i < offset) return;
-      const cellIdx = i - offset;
+    // Cached cellOrder Map — no rebuild unless pattern/cols changed
+    const { map: cellOrderMap } = getCachedCellOrder(totalCells, state.gridCols);
+
+    // Hoist loop-invariants out of per-cell loop
+    const phaseCount  = Math.max(1, state.gridLoops || 1);
+    const isRandom    = state.animPattern === 'random';
+    const isSeq       = !!state.sequenceMode;
+    const showTC      = computeShowTimecode();
+    const hasOnion    = !!(state.drawOnion && state.drawMode && state.drawTarget === 'frame');
+    ensureAnimDirShuffle(frameCount); // once, not per-cell
+
+    const tick    = state.currentTick;
+    const dir     = state.animDirection;
+    const shuffle = state.animDirShuffle;
+    const tcTotal = Math.ceil(frameCount / state.cellSize);
+
+    for (let cellIdx = 0; cellIdx < totalCells; cellIdx++) {
       const cellOrderIdx = cellOrderMap.get(cellIdx) ?? 0;
-      const rawOffset = cellOrderIdx;
-      const phaseCount = Math.max(1, state.gridLoops || 1);
       let cellOffset;
-      if (state.sequenceMode) {
-         // Sequence mode: cells are strictly sequential (offset = cell order)
-         cellOffset = (rawOffset * phaseCount) % frameCount;
+      if (isSeq) {
+        cellOffset = (cellOrderIdx * phaseCount) % frameCount;
       } else {
-         // Default mode: offset is spread evenly across total cells
-         cellOffset = Math.floor(rawOffset * frameCount * phaseCount / Math.max(1, totalCells)) % frameCount;
+        cellOffset = Math.floor(cellOrderIdx * frameCount * phaseCount / totalCells) % frameCount;
       }
-
-      const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[cellIdx] ?? 0) : cellOffset;
-
-      ensureAnimDirShuffle(frameCount);
-      let frameIdx = applyLoopAfterN(state.currentTick, baseOffset, frameCount, state.animDirection, state.animDirShuffle);
+      const baseOffset = isRandom ? (state.animRandomStarts[cellIdx] ?? 0) : cellOffset;
+      const frameIdx   = applyLoopAfterN(tick, baseOffset, frameCount, dir, shuffle);
 
       const frame = state.frames[frameIdx];
-      if (!frame) return;
+      if (!frame) continue;
 
-      const mainImg = item.querySelector('.frame-main-img');
-      if (mainImg) mainImg.src = frame.dataUrl;
-      updateOnionForItem(item, frameIdx);
+      const { mainImg, timecodeEl, item } = cells[cellIdx];
+      if (mainImg && mainImg.src !== frame.dataUrl) mainImg.src = frame.dataUrl;
+
+      if (hasOnion) updateOnionForItem(item, frameIdx);
       updateChronoForItem(item, frameIdx);
 
-      const tc = item.querySelector('.frame-timecode');
-      if (tc && computeShowTimecode()) {
+      if (showTC && timecodeEl) {
         const derivedIdx = getDerivedIndexFromFrameIdx(frameIdx);
-        tc.textContent = formatTimecode(frame, derivedIdx, Math.ceil(frameCount / state.cellSize), frameIdx);
+        timecodeEl.textContent = formatTimecode(frame, derivedIdx, tcTotal, frameIdx);
       }
       item.dataset.frameIdx = frameIdx;
-    });
+    }
     // Keep drawings animating even when Draw Mode is OFF.
 
     // Composite is needed whenever any overlay layer exists (BG / Template / per-frame drawings).
@@ -5811,9 +6018,9 @@ function updateAllCells() {
   }
 
   function restartAnimation() {
-    if (state.animInterval) { clearInterval(state.animInterval); state.animInterval = null; }
     if (!state.isPlaying) return;
-    state.animInterval = setInterval(() => { state.currentTick++; updateLogoFromTick(); updateAllCells(); }, 1000 / state.animFps);
+    stopAnimation();
+    startAnimation();
   }
 
   playBtn.onclick = startAnimation;
@@ -5837,20 +6044,49 @@ function updateAllCells() {
     
     const interval = 1000 / state.animFps;
     
-    state.animInterval = setInterval(() => {
-      state.currentTick++;
-      updateLogoFromTick();
-      updateAllCells();
-    }, interval);
+    let _rafLastTs = null;
+    function _rafLoop(ts) {
+      if (!state.isPlaying) return;
+      if (_rafLastTs === null) _rafLastTs = ts;
+      const _interval = 1000 / Math.max(1, state.animFps);
+      const _elapsed = ts - _rafLastTs;
+      if (_elapsed >= _interval) {
+        _rafLastTs = ts - (_elapsed % _interval);
+        state.currentTick++;
+        updateLogoFromTick();
+        updateAllCells();
+      }
+      state.animInterval = requestAnimationFrame(_rafLoop);
+    }
+    state.animInterval = requestAnimationFrame(_rafLoop);
   }
 
   
   // Apply loopAfterN cycle limiter: each cell stays within its own N-frame window
   // baseOffset determines the window start; direction/pattern work normally inside
   function applyLoopAfterN(t, baseOffset, frameCount, dir, animDirShuffle) {
-    const loopN = (state.loopAfterN > 0 && state.loopAfterN < frameCount) ? state.loopAfterN : frameCount;
+    // In single view, ignore loopAfterN — show all frames sequentially
+    const loopN = (state.loopAfterN > 0 && state.loopAfterN < frameCount && state.viewMode !== 'single') ? state.loopAfterN : frameCount;
     const loopStart = Math.floor(baseOffset / loopN) * loopN;
     const localOffset = baseOffset % loopN;
+
+    // For pingpong / bounce-offset with active loopN window:
+    // localT only covers 0..(loopN-1), so t%cycle never reaches backward phase.
+    // Compute true per-cell bounce directly using global tick t.
+    if (loopN < frameCount && (dir === 'pingpong' || dir === 'bounce-offset')) {
+      const cycle = loopN > 1 ? (loopN - 1) * 2 : 1;
+      let localFrame;
+      if (dir === 'pingpong') {
+        const pos = (t + localOffset) % cycle;
+        localFrame = pos < loopN ? pos : cycle - pos;
+      } else {
+        const pos = t % cycle;
+        const seq = pos < loopN ? pos : cycle - pos;
+        localFrame = (seq + localOffset) % loopN;
+      }
+      return Math.min(loopStart + localFrame, frameCount - 1);
+    }
+
     const localT = t % loopN;
     const localFrame = resolveDirectionFrame(localT, localOffset, loopN, dir, animDirShuffle);
     return Math.min(loopStart + localFrame, frameCount - 1);
@@ -5880,11 +6116,87 @@ function updateAllCells() {
   }
 
   
+
+  // ── Perf cache: DOM refs per cell (rebuilt on grid change) ──────────────────
+  let _cellDOMCache = null;
+  let _cellOrderCache = null;
+
+  function invalidateCellCaches() {
+    _cellDOMCache = null;
+    _cellOrderCache = null;
+  }
+
+  function buildCellDOMCache() {
+    const items = framesGrid.querySelectorAll('.frame-item');
+    _cellDOMCache = Array.from(items).map(item => ({
+      mainImg:    item.querySelector('.frame-main-img'),
+      timecodeEl: item.querySelector('.frame-timecode'),
+      item
+    }));
+  }
+
+  function getCachedCellOrder(totalCells, cols) {
+    const key = `${state.animPattern}|${cols}|${totalCells}|${state.flipPatternX}|${state.flipPatternY}`;
+    if (_cellOrderCache && _cellOrderCache.key === key) return _cellOrderCache;
+    const order = generateCellOrder(totalCells, cols);
+    const map = new Map();
+    order.forEach((cell, idx) => map.set(cell, idx));
+    _cellOrderCache = { map, key };
+    return _cellOrderCache;
+  }
+  // ────────────────────────────────────────────────────────────────────────────
+
+
+  function getEstimatedFrameCount() {
+    if (!state.videoDuration && !state.frames.length) return null;
+    const fps = state.videoFps || 24;
+    const dur = state.videoDuration || 0;
+    const totalFrames = Math.round(dur * fps) || state.frames.length || 0;
+    if (!totalFrames) return null;
+    const startF = Math.max(0, state.startFrame || 0);
+    const endF   = Math.min(totalFrames, state.endFrame > 0 ? state.endFrame : totalFrames);
+    const range  = Math.max(1, endF - startF);
+    const mode   = state.selectionMode || 'count';
+    if (mode === 'count')   return Math.min(state.frameCount || 24, range);
+    if (mode === 'seconds') return Math.max(1, Math.floor(range / fps / (state.intervalValue || 3)) + 1);
+    if (mode === 'frames')  return Math.max(1, Math.floor(range / (state.intervalValue || 1)) + 1);
+    if (mode === 'scene')   return (state.sceneCount || 5) * (state.sceneDepth || 8);
+    if (mode === 'slice')   return (state.cutCols || 3) * (state.cutRows || 3);
+    return null;
+  }
+
+  function updateRegenHint() {
+    const el = document.getElementById('regenFrameHint');
+    if (!el) return;
+    const n = getEstimatedFrameCount();
+    el.textContent = n ? `${n} frames` : '';
+  }
+
+
+  function updateGridColsOnly() {
+    // Fast path: just update CSS column template — no DOM rebuild
+    framesGrid.style.gridTemplateColumns = `repeat(${state.gridCols}, var(--cell-w))`;
+    invalidateCellCaches();
+    updateGridHint();
+    fitActiveView();
+  }
+
+  let _renderGridTimer = null;
+  function debouncedRenderGrid() {
+    if (_renderGridTimer) clearTimeout(_renderGridTimer);
+    _renderGridTimer = setTimeout(() => {
+      _renderGridTimer = null;
+      if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
+    }, 80);
+  }
+
   function markRegenPending() {
     if (generateBtn) generateBtn.classList.add('pending');
+    updateRegenHint();
   }
   function markRegenDone() {
     if (generateBtn) generateBtn.classList.remove('pending');
+    updateRegenHint();
   }
 
   function generateCellOrder(totalCells, cols) {
@@ -6018,7 +6330,7 @@ function updateAllCells() {
   function stopAnimation() {
     state.isPlaying = false;
     if (state.animInterval) {
-      clearInterval(state.animInterval);
+      cancelAnimationFrame(state.animInterval);
       state.animInterval = null;
     }
     playBtn.style.display = 'block';
@@ -9887,7 +10199,11 @@ async function exportResampledVideo(forceMode = null) {
 
     const frameCount = state.frames.length;
     const cycleLen = getAnimDirectionCycleLength(frameCount, state.animDirection);
-    const totalTicks = cycleLen * Math.max(1, state.exportLoops);
+    // If loopAfterN is active, one export loop = loopAfterN ticks (not full cycle)
+    const _loopN = (state.loopAfterN > 0 && state.loopAfterN < frameCount) ? state.loopAfterN : null;
+    const totalTicks = _loopN
+      ? _loopN * Math.max(1, state.exportLoops)
+      : cycleLen * Math.max(1, state.exportLoops);
 
     const cellOrder = generateCellOrder(cellCount, state.gridCols);
     const r = parseInt(state.tcBgColor.slice(1,3), 16);
@@ -11954,7 +12270,22 @@ const canvas = document.createElement('canvas');
     }
     if (state.tcShowTime) {
       const t = Number(frame && frame.time);
-      if (Number.isFinite(t)) parts.push(`${t.toFixed(2)}s`);
+      if (Number.isFinite(t)) {
+        const totalSec = Math.floor(t);
+        const ms = Math.round((t - totalSec) * 100);
+        const h  = Math.floor(totalSec / 3600);
+        const m  = Math.floor((totalSec % 3600) / 60);
+        const s  = totalSec % 60;
+        let timeStr;
+        if (h > 0) {
+          timeStr = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        } else if (m > 0) {
+          timeStr = `${m}:${String(s).padStart(2,'0')}`;
+        } else {
+          timeStr = `${s}.${String(ms).padStart(2,'0')}`;
+        }
+        parts.push(timeStr);
+      }
     }
     if (state.tcShowFrame) {
       parts.push(`F${String(Math.max(0, srcVal)).padStart(frameW, '0')}`);
@@ -12150,6 +12481,30 @@ const canvas = document.createElement('canvas');
 
 
 
+    function toggleAllSections() {
+    if (!sideMenu) return;
+    const sections = Array.from(sideMenu.querySelectorAll('.menu-section'));
+    const aboutWrap = $('aboutHeader') ? $('aboutHeader').parentElement : null;
+    const anyOpen = sections.some(s => !s.classList.contains('collapsed')) ||
+                    (aboutWrap && !aboutWrap.classList.contains('collapsed'));
+    if (anyOpen) {
+      // Collapse all
+      sections.forEach(s => s.classList.add('collapsed'));
+      if (aboutWrap) aboutWrap.classList.add('collapsed');
+    } else {
+      // Expand only Grid Layout and Animation Preview
+      const pinned = ['Grid Layout', 'Animation Preview'];
+      sections.forEach(s => {
+        const title = s.querySelector('.menu-section-title');
+        const isPinned = title && pinned.includes(title.textContent.trim());
+        s.classList.toggle('collapsed', !isPinned);
+      });
+      if (aboutWrap) aboutWrap.classList.add('collapsed');
+    }
+    const btn = $('menuCollapseBtn');
+    if (btn) btn.textContent = anyOpen ? '▶' : '◀';
+  }
+
   window.addEventListener('keydown', (e) => {
     const code = e.code; // Physical key (works with any language)
 
@@ -12180,10 +12535,11 @@ const canvas = document.createElement('canvas');
       }
       if (code === 'ArrowUp') {
          e.preventDefault();
-         // Ctrl/Cmd + Up = Cycle Pattern Prev
+         // Ctrl/Cmd + Up = Cycle Pattern Prev (up = go back in list)
          const sel = document.getElementById('animPattern');
          if (sel && sel.options.length > 0) {
-            let idx = (sel.selectedIndex + 1) % sel.options.length;
+            let idx = sel.selectedIndex - 1;
+            if (idx < 0) idx = sel.options.length - 1;
             sel.selectedIndex = idx;
             sel.onchange();
          }
@@ -12191,11 +12547,10 @@ const canvas = document.createElement('canvas');
       }
       if (code === 'ArrowDown') {
          e.preventDefault();
-         // Ctrl/Cmd + Down = Cycle Pattern Next
+         // Ctrl/Cmd + Down = Cycle Pattern Next (down = forward in list)
          const sel = document.getElementById('animPattern');
          if (sel && sel.options.length > 0) {
-            let idx = sel.selectedIndex - 1;
-            if (idx < 0) idx = sel.options.length - 1;
+            let idx = (sel.selectedIndex + 1) % sel.options.length;
             sel.selectedIndex = idx;
             sel.onchange();
          }
@@ -12235,14 +12590,7 @@ const canvas = document.createElement('canvas');
     else if (code === 'KeyM') { e.preventDefault(); toggleMenu(); }
     else if (code === 'KeyN') {
       e.preventDefault();
-      // Collapse/expand all sections in the right menu for easier navigation
-      if (sideMenu && sideMenu.classList.contains('open')) {
-        const sections = Array.from(sideMenu.querySelectorAll('.menu-section'));
-        const aboutWrap = $('aboutHeader') ? $('aboutHeader').parentElement : null;
-        const anyOpen = sections.some(s => !s.classList.contains('collapsed')) || (aboutWrap && !aboutWrap.classList.contains('collapsed'));
-        sections.forEach(s => s.classList.toggle('collapsed', anyOpen));
-        if (aboutWrap) aboutWrap.classList.toggle('collapsed', anyOpen);
-      }
+      if (sideMenu && sideMenu.classList.contains('open')) toggleAllSections();
     }
     else if (code === 'KeyB') {
       e.preventDefault();
@@ -12348,10 +12696,11 @@ const canvas = document.createElement('canvas');
         // Shift+ArrowUp: Plus columns
         const btn = document.getElementById('colsPlus'); if (btn) btn.click();
       } else {
-        // ArrowUp: Cycle Direction Next (Inverted)
+        // ArrowUp: Cycle Direction Prev
         const sel = document.getElementById('animDirection');
         if (sel && sel.options.length > 0) {
-           let idx = (sel.selectedIndex + 1) % sel.options.length;
+           let idx = sel.selectedIndex - 1;
+           if (idx < 0) idx = sel.options.length - 1;
            sel.selectedIndex = idx;
            sel.onchange();
         }
@@ -12363,11 +12712,10 @@ const canvas = document.createElement('canvas');
         // Shift+ArrowDown: Minus columns
         const btn = document.getElementById('colsMinus'); if (btn) btn.click();
       } else {
-        // ArrowDown: Cycle Direction Prev (Inverted)
+        // ArrowDown: Cycle Direction Next
         const sel = document.getElementById('animDirection');
         if (sel && sel.options.length > 0) {
-           let idx = sel.selectedIndex - 1;
-           if (idx < 0) idx = sel.options.length - 1;
+           let idx = (sel.selectedIndex + 1) % sel.options.length;
            sel.selectedIndex = idx;
            sel.onchange();
         }
@@ -13420,6 +13768,148 @@ function audioInitUI() {
       stopBtnRepeat();
     }
   });
+
+  // ── Meta tap-to-pick popup (Direction & Pattern) ──────────────────────────
+  let _metaPickPopup = null;
+  function closeMetaPick() {
+    if (_metaPickPopup) { _metaPickPopup.remove(); _metaPickPopup = null; }
+    document.querySelectorAll('.meta-cycle.open').forEach(el => el.classList.remove('open'));
+  }
+  function openMetaPick(cycleEl, selId) {
+    closeMetaPick();
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    cycleEl.classList.add('open');
+    const popup = document.createElement('div');
+    popup.className = 'meta-pick-popup';
+    Array.from(sel.options).forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.textContent = opt.text;
+      if (i === sel.selectedIndex) btn.classList.add('active');
+      btn.ontouchstart = btn.onmousedown = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        sel.selectedIndex = i;
+        sel.dispatchEvent(new Event('change'));
+        closeMetaPick();
+      };
+      popup.appendChild(btn);
+    });
+    document.body.appendChild(popup);
+    _metaPickPopup = popup;
+    // Position: above the tapped element, aligned left
+    const rect = cycleEl.getBoundingClientRect();
+    const ph = popup.offsetHeight || (sel.options.length * 36 + 8);
+    let top = rect.top - ph - 6;
+    let left = rect.left;
+    if (top < 8) top = rect.bottom + 6;
+    if (left + 160 > window.innerWidth) left = window.innerWidth - 164;
+    popup.style.top  = `${top}px`;
+    popup.style.left = `${left}px`;
+  }
+  document.addEventListener('pointerdown', (e) => {
+    if (_metaPickPopup && !_metaPickPopup.contains(e.target)) closeMetaPick();
+  }, true);
+
+  function cycleSelect(selId, dir) {
+    const sel = document.getElementById(selId);
+    if (!sel || !sel.options.length) return;
+    let idx = sel.selectedIndex + dir;
+    if (idx < 0) idx = sel.options.length - 1;
+    if (idx >= sel.options.length) idx = 0;
+    sel.selectedIndex = idx;
+    sel.dispatchEvent(new Event('change'));
+  }
+  const metaDirCycle = document.getElementById('metaDirCycle');
+  const metaPtnCycle = document.getElementById('metaPtnCycle');
+  if (metaDirCycle) metaDirCycle.onclick = () => openMetaPick(metaDirCycle, 'animDirection');
+  if (metaPtnCycle) metaPtnCycle.onclick = () => openMetaPick(metaPtnCycle, 'animPattern');
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // ── TC Align button group ──────────────────────────────────────────────────
+  const tcAlignGroup = document.getElementById('tcAlignGroup');
+  const tcPositionGroup = document.getElementById('tcPositionGroup');
+  // tcAlignSelect and tcPositionSelect already declared above via $()
+
+  function initTcBtnGroup(groupEl, selectEl, stateKey) {
+    if (!groupEl || !selectEl) return;
+    groupEl.querySelectorAll('button').forEach(btn => {
+      btn.onclick = () => {
+        groupEl.querySelectorAll('button').forEach(b => b.classList.remove('active-toggle'));
+        btn.classList.add('active-toggle');
+        selectEl.value = btn.dataset.val;
+        state[stateKey] = btn.dataset.val;
+        selectEl.dispatchEvent(new Event('change'));
+      };
+    });
+  }
+  initTcBtnGroup(tcAlignGroup,    tcAlignSelect,    'tcAlign');
+  initTcBtnGroup(tcPositionGroup, tcPositionSelect, 'tcPosition');
+
+  // ── TC Color buttons — sync background ────────────────────────────────────
+  function syncColorBtn(btnId, inputId) {
+    const btn   = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    if (!btn || !input) return;
+    const sync = () => { btn.style.background = input.value; };
+    input.addEventListener('input',  sync);
+    input.addEventListener('change', sync);
+    sync();
+  }
+  syncColorBtn('tcTextColorBtn', 'tcTextColor');
+  syncColorBtn('tcBgColorBtn',   'tcBgColor');
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // ── Reset Memory & Grid ────────────────────────────────────────────────────
+
+  const menuCollapseBtn = $('menuCollapseBtn');
+  if (menuCollapseBtn) menuCollapseBtn.onclick = () => toggleAllSections();
+
+  const resetMemoryBtn = $('resetMemoryBtn');
+  if (resetMemoryBtn) {
+    resetMemoryBtn.onclick = () => {
+      if (!confirm('Clear all drawings and reload the grid? Frame data is kept.')) return;
+      // 1. Stop animation
+      if (state.isPlaying) stopAnimation();
+      // 2. Clear drawing layers
+      state.bgDrawing = null;
+      state.bgDrawingSingle = null;
+      state.templateDrawing = null;
+      state.frameDrawings = {};
+      state.frameSheetDrawing = null;
+      state.frameSheetCols = 0;
+      state.frameSheetRows = 0;
+      // 3. Clear draw canvases
+      try {
+        if (typeof drawCtx !== 'undefined' && drawCtx && drawCanvas) {
+          drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        }
+        if (typeof tplCtx !== 'undefined' && tplCtx && tplCanvas) {
+          tplCtx.clearRect(0, 0, tplCanvas.width, tplCanvas.height);
+        }
+        if (typeof frameSheetCanvas !== 'undefined' && frameSheetCanvas) {
+          const fsc = frameSheetCanvas;
+          fsc.getContext('2d').clearRect(0, 0, fsc.width, fsc.height);
+        }
+      } catch(e) {}
+      // 4. Revoke any blob/object URLs from frames to free GPU texture memory
+      if (state.frames && state.frames.length) {
+        state.frames.forEach(f => {
+          if (f && f.objectUrl) { try { URL.revokeObjectURL(f.objectUrl); } catch(e) {} }
+        });
+      }
+      // 5. Invalidate DOM/cell caches
+      invalidateCellCaches();
+      // 6. Re-render grid (DOM rebuild, fresh canvases)
+      if (state.frames && state.frames.length) {
+        renderGrid();
+        updateGridHint();
+        fitActiveView();
+      }
+      resetMemoryBtn.textContent = 'Done ✓';
+      setTimeout(() => { resetMemoryBtn.textContent = 'Reset Memory & Grid'; }, 2000);
+    };
+  }
+  // ────────────────────────────────────────────────────────────────────────────
 
 })();
   
