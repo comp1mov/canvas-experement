@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Analyzer Testbench — AlgoRhythms</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+    :root {
+        --bg: #0a0a0f;
+        --panel: #12121a;
+        --border: #1e1e2e;
+        --text: #c8c8d4;
+        --dim: #5a5a70;
+        --accent1: #00ff88;
+        --accent2: #ff3366;
+        --accent3: #3399ff;
+        --accent4: #ffaa00;
+        --neon-green: #00ff88;
+        --neon-pink: #ff3366;
+        --neon-blue: #3399ff;
+        --neon-orange: #ffaa00;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        overflow-x: hidden;
+        min-height: 100vh;
+    }
+
+    /* ============ HEADER ============ */
+    .header {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        background: linear-gradient(180deg, #0f0f18 0%, var(--bg) 100%);
+    }
+
+    .header h1 {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--neon-green);
+        text-shadow: 0 0 20px rgba(0,255,136,0.3);
+    }
+
+    .header .subtitle {
+        font-size: 10px;
+        color: var(--dim);
+        letter-spacing: 1px;
+    }
+
+    .header-controls {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-left: auto;
+    }
+
+    .btn {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        padding: 6px 16px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--panel);
+        color: var(--text);
+        cursor: pointer;
+        transition: all 0.15s;
+        letter-spacing: 0.5px;
+    }
+    .btn:hover { border-color: var(--neon-green); color: #fff; }
+    .btn.active {
+        background: rgba(0,255,136,0.1);
+        border-color: var(--neon-green);
+        color: var(--neon-green);
+        box-shadow: 0 0 12px rgba(0,255,136,0.15);
+    }
+
+    .slider-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .slider-group label {
+        font-size: 10px;
+        color: var(--dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        min-width: 40px;
+    }
+    .slider-group input[type="range"] {
+        width: 100px;
+        height: 2px;
+        accent-color: var(--neon-green);
+        cursor: pointer;
+    }
+    .slider-group .val {
+        font-size: 11px;
+        color: var(--text);
+        min-width: 32px;
+        text-align: right;
+    }
+
+    /* ============ RAW SIGNAL ============ */
+    .raw-section {
+        padding: 12px 24px;
+        border-bottom: 1px solid var(--border);
+    }
+    .raw-section .label {
+        font-size: 10px;
+        color: var(--dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+    }
+    .raw-section canvas {
+        width: 100%;
+        height: 80px;
+        border-radius: 4px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+    }
+
+    /* ============ GRID ============ */
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: var(--border);
+        flex: 1;
+    }
+
+    .algo-column {
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .algo-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+    }
+    .algo-header h2 {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+    }
+    .algo-header .desc {
+        font-size: 9px;
+        color: var(--dim);
+        line-height: 1.4;
+    }
+
+    .algo-column:nth-child(1) .algo-header h2 { color: var(--neon-green); }
+    .algo-column:nth-child(2) .algo-header h2 { color: var(--neon-pink); }
+    .algo-column:nth-child(3) .algo-header h2 { color: var(--neon-blue); }
+    .algo-column:nth-child(4) .algo-header h2 { color: var(--neon-orange); }
+
+    /* ============ SPECTRUM SECTION ============ */
+    .spectrum-section {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        flex: 0 0 auto;
+    }
+    .spectrum-section .label {
+        font-size: 9px;
+        color: var(--dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+    }
+    .spectrum-section canvas {
+        width: 100%;
+        height: 100px;
+        border-radius: 3px;
+        background: rgba(0,0,0,0.3);
+    }
+
+    /* ============ BANDS SECTION ============ */
+    .bands-section {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        flex: 0 0 auto;
+    }
+    .bands-section .label {
+        font-size: 9px;
+        color: var(--dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+    }
+    .bands-bars {
+        display: flex;
+        gap: 3px;
+        height: 80px;
+        align-items: flex-end;
+    }
+    .band-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        justify-content: flex-end;
+    }
+    .band-bar {
+        width: 100%;
+        border-radius: 2px 2px 0 0;
+        transition: height 0.05s;
+        min-height: 1px;
+    }
+    .band-val {
+        font-size: 7px;
+        color: var(--dim);
+        margin-bottom: 2px;
+        text-align: center;
+        width: 100%;
+        overflow: hidden;
+    }
+    .band-label {
+        font-size: 7px;
+        color: var(--dim);
+        margin-top: 3px;
+        text-align: center;
+    }
+
+    /* ============ REACTIVE SECTION ============ */
+    .reactive-section {
+        padding: 12px 16px;
+        flex: 1;
+    }
+    .reactive-section .label {
+        font-size: 9px;
+        color: var(--dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+    }
+    .reactive-section canvas {
+        width: 100%;
+        height: 120px;
+        border-radius: 3px;
+        background: rgba(0,0,0,0.3);
+    }
+
+    /* ============ BOTTOM BAR ============ */
+    .bottom-bar {
+        padding: 8px 24px;
+        border-top: 1px solid var(--border);
+        background: var(--panel);
+        display: flex;
+        gap: 24px;
+        align-items: center;
+        font-size: 10px;
+        color: var(--dim);
+    }
+    .bottom-bar .stat { color: var(--text); }
+
+    /* Column accent colors for bars */
+    .algo-column:nth-child(1) .band-bar { background: var(--neon-green); box-shadow: 0 0 8px rgba(0,255,136,0.3); }
+    .algo-column:nth-child(2) .band-bar { background: var(--neon-pink); box-shadow: 0 0 8px rgba(255,51,102,0.3); }
+    .algo-column:nth-child(3) .band-bar { background: var(--neon-blue); box-shadow: 0 0 8px rgba(51,153,255,0.3); }
+    .algo-column:nth-child(4) .band-bar { background: var(--neon-orange); box-shadow: 0 0 8px rgba(255,170,0,0.3); }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>Audio Analyzer Testbench</h1>
+        <div class="subtitle">AlgoRhythms · comparing analysis methods side by side</div>
+    </div>
+    <div class="header-controls">
+        <button class="btn" id="btn-mic">⦿ MIC START</button>
+        <button class="btn" id="btn-osc">◎ TONE 440Hz</button>
+        <button class="btn" id="btn-file">♫ DROP MP3</button>
+        <input type="file" id="file-input" accept="audio/*" style="display:none">
+        <div class="slider-group">
+            <label>gain</label>
+            <input type="range" id="gain-slider" min="0" max="20" step="0.1" value="1">
+            <span class="val" id="gain-val">1.0×</span>
+        </div>
+        <div class="slider-group">
+            <label>fft</label>
+            <input type="range" id="fft-slider" min="10" max="14" step="1" value="13">
+            <span class="val" id="fft-val">8192</span>
+        </div>
+        <div class="slider-group">
+            <label>smooth</label>
+            <input type="range" id="smooth-slider" min="0" max="0.95" step="0.05" value="0">
+            <span class="val" id="smooth-val">0.00</span>
+        </div>
+    </div>
+</div>
+
+<div class="raw-section">
+    <div class="label">raw waveform · getFloatTimeDomainData · float -1.0 → +1.0</div>
+    <canvas id="waveform-canvas" height="80"></canvas>
+</div>
+
+<div class="grid" id="algo-grid">
+    <!-- Column 1: AnalyserNode getFloatFrequencyData → dB → linear -->
+    <div class="algo-column" data-algo="analyser-linear">
+        <div class="algo-header">
+            <h2>AnalyserNode → Linear</h2>
+            <div class="desc">getFloatFrequencyData · dB → pow(10, dB/20) · ×5000 · peak per band</div>
+        </div>
+        <div class="spectrum-section">
+            <div class="label">raw spectrum (all bins)</div>
+            <canvas class="spectrum-canvas" height="100"></canvas>
+        </div>
+        <div class="bands-section">
+            <div class="label">8 bands · log frequency split</div>
+            <div class="bands-bars"></div>
+        </div>
+        <div class="reactive-section">
+            <div class="label">reactive bars</div>
+            <canvas class="reactive-canvas" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- Column 2: AnalyserNode getByteFrequencyData → 0-255 → /255 -->
+    <div class="algo-column" data-algo="analyser-byte">
+        <div class="algo-header">
+            <h2>AnalyserNode → Byte</h2>
+            <div class="desc">getByteFrequencyData · 0-255 → /255 · peak per band</div>
+        </div>
+        <div class="spectrum-section">
+            <div class="label">raw spectrum (all bins)</div>
+            <canvas class="spectrum-canvas" height="100"></canvas>
+        </div>
+        <div class="bands-section">
+            <div class="label">8 bands · log frequency split</div>
+            <div class="bands-bars"></div>
+        </div>
+        <div class="reactive-section">
+            <div class="label">reactive bars</div>
+            <canvas class="reactive-canvas" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- Column 3: Goertzel from raw waveform -->
+    <div class="algo-column" data-algo="goertzel">
+        <div class="algo-header">
+            <h2>Goertzel · Raw</h2>
+            <div class="desc">getFloatTimeDomainData · Goertzel per freq · peak per band</div>
+        </div>
+        <div class="spectrum-section">
+            <div class="label">goertzel magnitudes</div>
+            <canvas class="spectrum-canvas" height="100"></canvas>
+        </div>
+        <div class="bands-section">
+            <div class="label">8 bands · log frequency split</div>
+            <div class="bands-bars"></div>
+        </div>
+        <div class="reactive-section">
+            <div class="label">reactive bars</div>
+            <canvas class="reactive-canvas" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- Column 4: RMS from raw waveform -->
+    <div class="algo-column" data-algo="rms-bands">
+        <div class="algo-header">
+            <h2>RMS · Bandpass</h2>
+            <div class="desc">getFloatFrequencyData · dB → linear · ×5000 · RMS per band</div>
+        </div>
+        <div class="spectrum-section">
+            <div class="label">band energy distribution</div>
+            <canvas class="spectrum-canvas" height="100"></canvas>
+        </div>
+        <div class="bands-section">
+            <div class="label">8 bands · log frequency split</div>
+            <div class="bands-bars"></div>
+        </div>
+        <div class="reactive-section">
+            <div class="label">reactive bars</div>
+            <canvas class="reactive-canvas" height="120"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-bar">
+    <span>sample rate: <span class="stat" id="stat-sr">—</span></span>
+    <span>fft size: <span class="stat" id="stat-fft">—</span></span>
+    <span>bins: <span class="stat" id="stat-bins">—</span></span>
+    <span>hz/bin: <span class="stat" id="stat-hzbin">—</span></span>
+    <span>fps: <span class="stat" id="stat-fps">—</span></span>
+    <span>peak waveform: <span class="stat" id="stat-peak">—</span></span>
+</div>
+
+<script>
+// ===== BAND RANGES (same for all algorithms) =====
+const BANDS = [
+    { name: 'sub',  lo: 20,    hi: 60 },
+    { name: 'bass', lo: 60,    hi: 250 },
+    { name: 'lo-m', lo: 250,   hi: 500 },
+    { name: 'mid',  lo: 500,   hi: 2000 },
+    { name: 'hi-m', lo: 2000,  hi: 4000 },
+    { name: 'pres', lo: 4000,  hi: 6000 },
+    { name: 'bril', lo: 6000,  hi: 12000 },
+    { name: 'air',  lo: 12000, hi: 20000 }
+];
+
+// ===== STATE =====
+let audioCtx = null;
+let analyser = null;
+let analyser2 = null; // second analyser for byte data (same source)
+let srcNode = null;
+let stream = null;
+let running = false;
+
+let floatFreqBuf = null;   // Float32Array for getFloatFrequencyData
+let byteFreqBuf = null;    // Uint8Array for getByteFrequencyData
+let timeBuf = null;         // Float32Array for getFloatTimeDomainData
+let fftSize = 8192;
+let gain = 1.0;
+let smoothing = 0.0;
+
+// Per-algorithm band values
+const algoBands = {
+    'analyser-linear': new Float32Array(8),
+    'analyser-byte': new Float32Array(8),
+    'goertzel': new Float32Array(8),
+    'rms-bands': new Float32Array(8)
+};
+
+// Reactive history for smooth bars
+const reactiveHistory = {};
+Object.keys(algoBands).forEach(k => {
+    reactiveHistory[k] = new Float32Array(8);
+});
+
+// ===== GOERTZEL =====
+function goertzelMag(buf, N, sr, targetHz) {
+    const k = Math.round(targetHz * N / sr);
+    const w = 2.0 * Math.PI * k / N;
+    const coeff = 2.0 * Math.cos(w);
+    let s0 = 0, s1 = 0, s2 = 0;
+    for (let i = 0; i < N; i++) {
+        s0 = buf[i] + coeff * s1 - s2;
+        s2 = s1;
+        s1 = s0;
+    }
+    const real = s1 - s2 * Math.cos(w);
+    const imag = s2 * Math.sin(w);
+    return Math.sqrt(real * real + imag * imag) / N;
+}
+
+// ===== ANALYSIS FUNCTIONS =====
+
+function analyseLinear() {
+    if (!analyser || !floatFreqBuf) return;
+    analyser.getFloatFrequencyData(floatFreqBuf);
+    const sr = audioCtx.sampleRate;
+    const hzPerBin = sr / analyser.fftSize;
+    const bands = algoBands['analyser-linear'];
+
+    // Debug: log raw dB range every 60 frames
+    if (window._linDbg === undefined) window._linDbg = 0;
+    window._linDbg++;
+    let dbMin = 0, dbMax = -999;
+
+    for (let b = 0; b < BANDS.length; b++) {
+        const lo = Math.max(1, Math.floor(BANDS[b].lo / hzPerBin));
+        const hi = Math.min(floatFreqBuf.length - 1, Math.ceil(BANDS[b].hi / hzPerBin));
+        let peakDB = -Infinity;
+        for (let i = lo; i <= hi; i++) {
+            if (floatFreqBuf[i] > peakDB) peakDB = floatFreqBuf[i];
+        }
+        if (peakDB < dbMin) dbMin = peakDB;
+        if (peakDB > dbMax) dbMax = peakDB;
+        // dB to linear then scale up: mic at -80dB = 0.0001, need x5000 to reach ~0.5
+        let amp = (peakDB > -150 && isFinite(peakDB)) ? Math.pow(10, peakDB / 20.0) : 0;
+        bands[b] = Math.min(1.0, amp * 5000.0 * gain);
+    }
+
+    if (window._linDbg % 60 === 0) {
+        logDebug('LINEAR', 'dB range: ' + dbMin.toFixed(1) + ' to ' + dbMax.toFixed(1) + ' | amp[0]=' + bands[0].toFixed(6));
+    }
+}
+
+function analyseByte() {
+    if (!analyser2 || !byteFreqBuf) return;
+    analyser2.getByteFrequencyData(byteFreqBuf);
+    const sr = audioCtx.sampleRate;
+    const hzPerBin = sr / analyser2.fftSize;
+    const bands = algoBands['analyser-byte'];
+
+    if (window._byteDbg === undefined) window._byteDbg = 0;
+    window._byteDbg++;
+
+    for (let b = 0; b < BANDS.length; b++) {
+        const lo = Math.max(1, Math.floor(BANDS[b].lo / hzPerBin));
+        const hi = Math.min(byteFreqBuf.length - 1, Math.ceil(BANDS[b].hi / hzPerBin));
+        let peak = 0;
+        for (let i = lo; i <= hi; i++) {
+            if (byteFreqBuf[i] > peak) peak = byteFreqBuf[i];
+        }
+        bands[b] = Math.min(1.0, (peak / 255) * gain);
+    }
+
+    if (window._byteDbg % 60 === 0) {
+        logDebug('BYTE', 'raw peak sub=' + byteFreqBuf[Math.max(1, Math.floor(BANDS[0].lo / hzPerBin))] + ' | band[0]=' + bands[0].toFixed(4));
+    }
+}
+
+function analyseGoertzel() {
+    if (!timeBuf) return;
+    const sr = audioCtx.sampleRate;
+    const N = timeBuf.length;
+    const bands = algoBands['goertzel'];
+
+    if (window._gDbg === undefined) window._gDbg = 0;
+    window._gDbg++;
+
+    for (let b = 0; b < BANDS.length; b++) {
+        const range = BANDS[b].hi - BANDS[b].lo;
+        // Fewer steps to avoid blocking: max 6
+        const steps = Math.min(6, Math.max(3, Math.ceil(range / 200)));
+        let peak = 0;
+        for (let s = 0; s < steps; s++) {
+            const hz = BANDS[b].lo + range * s / Math.max(1, steps - 1);
+            const mag = goertzelMag(timeBuf, N, sr, hz);
+            if (mag > peak) peak = mag;
+        }
+        bands[b] = Math.min(1.0, peak * 150.0 * gain);
+    }
+
+    if (window._gDbg % 60 === 0) {
+        logDebug('GOERTZEL', 'raw mag sub=' + bands[0].toFixed(6) + ' | mid=' + bands[3].toFixed(6));
+    }
+}
+
+function analyseRMS() {
+    if (!timeBuf || !analyser || !floatFreqBuf) return;
+    const sr = audioCtx.sampleRate;
+    const hzPerBin = sr / analyser.fftSize;
+    const bands = algoBands['rms-bands'];
+
+    if (window._rmsDbg === undefined) window._rmsDbg = 0;
+    window._rmsDbg++;
+
+    for (let b = 0; b < BANDS.length; b++) {
+        const lo = Math.max(1, Math.floor(BANDS[b].lo / hzPerBin));
+        const hi = Math.min(floatFreqBuf.length - 1, Math.ceil(BANDS[b].hi / hzPerBin));
+        let sum = 0;
+        let count = 0;
+        for (let i = lo; i <= hi; i++) {
+            const mag = (floatFreqBuf[i] > -150 && isFinite(floatFreqBuf[i])) ? Math.pow(10, floatFreqBuf[i] / 20.0) : 0;
+            sum += mag * mag;
+            count++;
+        }
+        const rms = count > 0 ? Math.sqrt(sum / count) : 0;
+        bands[b] = Math.min(1.0, rms * 5000.0 * gain);
+    }
+
+    if (window._rmsDbg % 60 === 0) {
+        logDebug('RMS', 'sub=' + bands[0].toFixed(6) + ' | mid=' + bands[3].toFixed(6));
+    }
+}
+
+// ===== DRAWING =====
+const COLORS = ['#00ff88', '#ff3366', '#3399ff', '#ffaa00'];
+
+function drawWaveform(canvas, buf) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid
+    ctx.strokeStyle = '#1a1a2a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, H/2); ctx.lineTo(W, H/2);
+    ctx.moveTo(0, H/4); ctx.lineTo(W, H/4);
+    ctx.moveTo(0, H*3/4); ctx.lineTo(W, H*3/4);
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#3a3a50';
+    ctx.font = '9px JetBrains Mono';
+    ctx.fillText('+1.0', 4, 12);
+    ctx.fillText(' 0.0', 4, H/2 + 4);
+    ctx.fillText('-1.0', 4, H - 4);
+
+    if (!buf) return;
+
+    // Waveform
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const step = Math.max(1, Math.floor(buf.length / W));
+    for (let x = 0; x < W; x++) {
+        const i = Math.floor(x * buf.length / W);
+        const y = (1 - buf[i]) * H / 2;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+}
+
+function drawSpectrum(canvas, algo) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const colIdx = ['analyser-linear', 'analyser-byte', 'goertzel', 'rms-bands'].indexOf(algo);
+    const color = COLORS[colIdx] || '#fff';
+
+    if (algo === 'analyser-linear' && floatFreqBuf) {
+        // Draw full spectrum - dB to linear
+        const len = floatFreqBuf.length;
+        ctx.fillStyle = color + '40';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = 0; x < W; x++) {
+            // Log frequency mapping
+            const frac = x / W;
+            const idx = Math.floor(Math.pow(frac, 2) * len);
+            const dB = floatFreqBuf[idx] || -150;
+            const amp = dB > -150 ? Math.pow(10, dB / 20.0) : 0;
+            const y = H - (amp * gain * H);
+            if (x === 0) ctx.moveTo(x, Math.max(0, y)); else ctx.lineTo(x, Math.max(0, y));
+        }
+        ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    } else if (algo === 'analyser-byte' && byteFreqBuf) {
+        const len = byteFreqBuf.length;
+        ctx.fillStyle = color + '40';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = 0; x < W; x++) {
+            const frac = x / W;
+            const idx = Math.floor(Math.pow(frac, 2) * len);
+            const amp = (byteFreqBuf[idx] || 0) / 255;
+            const y = H - (amp * gain * H);
+            if (x === 0) ctx.moveTo(x, Math.max(0, y)); else ctx.lineTo(x, Math.max(0, y));
+        }
+        ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    } else if (algo === 'goertzel') {
+        // Draw sampled Goertzel points
+        const bands = algoBands['goertzel'];
+        ctx.fillStyle = color + '60';
+        const barW = W / 8;
+        for (let b = 0; b < 8; b++) {
+            const h = bands[b] * H;
+            ctx.fillRect(b * barW + 1, H - h, barW - 2, h);
+        }
+    } else if (algo === 'rms-bands') {
+        const bands = algoBands['rms-bands'];
+        ctx.fillStyle = color + '60';
+        const barW = W / 8;
+        for (let b = 0; b < 8; b++) {
+            const h = bands[b] * H;
+            ctx.fillRect(b * barW + 1, H - h, barW - 2, h);
+        }
+    }
+}
+
+function updateBandBars(column, algo) {
+    const bands = algoBands[algo];
+    const bars = column.querySelectorAll('.band-bar');
+    const vals = column.querySelectorAll('.band-val');
+    for (let i = 0; i < bars.length; i++) {
+        const h = Math.min(100, bands[i] * 100);
+        bars[i].style.height = h + '%';
+        vals[i].textContent = bands[i].toFixed(3);
+    }
+}
+
+function drawReactive(canvas, algo) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const colIdx = ['analyser-linear', 'analyser-byte', 'goertzel', 'rms-bands'].indexOf(algo);
+    const color = COLORS[colIdx] || '#fff';
+    const bands = algoBands[algo];
+    const hist = reactiveHistory[algo];
+
+    // Smooth decay
+    for (let i = 0; i < 8; i++) {
+        hist[i] = Math.max(bands[i], hist[i] * 0.92);
+    }
+
+    const gap = 6;
+    const barW = (W - gap * 9) / 8;
+
+    for (let i = 0; i < 8; i++) {
+        const x = gap + i * (barW + gap);
+        const h = hist[i] * (H - 20);
+
+        // Bar glow
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = color;
+        ctx.fillRect(x, H - 10 - h, barW, h);
+        ctx.shadowBlur = 0;
+
+        // Peak line
+        const peakH = bands[i] * (H - 20);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x, H - 12 - peakH, barW, 2);
+
+        // Label
+        ctx.fillStyle = '#5a5a70';
+        ctx.font = '8px JetBrains Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(BANDS[i].name, x + barW/2, H - 1);
+    }
+}
+
+// ===== INIT BANDS HTML =====
+function initBandBars() {
+    document.querySelectorAll('.bands-bars').forEach(container => {
+        container.innerHTML = '';
+        for (let i = 0; i < 8; i++) {
+            const col = document.createElement('div');
+            col.className = 'band-col';
+            col.innerHTML = `
+                <div class="band-val">0.000</div>
+                <div class="band-bar" style="height:1%"></div>
+                <div class="band-label">${BANDS[i].name}</div>
+            `;
+            container.appendChild(col);
+        }
+    });
+}
+
+// ===== SHARED SETUP =====
+let oscNode = null;
+let audioFileSrc = null;
+let activeSource = null; // 'mic' | 'osc' | 'file'
+
+function stopAll() {
+    running = false;
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    if (oscNode) { try { oscNode.stop(); } catch(e) {} oscNode = null; }
+    if (audioFileSrc) { try { audioFileSrc.stop(); } catch(e) {} audioFileSrc = null; }
+    if (audioCtx) { audioCtx.close().catch(()=>{}); }
+    audioCtx = null; analyser = null; analyser2 = null; srcNode = null;
+    activeSource = null;
+    document.getElementById('btn-mic').textContent = '⦿ MIC';
+    document.getElementById('btn-mic').classList.remove('active');
+    document.getElementById('btn-osc').textContent = '◎ TONE 440Hz';
+    document.getElementById('btn-osc').classList.remove('active');
+    document.getElementById('btn-file').classList.remove('active');
+}
+
+function setupAnalysers(source) {
+    fftSize = Math.pow(2, parseInt(document.getElementById('fft-slider').value));
+
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = fftSize;
+    analyser.smoothingTimeConstant = smoothing;
+    source.connect(analyser);
+
+    analyser2 = audioCtx.createAnalyser();
+    analyser2.fftSize = fftSize;
+    analyser2.smoothingTimeConstant = smoothing;
+    source.connect(analyser2);
+
+    floatFreqBuf = new Float32Array(analyser.frequencyBinCount);
+    byteFreqBuf = new Uint8Array(analyser2.frequencyBinCount);
+    timeBuf = new Float32Array(analyser.fftSize);
+
+    running = true;
+
+    document.getElementById('stat-sr').textContent = audioCtx.sampleRate + ' Hz';
+    document.getElementById('stat-fft').textContent = fftSize;
+    document.getElementById('stat-bins').textContent = analyser.frequencyBinCount;
+    document.getElementById('stat-hzbin').textContent = (audioCtx.sampleRate / fftSize).toFixed(2) + ' Hz';
+
+    logDebug('SYSTEM', 'Source: ' + activeSource + ' | SR: ' + audioCtx.sampleRate + ' | FFT: ' + fftSize);
+    loop();
+}
+
+// ===== MIC =====
+async function startMic() {
+    if (running) { stopAll(); return; }
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
+            }
+        });
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtx();
+        srcNode = audioCtx.createMediaStreamSource(stream);
+        activeSource = 'mic';
+        document.getElementById('btn-mic').textContent = '■ MIC STOP';
+        document.getElementById('btn-mic').classList.add('active');
+        setupAnalysers(srcNode);
+    } catch(e) {
+        logDebug('ERROR', 'Mic: ' + e.message);
+    }
+}
+
+// ===== OSCILLATOR =====
+function startOsc() {
+    if (running) { stopAll(); return; }
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioCtx();
+    oscNode = audioCtx.createOscillator();
+    oscNode.type = 'sine';
+    oscNode.frequency.value = 440;
+
+    // Also connect to destination so we can hear it (quiet)
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0.05;
+    oscNode.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscNode.start();
+    activeSource = 'osc';
+    document.getElementById('btn-osc').textContent = '■ TONE STOP';
+    document.getElementById('btn-osc').classList.add('active');
+    setupAnalysers(oscNode);
+}
+
+// ===== FILE =====
+function startFile(file) {
+    if (running) stopAll();
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioCtx();
+    const reader = new FileReader();
+    reader.onload = async () => {
+        try {
+            const buf = await audioCtx.decodeAudioData(reader.result);
+            audioFileSrc = audioCtx.createBufferSource();
+            audioFileSrc.buffer = buf;
+            audioFileSrc.loop = true;
+
+            // Play through speakers
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.3;
+            audioFileSrc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            audioFileSrc.start();
+            activeSource = 'file';
+            document.getElementById('btn-file').textContent = '■ FILE STOP';
+            document.getElementById('btn-file').classList.add('active');
+            logDebug('FILE', file.name + ' | ' + buf.duration.toFixed(1) + 's | ' + buf.sampleRate + 'Hz');
+            setupAnalysers(audioFileSrc);
+        } catch(e) {
+            logDebug('ERROR', 'File decode: ' + e.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// ===== MAIN LOOP =====
+let lastTime = 0;
+let fpsCount = 0;
+let fpsTimer = 0;
+
+function loop() {
+    if (!running) return;
+    requestAnimationFrame(loop);
+
+    const now = performance.now();
+    fpsCount++;
+    if (now - fpsTimer > 1000) {
+        document.getElementById('stat-fps').textContent = fpsCount;
+        fpsCount = 0;
+        fpsTimer = now;
+    }
+
+    // Get raw time domain
+    analyser.getFloatTimeDomainData(timeBuf);
+
+    // Peak
+    let peak = 0;
+    for (let i = 0; i < timeBuf.length; i++) {
+        const a = Math.abs(timeBuf[i]);
+        if (a > peak) peak = a;
+    }
+    document.getElementById('stat-peak').textContent = peak.toFixed(6);
+
+    // Draw waveform
+    const wfCanvas = document.getElementById('waveform-canvas');
+    wfCanvas.width = wfCanvas.clientWidth;
+    wfCanvas.height = 80;
+    drawWaveform(wfCanvas, timeBuf);
+
+    // Run all 4 algorithms
+    analyseLinear();
+    analyseByte();
+    analyseGoertzel();
+    analyseRMS();
+
+    // Update all columns
+    const columns = document.querySelectorAll('.algo-column');
+    columns.forEach(col => {
+        const algo = col.dataset.algo;
+
+        // Spectrum
+        const specCanvas = col.querySelector('.spectrum-canvas');
+        specCanvas.width = specCanvas.clientWidth;
+        specCanvas.height = 100;
+        drawSpectrum(specCanvas, algo);
+
+        // Band bars
+        updateBandBars(col, algo);
+
+        // Reactive
+        const reactCanvas = col.querySelector('.reactive-canvas');
+        reactCanvas.width = reactCanvas.clientWidth;
+        reactCanvas.height = 120;
+        drawReactive(reactCanvas, algo);
+    });
+}
+
+// ===== CONTROLS =====
+document.getElementById('btn-mic').addEventListener('click', startMic);
+document.getElementById('btn-osc').addEventListener('click', startOsc);
+document.getElementById('btn-file').addEventListener('click', () => {
+    if (running && activeSource === 'file') { stopAll(); return; }
+    document.getElementById('file-input').click();
+});
+document.getElementById('file-input').addEventListener('change', (e) => {
+    if (e.target.files.length) startFile(e.target.files[0]);
+});
+// Drag & drop on whole page
+document.body.addEventListener('dragover', (e) => { e.preventDefault(); });
+document.body.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files.length) startFile(e.dataTransfer.files[0]);
+});
+
+document.getElementById('gain-slider').addEventListener('input', e => {
+    gain = parseFloat(e.target.value);
+    document.getElementById('gain-val').textContent = gain.toFixed(1) + '×';
+});
+
+document.getElementById('fft-slider').addEventListener('input', e => {
+    const val = Math.pow(2, parseInt(e.target.value));
+    document.getElementById('fft-val').textContent = val;
+});
+
+document.getElementById('smooth-slider').addEventListener('input', e => {
+    smoothing = parseFloat(e.target.value);
+    document.getElementById('smooth-val').textContent = smoothing.toFixed(2);
+    if (analyser) analyser.smoothingTimeConstant = smoothing;
+    if (analyser2) analyser2.smoothingTimeConstant = smoothing;
+});
+
+// ===== INIT =====
+initBandBars();
+</script>
+
+<div id="debug-log" style="position:fixed; bottom:40px; left:0; right:0; height:220px; background:rgba(0,0,0,0.95); border-top:1px solid #1e1e2e; overflow-y:auto; padding:8px 16px; font-family:JetBrains Mono,monospace; font-size:12px; line-height:1.6; color:#aaa; z-index:9999;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; position:sticky; top:0; background:rgba(0,0,0,0.95); padding-bottom:4px;">
+        <span style="color:#555; font-size:11px; letter-spacing:1px;">DEBUG LOG</span>
+        <div style="display:flex; gap:8px;">
+            <button id="debug-copy" style="font-family:JetBrains Mono; font-size:10px; padding:3px 10px; border:1px solid #333; border-radius:3px; background:#1a1a24; color:#aaa; cursor:pointer;">COPY</button>
+            <button id="debug-clear" style="font-family:JetBrains Mono; font-size:10px; padding:3px 10px; border:1px solid #333; border-radius:3px; background:#1a1a24; color:#aaa; cursor:pointer;">CLEAR</button>
+        </div>
+    </div>
+    <div id="debug-content"></div>
+</div>
+<script>
+const _debugContent = document.getElementById('debug-content');
+const _debugLines = [];
+const _debugPlain = [];
+function logDebug(tag, msg) {
+    const line = '<span style="color:#00ff88">[' + tag + ']</span> ' + msg;
+    _debugLines.push(line);
+    _debugPlain.push('[' + tag + '] ' + msg);
+    if (_debugLines.length > 100) { _debugLines.shift(); _debugPlain.shift(); }
+    _debugContent.innerHTML = _debugLines.join('<br>');
+    _debugContent.parentElement.scrollTop = _debugContent.parentElement.scrollHeight;
+}
+document.getElementById('debug-copy').addEventListener('click', () => {
+    const text = _debugPlain.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('debug-copy');
+        btn.textContent = 'COPIED!';
+        btn.style.color = '#00ff88';
+        setTimeout(() => { btn.textContent = 'COPY'; btn.style.color = '#aaa'; }, 1500);
+    });
+});
+document.getElementById('debug-clear').addEventListener('click', () => {
+    _debugLines.length = 0;
+    _debugPlain.length = 0;
+    _debugContent.innerHTML = '';
+});
+</script>
+</body>
+</html>
