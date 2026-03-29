@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.26.67                                        ║
+║      FRAMEGRID v0.26.75                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.26.67</title>
+  <title>FRAMEGRID v0.26.75</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
@@ -1217,6 +1217,34 @@
     color: rgba(255,255,255,0.95);
   }
 
+  
+    /* iPad/touch: prevent auto-zoom on input focus (iOS zooms when font-size < 16px) */
+    @media (pointer: coarse) {
+      input, select, textarea {
+        font-size: 16px !important;
+        touch-action: manipulation;
+      }
+    }
+  
+    /* Full-width action row spanning both palette columns */
+    .draw-palette { flex-direction: column !important; flex-wrap: nowrap !important; }
+
+    .draw-cols-wrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .draw-palette-full-row { pointer-events: auto; }
+    .draw-palette-full-row > * { pointer-events: auto; }
+
+    .draw-palette-full-row {
+      width: 100%;
+      box-sizing: border-box;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 4px;
+      margin-top: 2px;
+    }
   </style>
 </head>
 <body>
@@ -1229,7 +1257,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.26.67</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.26.75</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1288,76 +1316,84 @@
       
       <!-- Floating Draw Palette - COMPACT -->
       <div class="draw-palette" id="drawPalette">
+                <div class="draw-cols-wrapper">
         <div class="draw-palette-col">
-          <!-- Row 1: Main tools -->
-          <div class="draw-palette-row draw-tools-row">
-            <button class="draw-btn draw-brush-btn active" data-brush="round" title="Round brush">●</button>
-            <button class="draw-btn draw-brush-btn" data-brush="spray" title="Spray">✦</button>
-            <button class="draw-btn" id="drawEraser" title="Eraser (3)">◯</button>
-            <button class="draw-btn" id="toggleTemplateVisibility" title="Toggle Template Visibility (T)">T</button>
-            <div class="draw-row-sep"></div>
-            <input type="color" id="drawColorInput" value="#ffffff" class="draw-color-input" style="width:28px;height:28px;border:2px solid rgba(255,255,255,0.3);padding:0;cursor:pointer;border-radius:2px;background:none;">
-            <button class="draw-btn" id="drawPaletteToggle" title="Hide palette (P)">▾</button>
+            <!-- Row 1: Main tools -->
+            <div class="draw-palette-row draw-tools-row">
+              <button class="draw-btn draw-brush-btn active" data-brush="round" title="Round brush">●</button>
+              <button class="draw-btn draw-brush-btn" data-brush="spray" title="Spray">✦</button>
+              <button class="draw-btn" id="drawEraser" title="Eraser (3)">◯</button>
+              <button class="draw-btn" id="toggleTemplateVisibility" title="Toggle Template Visibility (T)">T</button>
+              <div class="draw-row-sep"></div>
+              <input type="color" id="drawColorInput" value="#ffffff" class="draw-color-input" style="width:28px;height:28px;border:2px solid rgba(255,255,255,0.3);padding:0;cursor:pointer;border-radius:2px;background:none;">
+              <button class="draw-btn" id="drawPaletteToggle" title="Hide palette (P)">▾</button>
+            </div>
+
+            <!-- Row 2: Colors - Recent (circles) + Video palette (squares) -->
+            <div class="draw-palette-row" style="gap:3px;align-items:center;">
+              <div id="recentColorsRow" style="display:flex;gap:2px;"></div>
+              <div style="width:1px;height:16px;background:rgba(255,255,255,0.2);margin:0 2px;"></div>
+              <div id="videoPaletteRow" style="display:flex;gap:2px;"></div>
+              <button class="draw-btn" id="genVideoPalette" title="Regenerate video palette (Shift+V)">↻</button>
+            </div>
+
+            <!-- Row 5: Target buttons -->
+            <div class="draw-target-row">
+              <button class="draw-target-btn active" data-target="background" title="Background (Q)">BG</button>
+              <button class="draw-target-btn" data-target="template" title="Template (W)">TPL</button>
+              <button class="draw-target-btn" data-target="frame" title="Frame (E)">FRM</button>
+            </div>
           </div>
 
-          <!-- Row 2: Colors - Recent (circles) + Video palette (squares) -->
-          <div class="draw-palette-row" style="gap:3px;align-items:center;">
-            <div id="recentColorsRow" style="display:flex;gap:2px;"></div>
-            <div style="width:1px;height:16px;background:rgba(255,255,255,0.2);margin:0 2px;"></div>
-            <div id="videoPaletteRow" style="display:flex;gap:2px;"></div>
-            <button class="draw-btn" id="genVideoPalette" title="Regenerate video palette (Shift+V)">↻</button>
-          </div>
+          <div class="draw-palette-col">
+            <!-- Row 3: Size slider -->
+            <div class="draw-palette-row draw-slider-row" style="gap:4px;">
+              <span class="draw-softness-label" title="Size">SIZE</span><span class="draw-value-label" id="drawSizeLabel" style="margin-left:4px;min-width:26px;">4</span>
+              <button class="menu-input-btn" id="drawSizeMinus">−</button>
+              <input type="range" class="draw-size-slider" id="drawSizeSlider" min="1" max="120" value="4" style="flex:1;">
+              <button class="menu-input-btn" id="drawSizePlus">+</button>
+            </div>
 
-          <!-- Row 5: Target buttons -->
-          <div class="draw-target-row">
-            <button class="draw-target-btn active" data-target="background" title="Background (Q)">BG</button>
-            <button class="draw-target-btn" data-target="template" title="Template (W)">TPL</button>
-            <button class="draw-target-btn" data-target="frame" title="Frame (E)">FRM</button>
+            <!-- Row 4: Opacity slider with +/- -->
+            <div class="draw-palette-row draw-slider-row" style="gap:4px;">
+              <span class="draw-softness-label" title="Opacity">OPAC</span><span class="draw-value-label" id="drawOpacityLabel" style="margin-left:4px;min-width:32px;">100%</span>
+              <button class="menu-input-btn" id="drawOpacityMinus">−</button>
+              <input type="range" class="draw-size-slider" id="drawOpacitySlider" min="5" max="100" value="100" style="flex:1;">
+              <button class="menu-input-btn" id="drawOpacityPlus">+</button>
+            </div>
+
+            
+
+            <!-- Row 5: Edge Softness -->
+            <div class="draw-palette-row draw-slider-row" style="gap:4px;">
+              <span class="draw-softness-label" title="Edge Softness">EDGE</span><span class="draw-value-label" id="edgeSoftnessLabel" style="margin-left:4px;min-width:26px;">0%</span>
+              <button class="menu-input-btn" id="edgeSoftnessMinus">−</button>
+              <input type="range" class="draw-size-slider" id="edgeSoftnessSlider" min="0" max="100" value="0" style="flex:1;" title="Edge Softness">
+              <button class="menu-input-btn" id="edgeSoftnessPlus">+</button>
+            </div>
+
           </div>
         </div>
-
-        <div class="draw-palette-col">
-          <!-- Row 3: Size slider -->
-          <div class="draw-palette-row draw-slider-row" style="gap:4px;">
-            <span class="draw-softness-label" title="Size">SIZE</span>
-            <button class="menu-input-btn" id="drawSizeMinus">−</button>
-            <input type="range" class="draw-size-slider" id="drawSizeSlider" min="1" max="120" value="4" style="flex:1;">
-            <button class="menu-input-btn" id="drawSizePlus">+</button>
-            <span class="draw-value-label" id="drawSizeLabel">4</span>
-          </div>
-
-          <!-- Row 4: Opacity slider with +/- -->
-          <div class="draw-palette-row draw-slider-row" style="gap:4px;">
-            <span class="draw-softness-label" title="Opacity">OPAC</span>
-            <button class="menu-input-btn" id="drawOpacityMinus">−</button>
-            <input type="range" class="draw-size-slider" id="drawOpacitySlider" min="5" max="100" value="100" style="flex:1;">
-            <button class="menu-input-btn" id="drawOpacityPlus">+</button>
-            <span class="draw-value-label" id="drawOpacityLabel">100%</span>
-          </div>
-
-          
-
-          <!-- Row 5: Edge Softness -->
-          <div class="draw-palette-row draw-slider-row" style="gap:4px;">
-            <span class="draw-softness-label" title="Edge Softness">EDGE</span>
-            <button class="menu-input-btn" id="edgeSoftnessMinus">−</button>
-            <input type="range" class="draw-size-slider" id="edgeSoftnessSlider" min="0" max="100" value="0" style="flex:1;" title="Edge Softness">
-            <button class="menu-input-btn" id="edgeSoftnessPlus">+</button>
-            <span class="draw-value-label" id="edgeSoftnessLabel" title="Edge Softness">0%</span>
-          </div>
-<!-- Row 6: Actions + Long Stroke with +/- -->
-          <div class="draw-palette-row" style="gap:3px;align-items:center;">
-            <button class="draw-btn" id="drawUndo" title="Undo (Z)">↶</button>
-            <button class="draw-btn" id="drawOnion" title="Onion Skin">◐</button>
-            <button class="draw-btn" id="drawClear" title="Clear (C)">✕</button>
-            <button class="draw-btn wide" id="applyTemplateToFrames" title="Apply TEMPLATE layer into per-frame drawings">APLY TMPL</button>
-            <div class="draw-row-sep"></div>
-            <button class="draw-btn" id="drawLongStroke" title="Long Stroke (L)">⟿</button>
-            <button class="menu-input-btn" id="trailMinus">−</button>
-            <input type="number" class="menu-input menu-input-compact" id="longStrokeFade" value="8" min="0" max="100" title="Trail frames">
-            <button class="menu-input-btn" id="trailPlus">+</button>
-          </div>
-        </div>
+      <!-- Row 6: Actions + Long Stroke with +/- -->
+      <div class="draw-palette-row draw-palette-full-row" style="gap:3px;align-items:center;flex-wrap:wrap;">
+        <button class="draw-btn" id="drawUndo" title="Undo (Z)">↶</button>
+        <button class="draw-btn" id="drawOnion" title="Onion Skin">◐</button>
+        <button class="draw-btn" id="drawClear" title="Clear (C)">✕</button>
+        <div class="draw-row-sep"></div>
+        <button class="draw-btn" id="savePointSave1" title="Save drawing to slot 1">S1</button>
+        <button class="draw-btn" id="savePointLoad1" title="Load drawing from slot 1" style="opacity:0.35">L1</button>
+        <button class="draw-btn" id="savePointSave2" title="Save drawing to slot 2">S2</button>
+        <button class="draw-btn" id="savePointLoad2" title="Load drawing from slot 2" style="opacity:0.35">L2</button>
+        <button class="draw-btn" id="savePointSave3" title="Save drawing to slot 3">S3</button>
+        <button class="draw-btn" id="savePointLoad3" title="Load drawing from slot 3" style="opacity:0.35">L3</button>
+        <button class="draw-btn wide" id="applyTemplateToFrames" title="Apply TEMPLATE layer into per-frame drawings">APLY TMPL</button>
+        <div class="draw-row-sep"></div>
+        <button class="draw-btn" id="drawOneFrameBtn" title="One Frame — no cross-frame bleed">1F</button>
+        <button class="draw-btn" id="drawLongStroke" title="Long Stroke (L)">⟿</button>
+        <button class="menu-input-btn" id="trailMinus">−</button>
+        <input type="number" class="menu-input menu-input-compact" id="longStrokeFade" value="8" min="0" max="100" title="Trail frames">
+        <button class="menu-input-btn" id="trailPlus">+</button>
+      </div>
       </div>
 
 <!-- Hidden elements for compatibility -->
@@ -1476,7 +1512,7 @@
             <span class="menu-label">Scenes</span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="sceneCountMinus">−</button>
-              <input type="number" class="menu-input menu-input-narrow" id="sceneCountInput" value="5" min="1" max="200">
+              <input type="text" inputmode="decimal" class="menu-input menu-input-narrow" id="sceneCountInput" value="5" min="1" max="200">
               <button class="menu-input-btn" id="sceneCountPlus">+</button>
             </div>
           </div>
@@ -1484,7 +1520,7 @@
             <span class="menu-label">Depth</span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="sceneDepthMinus">−</button>
-              <input type="number" class="menu-input menu-input-narrow" id="sceneDepthInput" value="8" min="1" max="200">
+              <input type="text" inputmode="decimal" class="menu-input menu-input-narrow" id="sceneDepthInput" value="8" min="1" max="200">
               <button class="menu-input-btn" id="sceneDepthPlus">+</button>
             </div>
           </div>
@@ -1492,7 +1528,7 @@
             <span class="menu-label">Distance</span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="sceneDistanceMinus">−</button>
-              <input type="number" class="menu-input menu-input-narrow" id="sceneDistanceInput" value="1" min="1" max="500">
+              <input type="text" inputmode="decimal" class="menu-input menu-input-narrow" id="sceneDistanceInput" value="1" min="1" max="500">
               <button class="menu-input-btn" id="sceneDistancePlus">+</button>
             </div>
           </div>
@@ -1647,7 +1683,7 @@
             </div>
           </div>
           <div class="menu-row">
-            <span class="menu-label">Cell Size</span>
+            <span class="menu-label">HIDE</span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="cellMinus">-</button>
               <span id="cellSizeLabel" style="min-width:44px;text-align:center;font-size:11px;color:#fff;">1</span>
@@ -1672,6 +1708,14 @@
               <button class="menu-input-btn" id="loopNMinus">-</button>
               <input type="number" class="menu-input menu-input-narrow" id="loopNInput" value="0" min="0" max="9999" style="width:52px;">
               <button class="menu-input-btn" id="loopNPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row" id="loopOffsetRow" style="display:none;">
+            <span class="menu-label">Loop Offset</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="loopOffsetMinus">-</button>
+              <input type="number" class="menu-input menu-input-narrow" id="loopOffsetInput" value="0" min="0" max="9999" style="width:52px;">
+              <button class="menu-input-btn" id="loopOffsetPlus">+</button>
             </div>
           </div>
           <div class="menu-row" style="display:none;">
@@ -2336,7 +2380,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.26.67</div>
+          <div class="about-version">Version v0.26.75</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
@@ -2371,7 +2415,7 @@
                         <div class="hotkey-row"><span class="hotkey">↑ / ↓</span> Cycle Direction</div>
             <div class="hotkey-row"><span class="hotkey">Ctrl/Cmd + ↑ / ↓</span> Cycle Pattern</div>
             <div class="hotkey-row"><span class="hotkey">Shift + ↑ / ↓</span> Columns (Grid Size)</div>
-            <div class="hotkey-row"><span class="hotkey">Ctrl/Cmd + ← / →</span> Cell Size (- / +)</div>
+            <div class="hotkey-row"><span class="hotkey">Ctrl/Cmd + ← / →</span> Hide frames (- / +)</div>
             <div class="hotkey-row"><span class="hotkey">Shift + ← / →</span> Loop Phases (- / +)</div>
             <div class="hotkey-row"><span class="hotkey">Ctrl + Shift + (+ / -)</span> FPS (±5)</div>
             <div class="hotkey-row"><span class="hotkey">[ ]</span> Brush Size</div>
@@ -2414,7 +2458,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.26.67';
+  const APP_VERSION = 'v0.26.75';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   const EXPORT_CONF = {
@@ -2518,6 +2562,9 @@
     cellSize: 1, // frames per cell (1, 2, 4, 8...)
         gridLoops: 1, // 1-5: how many distinct phase offsets are used across grid cells
     loopAfterN: 0, // 0=disabled, N=cycle each cell within its N-frame window
+    loopOffset: 0,    // shifts the loop window start (0 = no shift)
+    savePoints: [null, null, null], // 3 save slots — {frameSheetBlob, bgDrawing, bgDrawingSingle, templateDrawing}
+    drawOneFrame: false, // constrain drawing to the single frame under brush
 
     // Scene sampling mode
     sceneMode: 0, // 0=disabled, 1=enabled
@@ -2900,20 +2947,29 @@ function getTargetFrameOutputDims() {
 
   if (loopNInput) {
     loopNInput.onchange = () => {
-      state.loopAfterN = Math.max(0, parseInt(loopNInput.value) || 0);
-      loopNInput.value = state.loopAfterN;
+      let v = Math.max(0, parseInt(loopNInput.value) || 0);
+      if (v === 1) v = 2; // skip 1 — static frame is useless
+      state.loopAfterN = v;
+      loopNInput.value = v;
+      if (!v) { state.loopOffset = 0; if (loopOffsetInput) loopOffsetInput.value = 0; }
+      _updateLoopOffsetRowVis();
       updateAllCells();
     };
     loopNMinus.onclick = () => {
       if (state.loopAfterN > 0) {
-        state.loopAfterN = Math.max(0, state.loopAfterN - 1);
+        // Skip 1: 2→0 directly (loopAfterN=1 is static — useless)
+        state.loopAfterN = state.loopAfterN <= 2 ? 0 : state.loopAfterN - 1;
         loopNInput.value = state.loopAfterN;
+        if (!state.loopAfterN) { state.loopOffset = 0; if (loopOffsetInput) loopOffsetInput.value = 0; }
+        _updateLoopOffsetRowVis();
         updateAllCells();
       }
     };
     loopNPlus.onclick = () => {
-      state.loopAfterN = (state.loopAfterN || 0) + 1;
+      // Skip 1: 0→2 directly
+      state.loopAfterN = state.loopAfterN === 0 ? 2 : state.loopAfterN + 1;
       loopNInput.value = state.loopAfterN;
+      _updateLoopOffsetRowVis();
       updateAllCells();
     };
   }
@@ -3605,7 +3661,7 @@ for (let i = 0; i < times.length; i++) {
 
 
   function calculateFrameTimes() {
-    const times = [], max = 2000;
+    const times = [], max = 10000;
     const fps = Math.max(1, state.videoFps || 1);
     const startTime = state.startFrame / fps;
     const endTime = state.endFrame / fps;
@@ -4383,6 +4439,7 @@ function schedulePostGridSync() {
 
   
   function renderGrid() {
+    // ── Sync setup ───────────────────────────────────────────────────────────
     invalidateCellCaches();
     framesGrid._cellCount = 0;
     framesGrid.innerHTML = '';
@@ -4409,55 +4466,81 @@ function schedulePostGridSync() {
       framesGrid.appendChild(item);
     }
 
-    // With gridLoops, show the full sequence N times across the grid
     const cellCount = Math.ceil(state.frames.length / state.cellSize);
-    
-    for (let c = 0; c < cellCount; c++) {
-      // Loop phases: distribute so sequence repeats gridLoops times
+
+    // ── Reusable cell-node builder ───────────────────────────────────────────
+    function _buildCell(c) {
       const displayFrameIdx = Math.floor(c * state.frames.length * state.gridLoops / cellCount) % state.frames.length;
       const frame = state.frames[displayFrameIdx];
-      if (!frame) continue;
-      
-      const item = document.createElement('div');
+      if (!frame) return null;
+      const item  = document.createElement('div');
       item.className = 'frame-item';
-      // Store cell index for animation offset, but animate through ALL frames
-      item.dataset.cellIdx = c;
+      item.dataset.cellIdx  = c;
       item.dataset.frameIdx = displayFrameIdx;
-      
-            const wrap = document.createElement('div');
+      const wrap  = document.createElement('div');
       wrap.className = 'frame-image-wrap';
-
       const xform = document.createElement('div');
       xform.className = 'frame-media-xform';
-
-      const img = document.createElement('img');
+      const img   = document.createElement('img');
       img.className = 'frame-main-img';
       img.src = frame.dataUrl;
       xform.appendChild(img);
-
-      // Onion skin overlay (drawings only)
       const onionCnv = document.createElement('canvas');
       onionCnv.className = 'frame-onion';
       xform.appendChild(onionCnv);
-
       wrap.appendChild(xform);
-const tc = document.createElement('div');
+      const tc = document.createElement('div');
       const showTC = computeShowTimecode();
       tc.className = `frame-timecode pos-${state.tcPosition} align-${state.tcAlign}` + (showTC ? '' : ' hidden');
       const derivedIdx = getDerivedIndexFromFrameIdx(displayFrameIdx);
       tc.textContent = formatTimecode(frame, derivedIdx, cellCount, displayFrameIdx);
       wrap.appendChild(tc);
       item.appendChild(wrap);
-      framesGrid.appendChild(item);
+      return item;
     }
-  
 
+    function _finalize() {
+      updateTimecodeVisibility();
+      framesGrid._cellCount = framesGrid.querySelectorAll('.frame-item').length;
+      schedulePostGridSync();
+    }
 
-    updateTimecodeVisibility();
-    framesGrid._cellCount = framesGrid.querySelectorAll('.frame-item').length;
+    const ASYNC_THRESHOLD = 200;
+    const BATCH_SIZE      = 80;
 
-    // Sync drawing geometry after grid build (deferred so layout is stable)
-    schedulePostGridSync();
+    if (cellCount <= ASYNC_THRESHOLD) {
+      // ── Fast sync path: one DocumentFragment flush ────────────────────────
+      const frag = document.createDocumentFragment();
+      for (let c = 0; c < cellCount; c++) {
+        const n = _buildCell(c); if (n) frag.appendChild(n);
+      }
+      framesGrid.appendChild(frag);
+      _finalize();
+    } else {
+      // ── Async batched path: non-blocking with progress bar ────────────────
+      const overlay = document.getElementById('gridBusyOverlay');
+      const bar     = document.getElementById('gridBusyBar');
+      if (overlay) { bar.style.width = '0%'; overlay.style.display = 'flex'; }
+
+      if (renderGrid._token) renderGrid._token.dead = true;
+      const token = { dead: false };
+      renderGrid._token = token;
+
+      let c = 0;
+      function _tick() {
+        if (token.dead) return;
+        const frag = document.createDocumentFragment();
+        const end  = Math.min(c + BATCH_SIZE, cellCount);
+        for (; c < end; c++) {
+          const n = _buildCell(c); if (n) frag.appendChild(n);
+        }
+        framesGrid.appendChild(frag);
+        if (bar) bar.style.width = `${Math.round(c / cellCount * 100)}%`;
+        if (c < cellCount) { setTimeout(_tick, 0); }
+        else { if (overlay) overlay.style.display = 'none'; _finalize(); }
+      }
+      setTimeout(_tick, 0);
+    }
   }
 
 
@@ -4868,16 +4951,19 @@ function fitToSingleFrame() {
 
   if (sceneCountInput) {
     const syncScene = () => {
-      state.sceneCount = Math.max(1, parseInt(sceneCountInput.value) || 5);
-      state.sceneDepth = Math.max(1, parseInt(sceneDepthInput.value) || 8);
-      state.sceneDistance = Math.max(1, parseInt(sceneDistanceInput.value) || 1);
-      sceneCountInput.value = state.sceneCount;
-      sceneDepthInput.value = state.sceneDepth;
+      state.sceneCount    = resolveIntMenuValue(sceneCountInput,    state.sceneCount    || 5,  1, 999);
+      state.sceneDepth    = resolveIntMenuValue(sceneDepthInput,    state.sceneDepth    || 8,  1, 999);
+      state.sceneDistance = resolveIntMenuValue(sceneDistanceInput, state.sceneDistance || 1,  1, 999);
+      sceneCountInput.value    = state.sceneCount;
+      sceneDepthInput.value    = state.sceneDepth;
       sceneDistanceInput.value = state.sceneDistance;
       updateGridHint();
       markRegenPending();
     };
     sceneCountInput.onchange = sceneDepthInput.onchange = sceneDistanceInput.onchange = syncScene;
+    [sceneCountInput, sceneDepthInput, sceneDistanceInput].forEach(inp => {
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); syncScene(); inp.blur(); } });
+    });
     sceneCountMinus.onclick = () => { if (state.sceneCount > 1) { state.sceneCount--; sceneCountInput.value = state.sceneCount; updateGridHint(); markRegenPending(); } };
     sceneCountPlus.onclick = () => { state.sceneCount = (state.sceneCount || 5) + 1; sceneCountInput.value = state.sceneCount; updateGridHint(); markRegenPending(); };
     sceneDepthMinus.onclick = () => { if (state.sceneDepth > 1) { state.sceneDepth--; sceneDepthInput.value = state.sceneDepth; updateGridHint(); markRegenPending(); } };
@@ -4895,7 +4981,7 @@ function fitToSingleFrame() {
   // Frame count +/-
   countMinus.onclick = () => { if (state.frameCount > 1) { state.frameCount--; frameCountInput.value = state.frameCount; updateGridHint(); }   markRegenPending();
   };
-  countPlus.onclick = () => { if (state.frameCount < 2000) { state.frameCount++; frameCountInput.value = state.frameCount; updateGridHint(); }   markRegenPending();
+  countPlus.onclick = () => { if (state.frameCount < 10000) { state.frameCount++; frameCountInput.value = state.frameCount; updateGridHint(); }   markRegenPending();
   };
   
   intervalValueInput.onchange = () => { state.intervalValue = Math.max(1, parseInt(intervalValueInput.value) || 1); intervalValueInput.value = state.intervalValue;   markRegenPending();
@@ -5477,7 +5563,7 @@ function fitToSingleFrame() {
     }
   };
   
-  // Cell Size (subdivision) - combines N frames into 1 cell
+  // HIDE (cell size / subdivision) - combines N frames into 1 cell
   cellMinus.onclick = () => {
     if (state.cellSize > 1) {
       state.cellSize -= 1;
@@ -5963,7 +6049,13 @@ function updateAllCells() {
         const v = Math.min(1, Math.max(0, hit.localY / Math.max(1, hit.height)));
         const sp = sheetPoint(hit.frameIdx, u, v);
         captureUndoFrameTile(hit.frameIdx);
-        drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+        if (state.drawOneFrame) {
+          _drawOneTile(frameSheetCtx, hit.frameIdx, () =>
+            drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser)
+          );
+        } else {
+          drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+        }
         holdStampLastFrame = hit.frameIdx;
         if (activeFrameStroke) {
           activeFrameStroke.frameIdx = hit.frameIdx;
@@ -6067,8 +6159,12 @@ function updateAllCells() {
   function applyLoopAfterN(t, baseOffset, frameCount, dir, animDirShuffle) {
     // In single view, ignore loopAfterN — show all frames sequentially
     const loopN = (state.loopAfterN > 0 && state.loopAfterN < frameCount && state.viewMode !== 'single') ? state.loopAfterN : frameCount;
-    const loopStart = Math.floor(baseOffset / loopN) * loopN;
-    const localOffset = baseOffset % loopN;
+    // loopOffset shifts the loop window: allows changing which frames get cycled on the fly
+    const shiftedOffset = loopN < frameCount
+      ? (baseOffset + (state.loopOffset || 0)) % frameCount
+      : baseOffset;
+    const loopStart = Math.floor(shiftedOffset / loopN) * loopN;
+    const localOffset = shiftedOffset % loopN;
 
     // For pingpong / bounce-offset with active loopN window:
     // localT only covers 0..(loopN-1), so t%cycle never reaches backward phase.
@@ -6087,7 +6183,8 @@ function updateAllCells() {
       return Math.min(loopStart + localFrame, frameCount - 1);
     }
 
-    const localT = t % loopN;
+    // Pass raw tick when loopAfterN disabled so pingpong/bounce-offset reach backward phase
+    const localT = loopN < frameCount ? t % loopN : t;
     const localFrame = resolveDirectionFrame(localT, localOffset, loopN, dir, animDirShuffle);
     return Math.min(loopStart + localFrame, frameCount - 1);
   }
@@ -6380,6 +6477,7 @@ function updateAllCells() {
   const applyTemplateToFramesBtn = $('applyTemplateToFrames');
   const drawOnionBtn = $('drawOnion');
   const drawLongStrokeBtn = $('drawLongStroke');
+  const drawOneFrameBtn = $('drawOneFrameBtn');
   const drawColorInput = $('drawColorInput');
   const drawPaletteToggleBtn = $('drawPaletteToggle');
   const drawSizeSlider = $('drawSizeSlider');
@@ -6602,7 +6700,25 @@ let isDrawing = false;
     }
   }
 
+
+  // Safety guard: if a frame-draw happens mid-stroke but activeUndoEntry was lost, recover it
+  function _ensureActiveUndoEntry() {
+    if (!isDrawing || state.drawTarget !== 'frame') return;
+    if (activeUndoEntry && activeUndoEntry.kind === 'frm') return;
+    const top = drawUndoStack[drawUndoStack.length - 1];
+    if (top && top.kind === 'frm') { activeUndoEntry = top; return; }
+    try {
+      ensureFrameSheet();
+      const entry = { kind: 'frm', tw: state.frameSheetTileW || 1,
+        th: state.frameSheetTileH || 1, cols: state.frameSheetCols || 1,
+        tiles: new Map() };
+      pushUndoEntry(entry);
+      activeUndoEntry = entry;
+    } catch(e) {}
+  }
+
   function captureUndoFrameTile(frameIdx) {
+    _ensureActiveUndoEntry();
     if (!activeUndoEntry || activeUndoEntry.kind !== 'frm') return;
     const idx = frameIdx | 0;
     if (idx < 0) return;
@@ -7694,6 +7810,23 @@ ctx.beginPath();
     ctx.restore();
   }
   
+
+  // One Frame mode: clip drawing to the current frame's tile on frameSheetCtx
+  // Prevents brush radius from bleeding into adjacent tiles
+  function _drawOneTile(ctx, frameIdx, drawFn) {
+    const tw = state.frameSheetTileW || 1;
+    const th = state.frameSheetTileH || 1;
+    const cols = state.frameSheetCols || 1;
+    const tx = (frameIdx % cols) * tw;
+    const ty = Math.floor(frameIdx / cols) * th;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(tx, ty, tw, th);
+    ctx.clip();
+    drawFn();
+    ctx.restore();
+  }
+
   function drawDot(ctx, point, color, size, eraser) {
     ctx.save();
     if (eraser) {
@@ -7838,7 +7971,13 @@ ctx.beginPath();
       }
 
       captureUndoFrameTile(hit.frameIdx);
-      drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+      if (state.drawOneFrame) {
+        _drawOneTile(frameSheetCtx, hit.frameIdx, () =>
+          drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser)
+        );
+      } else {
+        drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+      }
       requestComposite();
       return;
     }
@@ -7867,6 +8006,7 @@ ctx.beginPath();
   // Fast-stroke fix: when the pointer crosses multiple frame cells between events,
   // resample the segment and draw on each touched frame so strokes don't get "cut" near borders.
   function drawFrameStrokeResampled(p0, p1) {
+    _ensureActiveUndoEntry();
     const rect = drawCanvas.getBoundingClientRect();
     const scaleX = drawCanvas.width / Math.max(1, rect.width);
     const scaleY = drawCanvas.height / Math.max(1, rect.height);
@@ -7948,7 +8088,13 @@ drawCanvas.onmousemove = e => {
         holdStampLastFrame = hit0.frameIdx;
         activeFrameStroke.lastSheet = sp0;
         captureUndoFrameTile(hit0.frameIdx);
-        drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser);
+        if (state.drawOneFrame) {
+          _drawOneTile(frameSheetCtx, hit0.frameIdx, () =>
+            drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser)
+          );
+        } else {
+          drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser);
+        }
         lastPoint = currentPoint;
         requestComposite();
         return;
@@ -8007,6 +8153,20 @@ drawCanvas.onmousemove = e => {
       const _frameChanged = (hit.frameIdx !== activeFrameStroke.frameIdx);
 
       if (_frameChanged) {
+        if (state.drawOneFrame) {
+          // One Frame mode: never draw across frame boundaries.
+          // Just capture undo for new frame and place a clean dot there.
+          captureUndoFrameTile(hit.frameIdx);
+          activeFrameStroke.frameIdx = hit.frameIdx;
+          holdStampLastFrame = hit.frameIdx;
+          activeFrameStroke.lastSheet = sp;
+          _drawOneTile(frameSheetCtx, hit.frameIdx, () =>
+            drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser)
+          );
+          lastPoint = currentPoint;
+          requestComposite();
+          return;
+        }
         if (state.drawLongStroke && state.isPlaying) {
           drawLongStrokeOnFrame(hit.frameIdx);
           longStrokeLastFrame = hit.frameIdx;
@@ -8022,7 +8182,14 @@ drawCanvas.onmousemove = e => {
         return;
       }
 
-      drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+      // Same frame: draw smooth line — in One Frame mode, clip to tile
+      if (state.drawOneFrame) {
+        _drawOneTile(frameSheetCtx, hit.frameIdx, () =>
+          drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser)
+        );
+      } else {
+        drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+      }
 activeFrameStroke.lastSheet = sp;
       lastPoint = currentPoint;
       requestComposite();
@@ -8530,7 +8697,32 @@ function stampLongStrokeFrame(frameIdx) {
     }
     if (suppressDrawTouchUntilRelease) return;
 
-    
+        // Eyedropper: pick color on tap (mirrors mousedown logic)
+    if (eyedropperActive) {
+      const pt = getCanvasPoint(e);
+      const hit = getFrameAtPoint(pt);
+      if (hit && hit.cellEl) {
+        const imgEl = hit.cellEl.querySelector('img');
+        if (imgEl && imgEl.naturalWidth) {
+          const u = hit.localX / Math.max(1, hit.width);
+          const v = hit.localY / Math.max(1, hit.height);
+          const tmpC = document.createElement('canvas');
+          tmpC.width = 1; tmpC.height = 1;
+          const tmpCtx2 = tmpC.getContext('2d', { willReadFrequently: true });
+          try {
+            tmpCtx2.drawImage(imgEl, Math.round(u * imgEl.naturalWidth), Math.round(v * imgEl.naturalHeight), 1, 1, 0, 0, 1, 1);
+            const px = tmpCtx2.getImageData(0, 0, 1, 1).data;
+            const hex = '#' + [px[0],px[1],px[2]].map(c => c.toString(16).padStart(2,'0')).join('');
+            setDrawColor(hex);
+          } catch (ex) {}
+        }
+      }
+      eyedropperActive = false;
+      if (drawEyedropperBtn) drawEyedropperBtn.classList.remove('active');
+      drawCanvas.style.cursor = state.drawEraser ? 'cell' : 'default';
+      return;
+    }
+
     e.preventDefault();
     // Save undo state (stable, target-only)
     beginUndoCaptureForDrawTarget();
@@ -8628,7 +8820,13 @@ function stampLongStrokeFrame(frameIdx) {
         holdStampLastFrame = hit0.frameIdx;
         activeFrameStroke.lastSheet = sp0;
         captureUndoFrameTile(hit0.frameIdx);
-        drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser);
+        if (state.drawOneFrame) {
+          _drawOneTile(frameSheetCtx, hit0.frameIdx, () =>
+            drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser)
+          );
+        } else {
+          drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser);
+        }
         lastPoint = currentPoint;
         requestComposite();
         return;
@@ -8802,7 +9000,9 @@ function stampLongStrokeFrame(frameIdx) {
     row.innerHTML = '';
     state.recentColors.forEach(c => {
       const swatch = document.createElement('div');
-      swatch.style.cssText = `background:${c};width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,0.15);flex-shrink:0;`;
+      swatch.style.cssText = `background:${c};width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,0.15);flex-shrink:0;touch-action:manipulation;`;
+      // ontouchstart: immediate pick, no 300ms delay, no double-fire with onclick
+      swatch.ontouchstart = (e) => { e.preventDefault(); e.stopPropagation(); setDrawColor(c); };
       swatch.onclick = () => setDrawColor(c);
       row.appendChild(swatch);
     });
@@ -9080,7 +9280,8 @@ function renderVideoPalette() {
     state.videoPalette.forEach(c => {
       const swatch = document.createElement('div');
       swatch.className = 'draw-color';
-      swatch.style.cssText = `background:${c};width:20px;height:20px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);`;
+      swatch.style.cssText = `background:${c};width:20px;height:20px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);touch-action:manipulation;`;
+      swatch.ontouchstart = (e) => { e.preventDefault(); e.stopPropagation(); setDrawColor(c); };
       swatch.onclick = () => setDrawColor(c);
       row.appendChild(swatch);
     });
@@ -9558,6 +9759,12 @@ if (refFrameOffXSlider) refFrameOffXSlider.disabled = !hasRef;
   }
   
   drawLongStrokeBtn.onclick = toggleLongStroke;
+  if (drawOneFrameBtn) {
+    drawOneFrameBtn.onclick = () => {
+      state.drawOneFrame = !state.drawOneFrame;
+      drawOneFrameBtn.classList.toggle('active', state.drawOneFrame);
+    };
+  }
   
   drawColorInput.oninput = () => {}; // preview only
     drawColorInput.onchange = () => setDrawColor(drawColorInput.value);
@@ -9614,6 +9821,8 @@ function updateEdgeSoftness(val) {
   if (longStrokeFadeInput) longStrokeFadeInput.onchange = () => updateTrailFrames(parseInt(longStrokeFadeInput.value) || 8);
   
   drawColors.forEach(el => {
+    el.style.touchAction = 'manipulation';
+    el.ontouchstart = (e) => { e.preventDefault(); e.stopPropagation(); setDrawColor(el.dataset.color); };
     el.onclick = () => setDrawColor(el.dataset.color);
   });
   
@@ -12558,13 +12767,13 @@ const canvas = document.createElement('canvas');
       }
       if (code === 'ArrowLeft') {
          e.preventDefault();
-         // Ctrl/Cmd + Left = Cell Size Minus
+         // Ctrl/Cmd + Left = HIDE Minus
          const btn = document.getElementById('cellMinus'); if (btn) btn.click();
          return;
       }
       if (code === 'ArrowRight') {
          e.preventDefault();
-         // Ctrl/Cmd + Right = Cell Size Plus
+         // Ctrl/Cmd + Right = HIDE Plus
          const btn = document.getElementById('cellPlus'); if (btn) btn.click();
          return;
       }
@@ -12655,8 +12864,10 @@ const canvas = document.createElement('canvas');
     else if (code === 'Digit4' || code === 'Numpad4') {
       e.preventDefault();
       if (!state.drawMode) setDrawMode(true);
-      const btn = document.getElementById('drawEyedropper');
-      if (btn) btn.click();
+      // Activate eyedropper directly — avoid toggle via btn.click() which can deactivate it
+      eyedropperActive = true;
+      if (drawEyedropperBtn) drawEyedropperBtn.classList.add('active');
+      drawCanvas.style.cursor = 'crosshair';
     }
     else if (code === 'KeyX') {
       e.preventDefault();
@@ -13825,6 +14036,136 @@ function audioInitUI() {
   if (metaPtnCycle) metaPtnCycle.onclick = () => openMetaPick(metaPtnCycle, 'animPattern');
   // ────────────────────────────────────────────────────────────────────────────
 
+  // ── Loop Offset controls ────────────────────────────────────────────────────
+  const loopOffsetInput  = $('loopOffsetInput');
+  const loopOffsetMinus  = $('loopOffsetMinus');
+  const loopOffsetPlus   = $('loopOffsetPlus');
+  const loopOffsetRow    = $('loopOffsetRow');
+
+  function _updateLoopOffsetRowVis() {
+    if (loopOffsetRow) loopOffsetRow.style.display = state.loopAfterN >= 2 ? '' : 'none';
+  }
+  _updateLoopOffsetRowVis();
+
+  if (loopOffsetInput) {
+    loopOffsetInput.onchange = () => {
+      state.loopOffset = Math.max(0, parseInt(loopOffsetInput.value) || 0);
+      loopOffsetInput.value = state.loopOffset;
+      updateAllCells();
+    };
+    loopOffsetMinus.onclick = () => {
+      if (state.loopOffset > 0) {
+        state.loopOffset--;
+        loopOffsetInput.value = state.loopOffset;
+        updateAllCells();
+      }
+    };
+    loopOffsetPlus.onclick = () => {
+      state.loopOffset = (state.loopOffset || 0) + 1;
+      loopOffsetInput.value = state.loopOffset;
+      updateAllCells();
+    };
+  }
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // ── Save Points ─────────────────────────────────────────────────────────────
+  (function() {
+    function _spBtn(id) { return document.getElementById(id); }
+
+    function _updateLoadBtn(idx) {
+      const btn = _spBtn('savePointLoad' + (idx + 1));
+      if (!btn) return;
+      const hasData = !!(state.savePoints[idx]);
+      btn.style.opacity = hasData ? '1' : '0.35';
+      btn.title = hasData ? 'Load drawing from slot ' + (idx + 1) : 'Slot ' + (idx + 1) + ' empty';
+    }
+
+    async function savePoint(idx) {
+      const sp = {};
+      // frameSheet — PNG blob (~10x smaller than raw ImageData)
+      if (frameSheetCanvas && frameSheetCanvas.width > 0 && frameSheetCanvas.height > 0) {
+        sp.frameSheetBlob = await new Promise(r => frameSheetCanvas.toBlob(r, 'image/png'));
+        sp.frameSheetW = frameSheetCanvas.width;
+        sp.frameSheetH = frameSheetCanvas.height;
+      }
+      // bg layers
+      if (state.bgDrawing)       sp.bgDrawing       = _cloneImageDataSafe(state.bgDrawing);
+      if (state.bgDrawingSingle) sp.bgDrawingSingle = _cloneImageDataSafe(state.bgDrawingSingle);
+      // template
+      if (state.templateDrawing) sp.templateDrawing = _cloneImageDataSafe(state.templateDrawing);
+
+      state.savePoints[idx] = sp;
+      _updateLoadBtn(idx);
+
+      // Flash the save button green
+      const btn = _spBtn('savePointSave' + (idx + 1));
+      if (btn) {
+        btn.style.background = 'rgba(80,200,80,0.35)';
+        setTimeout(() => { btn.style.background = ''; }, 600);
+      }
+    }
+
+    async function loadPoint(idx) {
+      const sp = state.savePoints[idx];
+      if (!sp) return;
+
+      // frameSheet
+      if (sp.frameSheetBlob) {
+        try {
+          const bitmap = await createImageBitmap(sp.frameSheetBlob);
+          ensureFrameSheet();
+          frameSheetCtx.clearRect(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
+          frameSheetCtx.drawImage(bitmap, 0, 0);
+          bitmap.close();
+          // sync state.frameSheetDrawing
+          try {
+            state.frameSheetDrawing = frameSheetCtx.getImageData(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
+          } catch(e) {}
+        } catch(e) {}
+      } else {
+        // slot was saved with empty frameSheet — clear it
+        if (frameSheetCanvas) frameSheetCtx.clearRect(0, 0, frameSheetCanvas.width, frameSheetCanvas.height);
+        state.frameSheetDrawing = null;
+      }
+
+      // bg layers
+      if (sp.bgDrawing && bgCtx && bgCanvas) {
+        state.bgDrawing = _cloneImageDataSafe(sp.bgDrawing);
+        bgCtx.putImageData(state.bgDrawing, 0, 0);
+      }
+      if (sp.bgDrawingSingle && bgCtxSingle && bgCanvasSingle) {
+        state.bgDrawingSingle = _cloneImageDataSafe(sp.bgDrawingSingle);
+        bgCtxSingle.putImageData(state.bgDrawingSingle, 0, 0);
+      }
+
+      // template
+      if (sp.templateDrawing && tplCtx && tplCanvas) {
+        state.templateDrawing = _cloneImageDataSafe(sp.templateDrawing);
+        tplCtx.putImageData(state.templateDrawing, 0, 0);
+      }
+
+      requestComposite();
+
+      // Flash the load button
+      const btn = _spBtn('savePointLoad' + (idx + 1));
+      if (btn) {
+        btn.style.background = 'rgba(80,160,255,0.35)';
+        setTimeout(() => { btn.style.background = ''; }, 600);
+      }
+    }
+
+    // Wire buttons
+    for (let i = 0; i < 3; i++) {
+      const si = i; // closure
+      const sBtn = _spBtn('savePointSave' + (i + 1));
+      const lBtn = _spBtn('savePointLoad' + (i + 1));
+      if (sBtn) sBtn.onclick = () => savePoint(si);
+      if (lBtn) lBtn.onclick = () => loadPoint(si);
+      _updateLoadBtn(i);
+    }
+  })();
+  // ────────────────────────────────────────────────────────────────────────────
+
   // ── TC Align button group ──────────────────────────────────────────────────
   const tcAlignGroup = document.getElementById('tcAlignGroup');
   const tcPositionGroup = document.getElementById('tcPositionGroup');
@@ -13915,5 +14256,17 @@ function audioInitUI() {
   
 
 </script>
+
+  <!-- Grid busy overlay -->
+  <div id="gridBusyOverlay" style="display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,0.45);backdrop-filter:blur(2px);
+    align-items:center;justify-content:center;flex-direction:column;gap:12px;pointer-events:none;">
+    <div style="width:220px;height:4px;background:rgba(255,255,255,0.12);border-radius:4px;overflow:hidden;">
+      <div id="gridBusyBar" style="height:100%;width:0%;background:rgba(80,220,140,0.9);
+        border-radius:4px;transition:width 0.1s linear;"></div>
+    </div>
+    <div style="color:rgba(255,255,255,0.6);font-size:11px;letter-spacing:1px;font-family:inherit;">
+      BUILDING GRID…</div>
+  </div>
 </body>
 </html>
