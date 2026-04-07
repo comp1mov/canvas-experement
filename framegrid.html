@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.26.75                                        ║
+║      FRAMEGRID v0.26.85                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,10 +10,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.26.75</title>
+  <title>FRAMEGRID v0.26.85</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
+      --fg-accent2: #f28c35;
     }
 
     /* Prevent page scrollbars (keep scrolling inside the side menu only) */
@@ -79,11 +80,14 @@
 
     .fg-logo-cell { width: 3px; height: 3px; background: rgba(255,255,255,0.28); border-radius: 1px; }
     .fg-logo-cell.active { background: var(--fg-accent, #35f2a3); }
+    .fg-logo-cell.active2 { background: var(--fg-accent2, #f28c35); }
     .metadata-logo-text { white-space: nowrap; }
     /* Welcome logo sizing */
     .fg-logo-icon--welcome { grid-template-columns: repeat(3, 14px); grid-auto-rows: 14px; gap: 4px; }
     .fg-logo-icon--welcome .fg-logo-cell { width: 14px; height: 14px; border-radius: 3px; background: rgba(255,255,255,0.20); }
     .fg-logo-icon--welcome .fg-logo-cell.active { background: var(--fg-accent, #35f2a3); }
+    .fg-logo-icon--welcome .fg-logo-cell.active2 { background: var(--fg-accent2, #f28c35); }
+    .fg-logo-cell.active2 { background: var(--fg-accent2, #f28c35); }
 
     .metadata-group { display: flex; align-items: center; gap: 18px; min-width: 0; flex: 0 1 auto; }
     .metadata-group.fps-group { flex: 0 0 auto; }
@@ -382,6 +386,9 @@
     .quick-toolbar {
       position: absolute; top: 8px; left: 8px; display: flex; gap: 4px; z-index: 15;
     }
+    /* Visual group separators */
+    #qReset { margin-left: 6px; }
+    #qDraw  { margin-left: 6px; }
     .quick-btn {
       width: 36px; height: 36px; background: rgba(0,0,0,0.8);
       border: 1px solid rgba(255,255,255,0.25); border-radius: 4px;
@@ -1255,9 +1262,9 @@
           <span class="fg-logo-icon" id="fgLogoIcon" aria-hidden="true">
             <span class="fg-logo-cell active"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
-            <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
+            <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell active2"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.26.75</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.26.85</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1420,11 +1427,11 @@
       <div class="quick-toolbar" id="quickToolbar">
         <button class="quick-btn" id="qMode" title="View Mode (G/1)" style="font-size:10px;width:auto;padding:0 10px;">GRID</button>
         <button class="quick-btn" id="qFit" title="Fit to Screen (F)" aria-label="Fit to Screen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v2H6v5H4V4zm9 0h7v7h-2V6h-5V4zm7 9v7h-7v-2h5v-5h2zM11 20H4v-7h2v5h5v2z"/></svg></button>
-                <button class="quick-btn" id="qOne" title="Zoom 100% (no fit)" style="font-size:10px;">1:1</button>
-<button class="quick-btn" id="qReset" title="Reset to Start (Home)">|◀</button>
-        <button class="quick-btn" id="qPrev" title="Previous Frame (←)">◀</button>
-        <button class="quick-btn" id="qPlay" title="Play/Stop (Space)">▶</button>
-        <button class="quick-btn" id="qNext" title="Next Frame (→)">▶|</button>
+        <button class="quick-btn" id="qOne" title="Zoom 100% (no fit)" style="font-size:10px;">1:1</button>
+        <button class="quick-btn" id="qReset" title="Reset to Start (Home)" aria-label="Reset to Start" style="font-size:15px;">↺</button>
+        <button class="quick-btn" id="qPlay" title="Play / Stop (Space)" aria-label="Play/Stop"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg></button>
+        <button class="quick-btn" id="qPrev" title="Previous Frame (←)" aria-label="Previous Frame" style="font-size:18px;letter-spacing:-1px;">‹</button>
+        <button class="quick-btn" id="qNext" title="Next Frame (→)" aria-label="Next Frame" style="font-size:18px;letter-spacing:-1px;">›</button>
         <button class="quick-btn" id="qDraw" title="Draw Mode (D)">●</button>
         <button class="quick-btn" id="qMenu" title="Menu (M)">≡</button>
       </div>
@@ -1434,7 +1441,7 @@
           <span class="fg-logo-icon fg-logo-icon--welcome" id="fgLogoIconWelcome">
             <span class="fg-logo-cell active"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
-            <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
+            <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell active2"></span>
           </span>
         </div>
         <div class="drop-zone-text">
@@ -2380,12 +2387,17 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.26.75</div>
+          <div class="about-version">Version v0.26.85</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
             <span class="menu-label" style="opacity:0.7">Accent Color</span>
             <input class="menu-color" type="color" id="fgAccentColor" value="#35f2a3">
+          </div>
+
+          <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
+            <span class="menu-label" style="opacity:0.7">Accent 2 Color</span>
+            <input class="menu-color" type="color" id="fgAccent2Color" value="#f28c35">
           </div>
 
           <div class="about-hotkeys">
@@ -2458,7 +2470,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.26.75';
+  const APP_VERSION = 'v0.26.85';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   const EXPORT_CONF = {
@@ -2577,6 +2589,7 @@ exportQuality: 'hd', // low, medium, high, max
     _exportBgCropGrid: null,
     _exportBgCropSingle: null,
     exportLoops: 1, // 1-10 loops for MP4
+    accent2Color: '#f28c35',  // second accent color (logo last-frame dot)
     currentFrame: 0, // current frame index for manual scrubbing
     // Drawing state - Layer architecture:
     // 1. bgDrawing - background around frames
@@ -2843,8 +2856,8 @@ function getTargetFrameOutputDims() {
     // Sync mode -> flashes on the first frame of the cycle
     if (dir === 'sync') {
        const mainFrames = Math.max(1, state.frames.length || 1);
-       if (t % mainFrames === 0) return [0, 1, 2, 3, 4, 5, 6, 7, 8];
-       return [];
+       if (t % mainFrames === 0) return { first: [0, 1, 2, 3, 4, 5, 6, 7, 8], last: [] };
+       return { first: [], last: [] };
     }
 
     // We map the actual grid's state down to the 3x3 logo.
@@ -2855,7 +2868,7 @@ function getTargetFrameOutputDims() {
     const animCellCount = cellCount; 
 
     // Safety check
-    if (animCellCount <= 0) return [0];
+    if (animCellCount <= 0) return { first: [0], last: [] };
 
     const cols = Math.max(1, state.gridCols || 1);
     const rows = Math.ceil(totalCells / cols);
@@ -2867,7 +2880,9 @@ function getTargetFrameOutputDims() {
     ensureAnimDirShuffle(frameCount);
     if (state.animPattern === 'random') ensureAnimRandomStarts(animCellCount);
 
-    let activeCells = new Set();
+    const firstCells = new Set();
+    const lastCells  = new Set();
+    const lastFrame  = frameCount - 1;
 
     for (let c = 0; c < animCellCount; c++) {
       const cellOrderIdx = cellOrderMap.get(c) ?? 0;
@@ -2876,33 +2891,36 @@ function getTargetFrameOutputDims() {
       const baseOffset = (state.animPattern === 'random') ? (state.animRandomStarts[c] ?? 0) : cellOffset;
 
       const frameIdx = applyLoopAfterN(t, baseOffset, frameCount, dir, state.animDirShuffle);
+      const isFirst = frameIdx === 0;
+      const isLast  = frameIdx === lastFrame && lastFrame > 0;
 
-      // We look for where the playhead is currently hitting frame 0.
-      if (frameIdx === 0) {
+      if (isFirst || isLast) {
         const uiIdx = c + offset;
         const x = uiIdx % cols;
         const y = Math.floor(uiIdx / cols);
-
-        // Map (x, y) down to (3 x 3) using proportional bucketing
         const lx = Math.min(2, Math.floor((x / cols) * 3));
         const ly = Math.min(2, Math.floor((y / rows) * 3));
-
-        activeCells.add(ly * 3 + lx);
+        if (isFirst) firstCells.add(ly * 3 + lx);
+        if (isLast)  lastCells.add(ly * 3 + lx);
       }
     }
 
-    // If pingpong is going backwards and frame 0 is not anywhere, it returns empty (goes dark).
-    return Array.from(activeCells);
+    return { first: Array.from(firstCells), last: Array.from(lastCells) };
   }
 
   let exportLogoIndices = [0];
 
   function updateLogoFromTick() {
     if (!fgLogoCellGroups.length) return;
-    const indices = getLogoActiveIndicesForTick(state.currentTick);
-    exportLogoIndices = indices;
+    const _logoResult = getLogoActiveIndicesForTick(state.currentTick);
+    const first = Array.isArray(_logoResult) ? _logoResult : (_logoResult.first || []);
+    const last  = Array.isArray(_logoResult) ? []          : (_logoResult.last  || []);
+    exportLogoIndices = first;
     for (const g of fgLogoCellGroups) {
-      for (let i = 0; i < g.length; i++) g[i].classList.toggle('active', indices.includes(i));
+      for (let i = 0; i < g.length; i++) {
+        g[i].classList.toggle('active',  first.includes(i));
+        g[i].classList.toggle('active2', last.includes(i) && !first.includes(i));
+      }
     }
   }
 
@@ -3664,13 +3682,15 @@ for (let i = 0; i < times.length; i++) {
     const times = [], max = 10000;
     const fps = Math.max(1, state.videoFps || 1);
     const startTime = state.startFrame / fps;
-    const endTime = state.endFrame / fps;
+    const endTime   = state.endFrame   / fps;
     const rangeDuration = endTime - startTime;
     const includeEdges = !isFullVideoRange();
-    const maxSeekTime = Math.max(0, (state.videoDuration || endTime || 0) - (0.5 / fps));
-    const clampTime = (t) => Math.max(0, Math.min(t, maxSeekTime));
+
+    // Clamp generated times strictly within [startTime, endTime].
+    // captureFrame() already applies its own iOS seek-safety clamp independently.
+    const clamp = (t) => Math.max(startTime, Math.min(t, endTime));
     const pushUnique = (t) => {
-      const ct = clampTime(t);
+      const ct = clamp(t);
       if (!times.length || Math.abs(times[times.length - 1] - ct) > (0.25 / fps)) times.push(ct);
     };
 
@@ -3678,18 +3698,17 @@ for (let i = 0; i < times.length; i++) {
       if (state.selectionMode === 'count') {
         const n = Math.min(state.frameCount, max);
         for (let i = 0; i < n; i++) {
-          const t = startTime + (rangeDuration / (n + 1)) * (i + 1);
-          times.push(Math.min(t, endTime - 0.01));
+          times.push(clamp(startTime + (rangeDuration / (n + 1)) * (i + 1)));
         }
       } else if (state.selectionMode === 'seconds') {
         for (let t = startTime; t < endTime && times.length < max; t += state.intervalValue) {
-          times.push(Math.min(t, endTime - 0.01));
+          times.push(clamp(t));
         }
       } else if (state.selectionMode === 'scene') {
-        calcSceneTimes(startTime, endTime, fps, false, max).forEach(t => times.push(t));
+        calcSceneTimes(startTime, endTime, fps, false, max).forEach(t => times.push(clamp(t)));
       } else {
         for (let f = state.startFrame; f < state.endFrame && times.length < max; f += state.intervalValue) {
-          times.push(Math.min(f / fps, endTime - 0.01));
+          times.push(clamp(f / fps));
         }
       }
       return times;
@@ -3701,8 +3720,7 @@ for (let i = 0; i < times.length; i++) {
         pushUnique(startTime);
       } else {
         for (let i = 0; i < n; i++) {
-          const t = startTime + (rangeDuration / Math.max(1, n - 1)) * i;
-          pushUnique(t);
+          pushUnique(startTime + (rangeDuration / (n - 1)) * i);
         }
       }
     } else if (state.selectionMode === 'seconds') {
@@ -3712,7 +3730,7 @@ for (let i = 0; i < times.length; i++) {
       }
       if (times.length < max) pushUnique(endTime);
     } else if (state.selectionMode === 'scene') {
-        calcSceneTimes(startTime, endTime, fps, true, max).forEach(t => pushUnique(t));
+      calcSceneTimes(startTime, endTime, fps, true, max).forEach(t => pushUnique(t));
     } else {
       for (let f = state.startFrame; f <= state.endFrame && times.length < max; f += state.intervalValue) {
         pushUnique(f / fps);
@@ -5294,6 +5312,17 @@ function fitToSingleFrame() {
       updateLogoFromTick(); // Redraw logo in UI
     };
   }
+
+  const accent2ColorInput = $('fgAccent2Color');
+  if (accent2ColorInput) {
+    accent2ColorInput.value = state.accent2Color || '#f28c35';
+    accent2ColorInput.oninput = () => {
+      state.accent2Color = accent2ColorInput.value;
+      document.documentElement.style.setProperty('--fg-accent2', state.accent2Color);
+      updateLogoFromTick();
+    };
+  }
+
   if (toggleBgGrid) {
     toggleBgGrid.onclick = () => {
       state.bgGridShow = !state.bgGridShow;
@@ -5626,7 +5655,7 @@ function fitToSingleFrame() {
   qMenu.onclick = toggleMenu;
   
   function updatePlayButton() {
-    qPlay.textContent = state.isPlaying ? '■' : '▶';
+    qPlay.innerHTML = state.isPlaying ? '<svg viewBox="0 0 24 24" style="width:14px;height:14px;"><rect x="5" y="4" width="4" height="16" fill="currentColor"/><rect x="15" y="4" width="4" height="16" fill="currentColor"/></svg>' : '<svg viewBox="0 0 24 24" style="width:14px;height:14px;"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>';
     qPlay.classList.toggle('active', state.isPlaying);
   }
   exportSmallBtn.onclick = () => exportImage('jpeg', EXPORT_CONF.STILL_PREV).catch(e => console.error(e));
@@ -10251,7 +10280,7 @@ async function exportResampledVideo(forceMode = null) {
         loadingProgress.textContent = (aTrack ? 'Recording resampled video (with audio)... ' : 'Recording resampled video (no audio track)... ') + pct + '%';
       } catch (e) {}
 
-      exportLogoIndices = getLogoActiveIndicesForTick(tick);
+      const { first: exportLogoIndices, last: exportLogoIndices2 } = getLogoActiveIndicesForTick(tick);
       ectx.save();
       ectx.globalAlpha = 1;
       ectx.globalCompositeOperation = 'source-over';
@@ -10325,7 +10354,7 @@ async function exportResampledVideo(forceMode = null) {
        updateAllCells();
     }
 
-    const exportLogoIndices = getLogoActiveIndicesForTick(state.currentTick);
+    const { first: exportLogoIndices, last: exportLogoIndices2 } = getLogoActiveIndicesForTick(state.currentTick);
     loadingOverlay.classList.add('visible');
     loadingProgress.textContent = 'Loading MP4 encoder...';
 
@@ -10580,8 +10609,10 @@ function renderMp4GridFrame(ctx, w, h, frameImages, tick, cellOrder, rows, frame
 
     if (state.exportShowMetadata && outHeaderH > 0) {
       const metaText = buildExportMetaText({ mode: 'grid', cols: state.gridCols, frameW: frameWLogical, frameH: frameHLogical, frames: frameCount, fps: state.animFps, srcW: state.videoWidth, srcH: state.videoHeight, duration: state.videoDuration, date: state.videoDate });
-      const dynamicLogoIdx = typeof getLogoActiveIndicesForTick === 'function' ? getLogoActiveIndicesForTick(tick) : exportLogoIndices;
-      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndices: dynamicLogoIdx });
+      const _dynLogoResult = typeof getLogoActiveIndicesForTick === 'function' ? getLogoActiveIndicesForTick(tick) : { first: exportLogoIndices, last: [] };
+      const dynamicLogoIdx  = Array.isArray(_dynLogoResult) ? _dynLogoResult : (_dynLogoResult.first || []);
+      const dynamicLogoIdx2 = Array.isArray(_dynLogoResult) ? [] : (_dynLogoResult.last  || []);
+      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndices: dynamicLogoIdx, activeIndices2: dynamicLogoIdx2 });
     }
 
     if (!state.bgLayerAboveDrawings) drawExportBgLayer(ctx, 0, outHeaderH, w, bodyH, 'grid');
@@ -11055,7 +11086,7 @@ function renderMp4SingleFrame(ctx, w, h, frameImages, frameIdx, r, g, b, layout,
 
     if (state.exportShowMetadata && outHeaderH > 0) {
       const metaText = buildExportMetaText({ mode: 'single', frameW: frameWLogical, frameH: frameHLogical, frames: frameCount, fps: state.animFps, frameIdx, time: frame?.time || 0, srcW: state.videoWidth, srcH: state.videoHeight, duration: state.videoDuration, date: state.videoDate });
-      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndices: exportLogoIndices });
+      drawExportMetadataBar(ctx, w, outHeaderH, metaText, { activeIndices: exportLogoIndices, activeIndices2: exportLogoIndices2 || [] });
     }
     if (!state.bgLayerAboveDrawings) drawExportBgLayer(ctx, 0, outHeaderH, w, bodyH, 'single');
     drawExportBgPattern(ctx, 0, outHeaderH, w, bodyH, 'single');
@@ -11457,7 +11488,7 @@ async function exportPngSeqDrawings() {
         metaCanvas.width = metaW;
         metaCanvas.height = Math.max(1, metaH);
         const metaCtx = metaCanvas.getContext('2d');
-        drawExportMetadataBar(metaCtx, metaW, metaH, metaTextLocal, { activeIndices: exportLogoIndices });
+        drawExportMetadataBar(metaCtx, metaW, metaH, metaTextLocal, { activeIndices: exportLogoIndices, activeIndices2: exportLogoIndices2 || [] });
         const metaBlob = await new Promise(r => metaCanvas.toBlob(r, 'image/png'));
         if (metaBlob) pngs.push({ name: 'metadata.png', blob: metaBlob });
       } catch (e) {}
@@ -11623,8 +11654,13 @@ function getAccentColor() {
   return state.fgAccentColor || '#35f2a3';
 }
 
-function drawFGLogoCanvas(ctx, x, y, size, activeIndices = [0]) {
-  const arr = Array.isArray(activeIndices) ? activeIndices : [activeIndices];
+function getAccent2Color() {
+  return state.accent2Color || '#f28c35';
+}
+
+function drawFGLogoCanvas(ctx, x, y, size, activeIndices = [0], activeIndices2 = []) {
+  const arr  = Array.isArray(activeIndices)  ? activeIndices  : [activeIndices];
+  const arr2 = Array.isArray(activeIndices2) ? activeIndices2 : [];
   // Match CSS proportions: cell=8, gap=1, radius=2
   // Total width = 8*3 + 1*2 = 26 units.
   const unit = size / 26;
@@ -11641,9 +11677,9 @@ function drawFGLogoCanvas(ctx, x, y, size, activeIndices = [0]) {
       const idx = r * 3 + c;
       const cx = ox + c * (cell + gap);
       const cy = oy + r * (cell + gap);
-      ctx.fillStyle = (arr.includes(idx))
+      ctx.fillStyle = arr.includes(idx)
         ? getAccentColor()
-        : 'rgba(255,255,255,0.22)';
+        : (arr2.includes(idx) ? getAccent2Color() : 'rgba(255,255,255,0.22)');
 
       ctx.beginPath();
       if (ctx.roundRect) {
@@ -11860,7 +11896,7 @@ function drawExportMetadataBar(ctx, w, headerH, metaInput, opts = {}) {
 
   const iconX = layout.padX;
   const iconY = (layout.headerH - layout.iconSize) / 2;
-  drawFGLogoCanvas(ctx, iconX, iconY, layout.iconSize, opts.activeIndices || [0]);
+  drawFGLogoCanvas(ctx, iconX, iconY, layout.iconSize, opts.activeIndices || [0], opts.activeIndices2 || []);
 
   const textX = layout.textX;
   const textW = layout.textW;
@@ -11951,7 +11987,7 @@ async function exportImage(format, maxSize) {
 
   
 
-  const exportLogoIndices = getLogoActiveIndicesForTick(state.currentTick);
+  const { first: exportLogoIndices, last: exportLogoIndices2 } = getLogoActiveIndicesForTick(state.currentTick);
   let metaText = '';
 
   const dims = getTargetFrameOutputDims();
@@ -12142,7 +12178,7 @@ const canvas = document.createElement('canvas');
   const sy = 1;
 
   if (state.exportShowMetadata && metaText) {
-    drawExportMetadataBar(outCtx, outCanvas.width, Math.max(1, Math.round(sHeaderH * sy)), metaText, { activeIndices: exportLogoIndices, baseHeaderH: Math.max(1, Math.round(baseHeaderH * sy)) });
+    drawExportMetadataBar(outCtx, outCanvas.width, Math.max(1, Math.round(sHeaderH * sy)), metaText, { activeIndices: exportLogoIndices, activeIndices2: exportLogoIndices2 || [], baseHeaderH: Math.max(1, Math.round(baseHeaderH * sy)) });
   }
 
   for (const cell of __exportCells) {
@@ -12275,7 +12311,7 @@ const canvas = document.createElement('canvas');
 
     
 
-  const exportLogoIndices = getLogoActiveIndicesForTick(state.currentTick);
+  const { first: exportLogoIndices, last: exportLogoIndices2 } = getLogoActiveIndicesForTick(state.currentTick);
 // Export padding is only meaningful when BG layer is included
     const padBase = state.exportBgLayer ? Math.max(0, Math.round(Number(state.exportPaddingPx) || 0)) : 0;
 
@@ -12401,7 +12437,7 @@ const canvas = document.createElement('canvas');
     const sy = 1;
 
     if (state.exportShowMetadata && metaText) {
-      drawExportMetadataBar(outCtx, outCanvas.width, Math.max(1, Math.round(headerH * sy)), metaText, { activeIndices: exportLogoIndices, baseHeaderH: Math.max(1, Math.round(baseHeaderH * sy)) });
+      drawExportMetadataBar(outCtx, outCanvas.width, Math.max(1, Math.round(headerH * sy)), metaText, { activeIndices: exportLogoIndices, activeIndices2: exportLogoIndices2 || [], baseHeaderH: Math.max(1, Math.round(baseHeaderH * sy)) });
     }
 
     if (computeShowTimecode()) {
