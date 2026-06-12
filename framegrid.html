@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.27.24                                        ║
+║      FRAMEGRID v0.27.29                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -9,8 +9,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="pinterest" content="nopin">
+  <meta name="pinterest" content="nohover">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.27.24</title>
+  <title>FRAMEGRID v0.27.29</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
@@ -1272,7 +1274,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell active2"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.27.24</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.27.29</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1461,7 +1463,8 @@
           <button class="drop-zone-btn" id="browseImageBtn">IMPORT IMAGE</button>
           <button class="drop-zone-btn" id="browseCutBtn">SLICE</button>
         </div>
-        <div class="drop-zone-formats">MP4, MOV, WebM, AVI, MKV, OGV, M4V | JPG, WEBP, GIF</div>
+        <div class="drop-zone-formats">H.264 · PNG · JPEG</div>
+        <div class="drop-zone-hint">Best in the latest version of Chrome.</div>
 <!-- (Hotkeys list removed from start screen; see Menu > FRAMEGRID) -->
 
         <div class="drop-zone-support">
@@ -1701,10 +1704,10 @@
             </div>
           </div>
           <div class="menu-row">
-            <span class="menu-label" title="Show only first N frames in grid. 0 = show all.">Frame Target</span>
+            <span class="menu-label" title="1 = off/show all. 2,3,4... show only first N frames in grid.">Frame Target</span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="frameTargetMinus">−</button>
-              <input type="number" class="menu-input menu-input-narrow" id="frameTargetInput" value="0" min="0" max="9999" style="width:44px;" inputmode="decimal" placeholder="auto">
+              <input type="number" class="menu-input menu-input-narrow" id="frameTargetInput" value="1" min="1" max="9999" style="width:44px;" inputmode="decimal" placeholder="auto">
               <button class="menu-input-btn" id="frameTargetPlus">+</button>
             </div>
           </div>
@@ -2117,7 +2120,7 @@
               <option value="darken" selected>Darken</option>
               <option value="color-dodge">Color Dodge</option>
               <option value="color-burn">Color Burn</option>
-              <option value="difference" selected>Difference</option>
+              <option value="difference">Difference</option>
               <option value="exclusion">Exclusion</option>
               <option value="hard-light">Hard Light</option>
               <option value="soft-light">Soft Light</option>
@@ -2682,6 +2685,10 @@
               <div>Upscale: <span id="infoUpscale">—</span></div>
               <div>Zoom: <span id="infoZoom">—</span></div>
               <div>Draw scale: <span id="infoDrawScale">—</span></div>
+              <div>GPU: <span id="infoGpuRenderer">—</span></div>
+              <div>GPU vendor: <span id="infoGpuVendor">—</span></div>
+              <div>GPU mode: <span id="infoGpuMode">—</span></div>
+              <div>GPU hint: <span id="infoGpuHint">—</span></div>
                <div>UI FPS: <span id="infoUiFps">—</span></div>
                <div>Composite: <span id="infoCompositeMs">—</span></div>
           </div>
@@ -2697,7 +2704,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.27.24</div>
+          <div class="about-version">Version v0.27.29</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
@@ -2780,7 +2787,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.27.24';
+  const APP_VERSION = 'v0.27.29';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   const EXPORT_CONF = {
@@ -2869,7 +2876,7 @@
     // Color Correction
     cc: { enabled: false, brightness: 1.0, contrast: 1.0, saturation: 1.0, hue: 0, invert: false, allLayers: true },
     colorama: { enabled: false, allLayers: true, colorA: '#0a0a2e', colorB: '#ff4400', colorC: '#ffee00', offset: 0, blend: 'normal', opacity: 1.0, speed: 0, cascade: false, cascadeAmt: 1.0 },
-    chronoEnabled: false, chronoBlend: 'difference', chronoDepth: 3, chronoOpacity: 1.0, chronoCascade: false, chronoCascadeMirror: false, chronoCascadeConst: 1, chronoStride: 1, chronoCleanLoop: false,
+    chronoEnabled: false, chronoBlend: 'darken', chronoDepth: 5, chronoOpacity: 1.0, chronoCascade: false, chronoCascadeMirror: false, chronoCascadeConst: 1, chronoStride: 1, chronoCleanLoop: false,
     frameDiffEnabled: false, frameDiffPlateIdx: 0, frameDiffBlend: 'difference', frameDiffOpacity: 1.0,
     frameImgFill: 'empty', // 'empty' or 'edge'
 
@@ -2885,7 +2892,7 @@
     isPlaying: false, animFrame: 0, animInterval: null,
     currentTick: 0, // global animation position
     viewMode: 'grid', // 'grid' or 'single'
-    frameTarget: 0,  // 0 = all frames, N = show only first N
+    frameTarget: 1,  // 1 = off/all frames, N>=2 = show only first N
     cellSize: 1, // frames per cell (1, 2, 4, 8...)
         gridLoops: 1, // 1-5: how many distinct phase offsets are used across grid cells
     loopAfterN: 0, // 0=disabled, N=cycle each cell within its N-frame window
@@ -3931,7 +3938,7 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
       metaFrames.innerHTML = `<span>${state.frames.length}f</span>`;
 
       if (state.autoFit) {
-        const cellCount = Math.ceil(state.frames.length / state.cellSize);
+        const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
         state.gridCols = calculateOptimalColumns(cellCount);
         gridColsInput.value = state.gridCols;
       }
@@ -3950,7 +3957,7 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
     const times = calculateFrameTimes();
     
     if (state.autoFit) {
-      const cellCount = Math.ceil(times.length / Math.max(1, state.cellSize || 1));
+      const cellCount = Math.ceil(Math.min(times.length, ((Number(state.frameTarget)||1) <= 1 ? times.length : Math.max(2, Math.round(Number(state.frameTarget)||1)))) / Math.max(1, state.cellSize || 1));
       state.gridCols = calculateOptimalColumns(cellCount);
       gridColsInput.value = state.gridCols;
     }
@@ -4237,7 +4244,50 @@ for (let i = 0; i < times.length; i++) {
     updateInfoPanel();
   }
 
-  function updateInfoPanel() {
+  
+  let _gpuInfoCache = null;
+  function getGpuInfo() {
+    if (_gpuInfoCache) return _gpuInfoCache;
+    try {
+      const c = document.createElement('canvas');
+      const gl = c.getContext('webgl2', { powerPreference: 'high-performance' })
+            || c.getContext('webgl', { powerPreference: 'high-performance' })
+            || c.getContext('experimental-webgl', { powerPreference: 'high-performance' });
+      if (!gl) {
+        _gpuInfoCache = { renderer: 'Unavailable', vendor: 'Unavailable', mode: 'No WebGL', hint: 'Browser cannot expose GPU info' };
+        return _gpuInfoCache;
+      }
+      const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+      const renderer = dbg ? (gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '') : (gl.getParameter(gl.RENDERER) || '');
+      const vendor = dbg ? (gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) || '') : (gl.getParameter(gl.VENDOR) || '');
+      const low = String(renderer + ' ' + vendor).toLowerCase();
+      let mode = 'Unknown';
+      let hint = 'Browser-selected GPU';
+      if (low.includes('swiftshader') || low.includes('software')) {
+        mode = 'Software';
+        hint = 'Hardware acceleration may be disabled';
+      } else if (low.includes('nvidia') || low.includes('geforce') || low.includes('rtx') || low.includes('quadro')) {
+        mode = 'Discrete';
+        hint = 'High-performance GPU appears active';
+      } else if (low.includes('amd') || low.includes('radeon') || low.includes('intel') || low.includes('iris')) {
+        mode = 'Integrated / Auto';
+        hint = 'You can force Chrome to High Performance in Windows Graphics settings';
+      }
+      _gpuInfoCache = {
+        renderer: renderer || 'Hidden',
+        vendor: vendor || 'Hidden',
+        mode,
+        hint
+      };
+      return _gpuInfoCache;
+    } catch (e) {
+      _gpuInfoCache = { renderer: 'Error', vendor: 'Error', mode: 'Unavailable', hint: 'GPU detection failed' };
+      return _gpuInfoCache;
+    }
+  }
+
+function updateInfoPanel() {
+    applyNoPinAttributes(document);
     const iv = document.getElementById('infoVideoRes');
     const icap = document.getElementById('infoCaptureRes');
     const ig = document.getElementById('infoGridCells');
@@ -4248,6 +4298,10 @@ for (let i = 0; i < times.length; i++) {
     const iup = document.getElementById('infoUpscale');
     const iz = document.getElementById('infoZoom');
     const is = document.getElementById('infoDrawScale');
+    const igpur = document.getElementById('infoGpuRenderer');
+    const igpuv = document.getElementById('infoGpuVendor');
+    const igpum = document.getElementById('infoGpuMode');
+    const igpuh = document.getElementById('infoGpuHint');
     const ifps = document.getElementById('infoUiFps');
     const icomp = document.getElementById('infoCompositeMs');
 
@@ -4305,6 +4359,12 @@ for (let i = 0; i < times.length; i++) {
     const drawScale = (r.width > 0) ? (drawCanvas.width / r.width) : 0;
     is.textContent = drawScale ? `${drawScale.toFixed(2)}x` : '—';
   
+
+    const gpu = getGpuInfo();
+    if (igpur) igpur.textContent = gpu.renderer || '—';
+    if (igpuv) igpuv.textContent = gpu.vendor || '—';
+    if (igpum) igpum.textContent = gpu.mode || '—';
+    if (igpuh) igpuh.textContent = gpu.hint || '—';
 
     if (ifps) ifps.textContent = (typeof state._uiFps === 'number' && state._uiFps > 0) ? String(state._uiFps) : '—';
     if (icomp) icomp.textContent = (typeof state._compAvgMs === 'number' && state._compAvgMs > 0) ? `${state._compAvgMs.toFixed(1)} ms` : '—';
@@ -4464,7 +4524,7 @@ function getViewportExportPadForElement(el, mode = 'grid') {
       const dims = getTargetFrameOutputDims();
       const baseFrameW = Math.max(1, Math.round(dims.w));
       const baseFrameH = Math.max(1, Math.round(dims.h));
-      const cellCount = Math.ceil(state.frames.length / state.cellSize);
+      const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
       const total = cellCount + (0);
       const rows = Math.ceil(total / state.gridCols);
       const gap = getExportScaledGap(baseFrameW);
@@ -4809,7 +4869,25 @@ function schedulePostGridSync() {
 
 
   
-  function renderGrid() {
+  
+  function applyNoPinAttributes(root = document) {
+    try {
+      root.querySelectorAll('img').forEach(img => {
+        img.setAttribute('nopin', 'nopin');
+        img.setAttribute('data-pin-nopin', 'true');
+        img.setAttribute('data-pin-no-hover', 'true');
+      });
+    } catch (e) {}
+  }
+
+
+  function getEffectiveFrameTargetCount() {
+    const ft = Number(state.frameTarget) || 1;
+    if (ft <= 1) return state.frames.length;
+    return Math.min(state.frames.length, Math.max(2, Math.round(ft)));
+  }
+
+function renderGrid() {
     // ── Sync setup ───────────────────────────────────────────────────────────
     invalidateCellCaches();
     framesGrid._cellCount = 0;
@@ -4837,9 +4915,7 @@ function schedulePostGridSync() {
       framesGrid.appendChild(item);
     }
 
-    const _frameLimit = (state.frameTarget && state.frameTarget > 0)
-      ? Math.min(state.frames.length, state.frameTarget)
-      : state.frames.length;
+    const _frameLimit = getEffectiveFrameTargetCount();
     const cellCount = Math.ceil(_frameLimit / state.cellSize);
 
     // ── Reusable cell-node builder ───────────────────────────────────────────
@@ -4857,6 +4933,9 @@ function schedulePostGridSync() {
       xform.className = 'frame-media-xform';
       const img   = document.createElement('img');
       img.className = 'frame-main-img';
+      img.setAttribute('nopin', 'nopin');
+      img.setAttribute('data-pin-nopin', 'true');
+      img.setAttribute('data-pin-no-hover', 'true');
       if (img.src !== frame.dataUrl) img.src = frame.dataUrl;
       xform.appendChild(img);
       const onionCnv = document.createElement('canvas');
@@ -4877,6 +4956,7 @@ function schedulePostGridSync() {
     function _finalize() {
       updateTimecodeVisibility();
       framesGrid._cellCount = framesGrid.querySelectorAll('.frame-item').length;
+      applyNoPinAttributes(framesGrid);
       setViewMode(state.viewMode);
       schedulePostGridSync();
     }
@@ -5301,7 +5381,7 @@ function fitToSingleFrame() {
       state.cellSize = resolveIntMenuValue(cellSizeInput, state.cellSize || 1, 1, 9999);
       cellSizeInput.value = state.cellSize;
       if (state.autoFit && state.frames.length) {
-        const cellCount = Math.ceil(state.frames.length / state.cellSize);
+        const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
         state.gridCols = calculateOptimalColumns(cellCount);
         if (gridColsInput) gridColsInput.value = state.gridCols;
       }
@@ -5312,20 +5392,25 @@ function fitToSingleFrame() {
   const frameTargetInput = $('frameTargetInput');
   const frameTargetMinus = $('frameTargetMinus'), frameTargetPlus = $('frameTargetPlus');
   if (frameTargetInput) {
-    frameTargetInput.value = state.frameTarget || 0;
+    frameTargetInput.value = state.frameTarget || 1;
     const applyFrameTarget = () => {
-      const v = Math.max(0, parseInt(frameTargetInput.value, 10) || 0);
+      const v = Math.max(1, parseInt(frameTargetInput.value, 10) || 1);
       state.frameTarget = v;
       frameTargetInput.value = v;
-      if (state.frames.length) debouncedRenderGrid();
+      if (state.autoFit && state.frames.length) {
+        const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
+        state.gridCols = calculateOptimalColumns(cellCount);
+        if (gridColsInput) gridColsInput.value = state.gridCols;
+      }
+      if (state.frames.length) { renderGrid(); updateGridHint(); fitActiveView(); }
     };
     frameTargetInput.onchange = applyFrameTarget;
     if (frameTargetMinus) frameTargetMinus.onclick = () => {
-      frameTargetInput.value = Math.max(0, (parseInt(frameTargetInput.value)||0) - 1);
+      frameTargetInput.value = Math.max(1, (parseInt(frameTargetInput.value)||1) - 1);
       applyFrameTarget();
     };
     if (frameTargetPlus) frameTargetPlus.onclick = () => {
-      frameTargetInput.value = Math.max(0, (parseInt(frameTargetInput.value)||0) + 1);
+      frameTargetInput.value = Math.max(1, (parseInt(frameTargetInput.value)||1) + 1);
       applyFrameTarget();
     };
   }
@@ -5966,7 +6051,7 @@ function fitToSingleFrame() {
   function updateAllTimecodes() {
     const items = framesGrid.querySelectorAll('.frame-item');
     const offset = 0;
-    const cellCount = Math.ceil(state.frames.length / state.cellSize);
+    const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
     items.forEach((item, i) => {
       if (i < offset) return;
       const cellIdx = i - offset;
@@ -6364,7 +6449,7 @@ function fitToSingleFrame() {
       state.cellSize -= 1;
       if(cellSizeInput) cellSizeInput.value = state.cellSize;
       if (state.autoFit && state.frames.length) {
-        const cellCount = Math.ceil(state.frames.length / state.cellSize);
+        const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
         state.gridCols = calculateOptimalColumns(cellCount);
         gridColsInput.value = state.gridCols;
       }
@@ -6377,7 +6462,7 @@ function fitToSingleFrame() {
       state.cellSize += 1;
       if(cellSizeInput) cellSizeInput.value = state.cellSize;
       if (state.autoFit && state.frames.length) {
-        const cellCount = Math.ceil(state.frames.length / state.cellSize);
+        const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
         state.gridCols = calculateOptimalColumns(cellCount);
         gridColsInput.value = state.gridCols;
       }
@@ -6612,6 +6697,9 @@ function fitToSingleFrame() {
       if (!img) {
         img = document.createElement('img');
         img.className = 'frame-chrono';
+        img.setAttribute('nopin', 'nopin');
+        img.setAttribute('data-pin-nopin', 'true');
+        img.setAttribute('data-pin-no-hover', 'true');
         img.style.position = 'absolute';
         img.style.inset = '0';
         img.style.width = '100%';
@@ -7194,7 +7282,7 @@ function updateAllCells() {
     const endF   = Math.min(totalFrames, state.endFrame > 0 ? state.endFrame : totalFrames);
     const range  = Math.max(1, endF - startF);
     const mode   = state.selectionMode || 'count';
-    const ft = state.frameTarget && state.frameTarget > 0 ? state.frameTarget : Infinity;
+    const ft = ((Number(state.frameTarget) || 1) <= 1) ? Infinity : getEffectiveFrameTargetCount();
     if (mode === 'count')   return Math.min(state.frameCount || 24, range, ft);
     if (mode === 'seconds') return Math.max(1, Math.floor(range / fps / (state.intervalValue || 3)) + 1);
     if (mode === 'frames')  return Math.max(1, Math.floor(range / (state.intervalValue || 1)) + 1);
@@ -7542,6 +7630,8 @@ function updateAllCells() {
 let isDrawing = false;
   let suppressDrawTouchUntilRelease = false; // multi-touch gesture guard (iPad)
   let skipNextSegment = false; // used when pointer leaves drawable area or misses frame hit
+  let _activePointerId = null; // Pointer Events: active pointer id (prevents double-fire w/ touch)
+  let _pointerEventsActive = false; // true when a pointer (non-mouse) event is driving drawing
 
   let lastPoint = null;
   let activeFrameStroke = null; // { frameIdx, canvas, ctx, lastLocal }
@@ -7836,10 +7926,12 @@ let isDrawing = false;
         showTemplateFrame(false);
       }
 
+      drawCanvas.style.touchAction = 'none';
       resizeDrawCanvas();
       compositeAllLayers();
       brushCursor.classList.toggle('eraser', state.drawEraser);
     } else {
+      drawCanvas.style.touchAction = '';
       showTemplateFrame(false);
       brushCursor.classList.remove('visible');
     }
@@ -8431,6 +8523,15 @@ function compositeAllLayers() {
     };
   }
   
+  // Get point from raw clientX/Y coordinates (used by Pointer Events)
+  function getCanvasPointXY(clientX, clientY) {
+    const rect = drawCanvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (drawCanvas.width  / rect.width),
+      y: (clientY - rect.top)  * (drawCanvas.height / rect.height)
+    };
+  }
+
   // Find which frame cell a point is over (returns null if on background)
   function getFrameAtPoint(point) {
     const items = framesGrid.querySelectorAll('.frame-item');
@@ -9629,6 +9730,8 @@ function stampLongStrokeFrame(frameIdx) {
   // Touch support
   drawCanvas.ontouchstart = e => {
     if (!state.drawMode) return;
+    // If Pointer Events already handling this touch, skip to avoid double-fire
+    if (_pointerEventsActive) { e.preventDefault(); return; }
 
     // Multi-touch gestures (2-finger zoom / 3-finger brush size) must NOT draw.
     if (!e.touches || e.touches.length !== 1) {
@@ -9735,6 +9838,7 @@ function stampLongStrokeFrame(frameIdx) {
   
   drawCanvas.ontouchmove = e => {
     if (!state.drawMode) return;
+    if (_pointerEventsActive) { e.preventDefault(); return; }
 
     // If this becomes a multi-touch gesture mid-stroke, stop drawing immediately.
     if (suppressDrawTouchUntilRelease || !e.touches || e.touches.length !== 1) {
@@ -9854,7 +9958,170 @@ function stampLongStrokeFrame(frameIdx) {
     lastPoint = currentPoint;
     requestComposite();
   };
-  
+ 
+  // ── Pointer Events (touch/pen on Windows/iPad, with coalesced events for smooth drawing) ──
+  // Mouse is handled by existing onmousedown/move/up — we skip it here to avoid double-fire.
+  drawCanvas.addEventListener('pointerdown', e => {
+    if (!state.drawMode) return;
+    if (e.pointerType === 'mouse') return; // mouse already handled by onmousedown
+    if (_activePointerId !== null) return; // already tracking a pointer
+
+    // Multi-touch: if a second pointer comes in, cancel drawing
+    if (e.isPrimary === false) {
+      suppressDrawTouchUntilRelease = true;
+      if (isDrawing) endStroke();
+      return;
+    }
+
+    e.preventDefault();
+    _activePointerId = e.pointerId;
+    _pointerEventsActive = true;
+    drawCanvas.setPointerCapture(e.pointerId);
+
+    // Mirror ontouchstart logic using pointer coords
+    const fakeE = { clientX: e.clientX, clientY: e.clientY, touches: null };
+    const pt = getCanvasPointXY(e.clientX, e.clientY);
+
+    // Eyedropper
+    if (eyedropperActive) {
+      const hit = getFrameAtPoint(pt);
+      if (hit && hit.cellEl) {
+        const imgEl = hit.cellEl.querySelector('img');
+        if (imgEl && imgEl.naturalWidth) {
+          const u = hit.localX / Math.max(1, hit.width);
+          const v = hit.localY / Math.max(1, hit.height);
+          const tmpC = document.createElement('canvas');
+          tmpC.width = 1; tmpC.height = 1;
+          const tmpCtx2 = tmpC.getContext('2d', { willReadFrequently: true });
+          try {
+            tmpCtx2.drawImage(imgEl, Math.round(u * imgEl.naturalWidth), Math.round(v * imgEl.naturalHeight), 1, 1, 0, 0, 1, 1);
+            const px = tmpCtx2.getImageData(0, 0, 1, 1).data;
+            const hex = '#' + [px[0],px[1],px[2]].map(c => c.toString(16).padStart(2,'0')).join('');
+            setDrawColor(hex);
+          } catch (ex) {}
+        }
+      }
+      eyedropperActive = false;
+      if (drawEyedropperBtn) drawEyedropperBtn.classList.remove('active');
+      drawCanvas.style.cursor = state.drawEraser ? 'cell' : 'default';
+      _activePointerId = null; _pointerEventsActive = false;
+      return;
+    }
+
+    beginUndoCaptureForDrawTarget();
+    isDrawing = true;
+    lastPoint = pt;
+    lastPointerPos = { x: pt.x, y: pt.y };
+    holdStampLastFrame = -1;
+    activeFrameStroke = null;
+
+    if (state.drawTarget === 'frame') {
+      const hit = getFrameAtPoint(pt);
+      if (!hit) { isDrawing = false; lastPoint = null; _activePointerId = null; _pointerEventsActive = false; return; }
+      holdStampLastFrame = hit.frameIdx;
+      ensureFrameSheet();
+      const u = Math.min(1, Math.max(0, hit.localX / Math.max(1, hit.width)));
+      const v = Math.min(1, Math.max(0, hit.localY / Math.max(1, hit.height)));
+      const sp = sheetPoint(hit.frameIdx, u, v);
+      activeFrameStroke = { frameIdx: hit.frameIdx, lastSheet: sp };
+      captureUndoFrameTile(hit.frameIdx);
+      drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+      requestComposite();
+      return;
+    }
+    const target = getTargetCanvas();
+    if (!target) return;
+    drawDot(target.ctx, pt, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
+    requestComposite();
+  }, { passive: false });
+
+  drawCanvas.addEventListener('pointermove', e => {
+    if (!state.drawMode) return;
+    if (e.pointerType === 'mouse') return;
+    if (_activePointerId !== e.pointerId) return;
+    if (!isDrawing || !lastPoint) return;
+
+    e.preventDefault();
+
+    // getCoalescedEvents gives all intermediate points — key for smooth lines
+    const coalesced = (e.getCoalescedEvents && e.getCoalescedEvents()) || [e];
+
+    for (const ce of coalesced) {
+      const currentPoint = getCanvasPointXY(ce.clientX, ce.clientY);
+      lastPointerPos = currentPoint;
+
+      if (skipNextSegment) {
+        skipNextSegment = false;
+        if (state.drawTarget === 'frame' && activeFrameStroke) {
+          const hit0 = getFrameAtPoint(currentPoint);
+          if (!hit0) continue;
+          ensureFrameSheet();
+          const u0 = Math.min(1, Math.max(0, hit0.localX / Math.max(1, hit0.width)));
+          const v0 = Math.min(1, Math.max(0, hit0.localY / Math.max(1, hit0.height)));
+          const sp0 = sheetPoint(hit0.frameIdx, u0, v0);
+          activeFrameStroke.frameIdx = hit0.frameIdx;
+          holdStampLastFrame = hit0.frameIdx;
+          activeFrameStroke.lastSheet = sp0;
+          captureUndoFrameTile(hit0.frameIdx);
+          drawDot(frameSheetCtx, sp0, state.drawColor, getBrushSizeFrame(hit0), state.drawEraser);
+          lastPoint = currentPoint;
+          requestComposite();
+          continue;
+        } else {
+          const t0 = getTargetCanvas();
+          if (!t0) continue;
+          drawDot(t0.ctx, currentPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
+          lastPoint = currentPoint;
+          requestComposite();
+          continue;
+        }
+      }
+
+      if (state.drawTarget === 'frame' && activeFrameStroke) {
+        const hit = getFrameAtPoint(currentPoint);
+        if (!hit) { skipNextSegment = true; continue; }
+        ensureFrameSheet();
+        const u = Math.min(1, Math.max(0, hit.localX / Math.max(1, hit.width)));
+        const v = Math.min(1, Math.max(0, hit.localY / Math.max(1, hit.height)));
+        const sp = sheetPoint(hit.frameIdx, u, v);
+        const _frameChanged = (hit.frameIdx !== activeFrameStroke.frameIdx);
+        if (_frameChanged) {
+          captureUndoFrameTile(hit.frameIdx);
+          drawDot(frameSheetCtx, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+          activeFrameStroke.frameIdx = hit.frameIdx;
+          holdStampLastFrame = hit.frameIdx;
+          activeFrameStroke.lastSheet = sp;
+          lastPoint = currentPoint;
+          requestComposite();
+          continue;
+        }
+        drawSmoothLine(frameSheetCtx, activeFrameStroke.lastSheet, sp, state.drawColor, getBrushSizeFrame(hit), state.drawEraser);
+        activeFrameStroke.lastSheet = sp;
+        lastPoint = currentPoint;
+        requestComposite();
+        continue;
+      }
+
+      const target = getTargetCanvas();
+      if (!target) continue;
+      drawSmoothLine(target.ctx, lastPoint, currentPoint, state.drawColor, getBrushSizeBgTpl(), state.drawEraser);
+      lastPoint = currentPoint;
+      requestComposite();
+    }
+  }, { passive: false });
+
+  const _pointerEndHandler = e => {
+    if (e.pointerType === 'mouse') return;
+    if (_activePointerId !== e.pointerId) return;
+    _activePointerId = null;
+    _pointerEventsActive = false;
+    if (isDrawing) endStroke();
+  };
+  drawCanvas.addEventListener('pointerup',     _pointerEndHandler);
+  drawCanvas.addEventListener('pointercancel', _pointerEndHandler);
+  drawCanvas.addEventListener('pointerleave',  _pointerEndHandler);
+
+ 
   
   function toggleOnionSkin() {
     state.drawOnion = !state.drawOnion;
@@ -11137,7 +11404,7 @@ async function exportResampledVideo(forceMode = null) {
     }
 
     const frameAspect = getEffectiveFrameAspect();
-    const cellCount = Math.ceil(state.frames.length / state.cellSize);
+    const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
     const total = cellCount + (0);
     const rows = Math.ceil(total / state.gridCols);
 
@@ -11294,7 +11561,7 @@ async function exportResampledVideo(forceMode = null) {
     }
 
     const frameAspect = getEffectiveFrameAspect();
-    const cellCount = Math.ceil(state.frames.length / state.cellSize);
+    const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
     const total = cellCount + (0);
     const rows = Math.ceil(total / state.gridCols);
     const gapBase = Math.max(0, Number(state.spacing) || 0);
@@ -12413,7 +12680,7 @@ async function recordAudioSeqAV(mode = 'grid') {
     for (let loop = 1; loop < (state.exportLoops || 1); loop++) sequence = sequence.concat(singleLoop);
 
     const frameAspect = getEffectiveFrameAspect();
-    const cellCount = Math.ceil(state.frames.length / state.cellSize);
+    const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
     const total = cellCount + (0);
     const rows = Math.ceil(total / state.gridCols);
     const videoLayout = getDeterministicVideoExportLayout(mode, rows);
@@ -13270,7 +13537,7 @@ async function exportImage(format, maxSize) {
   let baseFrameH = Math.max(2, Math.round(dims.h));
 
   const frameAspect = baseFrameW / baseFrameH;
-  const cellCount = Math.ceil(state.frames.length / state.cellSize);
+  const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
   const total = cellCount + (0);
   const rows = Math.ceil(total / state.gridCols);
   const gap = getExportScaledGap(baseFrameW);
@@ -14320,7 +14587,7 @@ const canvas = document.createElement('canvas');
       if (state.autoFit && state.frames.length) {
         if (!isIOS && state.canvasAspect === 'auto') {
           requestAnimationFrame(() => {
-            const cellCount = Math.ceil(state.frames.length / state.cellSize);
+            const cellCount = Math.ceil(getEffectiveFrameTargetCount() / Math.max(1, state.cellSize || 1));
             const newCols = calculateOptimalColumns(cellCount);
             if (newCols !== state.gridCols) {
               state.gridCols = newCols;
