@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.27.18                                        ║
+║      FRAMEGRID v0.27.24                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -10,7 +10,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.27.18</title>
+  <title>FRAMEGRID v0.27.24</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
@@ -1272,7 +1272,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell active2"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.27.18</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.27.24</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1576,6 +1576,7 @@
           <div class="menu-row" style="height:6px;"></div>
           <div class="menu-row">
             <span class="menu-label">Quality</span>
+            <div style="display:flex;align-items:center;gap:6px;">
             <select class="menu-select" id="qualitySelect">
               <option value="1">Full</option>
               <option value="0.5" selected>/2</option>
@@ -1589,6 +1590,8 @@
               <option value="0.001953125">/512</option>
               <option value="0.0009765625">/1024</option>
             </select>
+            <span id="qualityResHint" style="font-size:10px;color:rgba(255,255,255,0.4);white-space:nowrap;min-width:60px;"></span>
+            </div>
           </div>
 
           <div id="regenFrameHint" style="text-align:left;font-size:10px;color:#ccc;margin-bottom:4px;letter-spacing:0.04em;min-height:14px;padding-left:2px;"></div>
@@ -1695,6 +1698,14 @@
               <button class="menu-input-btn" id="colsMinus">−</button>
               <input type="text" class="menu-input menu-input-narrow" id="gridCols" value="6" inputmode="decimal">
               <button class="menu-input-btn" id="colsPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label" title="Show only first N frames in grid. 0 = show all.">Frame Target</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="frameTargetMinus">−</button>
+              <input type="number" class="menu-input menu-input-narrow" id="frameTargetInput" value="0" min="0" max="9999" style="width:44px;" inputmode="decimal" placeholder="auto">
+              <button class="menu-input-btn" id="frameTargetPlus">+</button>
             </div>
           </div>
           <div class="menu-row">
@@ -2137,6 +2148,18 @@
             <div class="menu-toggle-switch" id="toggleChronoCascade"></div>
           </div>
           <div class="menu-row">
+            <span class="menu-label" title="Mirror: center frame fully opaque, fades symmetrically to both edges">Mirror</span>
+            <div class="menu-toggle-switch" id="toggleChronoCascadeMirror"></div>
+          </div>
+          <div class="menu-row">
+            <span class="menu-label" title="Number of frames at full opacity before fade begins (1 = only center, 3 = 3 frames fully visible)">Constant</span>
+            <div class="menu-input-group">
+              <button class="menu-input-btn" id="chronoCascadeConstMinus">−</button>
+              <input type="number" class="menu-input menu-input-narrow" id="chronoCascadeConst" value="1" min="1" max="24" step="1">
+              <button class="menu-input-btn" id="chronoCascadeConstPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-row">
             <span class="menu-label" title="Step size between ghost frames. Stride 5 = frames at -5,-10,-15...">Phase Stride</span>
             <div class="menu-input-group">
               <button class="menu-input-btn" id="chronoStrideMinus">−</button>
@@ -2211,11 +2234,11 @@
           </div>
 
           <div class="menu-row">
-            <span class="menu-label">Edit</span>
+            <span class="menu-label">Playhead</span>
             <div class="menu-input-group" style="gap:4px;">
               <button class="menu-btn active-toggle" id="audioEditOff" data-mode="off">Off</button>
               <button class="menu-btn" id="audioEditAssign" data-mode="assign">Sample</button>
-              <button class="menu-btn" id="audioEditPlayhead" data-mode="playhead">Edit</button>
+              <button class="menu-btn" id="audioEditPlayhead" data-mode="playhead">Playhead</button>
             </div>
           </div>
 
@@ -2674,7 +2697,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.27.18</div>
+          <div class="about-version">Version v0.27.24</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
@@ -2757,7 +2780,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.27.18';
+  const APP_VERSION = 'v0.27.24';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   const EXPORT_CONF = {
@@ -2846,7 +2869,7 @@
     // Color Correction
     cc: { enabled: false, brightness: 1.0, contrast: 1.0, saturation: 1.0, hue: 0, invert: false, allLayers: true },
     colorama: { enabled: false, allLayers: true, colorA: '#0a0a2e', colorB: '#ff4400', colorC: '#ffee00', offset: 0, blend: 'normal', opacity: 1.0, speed: 0, cascade: false, cascadeAmt: 1.0 },
-    chronoEnabled: false, chronoBlend: 'difference', chronoDepth: 3, chronoOpacity: 1.0, chronoCascade: false, chronoStride: 1, chronoCleanLoop: false,
+    chronoEnabled: false, chronoBlend: 'difference', chronoDepth: 3, chronoOpacity: 1.0, chronoCascade: false, chronoCascadeMirror: false, chronoCascadeConst: 1, chronoStride: 1, chronoCleanLoop: false,
     frameDiffEnabled: false, frameDiffPlateIdx: 0, frameDiffBlend: 'difference', frameDiffOpacity: 1.0,
     frameImgFill: 'empty', // 'empty' or 'edge'
 
@@ -2862,6 +2885,7 @@
     isPlaying: false, animFrame: 0, animInterval: null,
     currentTick: 0, // global animation position
     viewMode: 'grid', // 'grid' or 'single'
+    frameTarget: 0,  // 0 = all frames, N = show only first N
     cellSize: 1, // frames per cell (1, 2, 4, 8...)
         gridLoops: 1, // 1-5: how many distinct phase offsets are used across grid cells
     loopAfterN: 0, // 0=disabled, N=cycle each cell within its N-frame window
@@ -3407,6 +3431,7 @@ function getTargetFrameOutputDims() {
 
     state.videoDuration = videoElement.duration || 0;
     if (typeof updateRegenHint === 'function') updateRegenHint();
+    if (typeof updateQualityResHint === 'function') updateQualityResHint();
     state.videoWidth = videoElement.videoWidth || 1;
     state.videoHeight = videoElement.videoHeight || 1;
     state._frameTileDims = null; // recalculate for new source
@@ -3650,7 +3675,12 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
     if (cutTotalInput) cutTotalInput.value = String(tot);
     const totEl = document.getElementById('cutTotalText');
     if (totEl) totEl.textContent = String(tot);
-    if (state.selectionMode === 'slice') markRegenPending();
+    if (state.selectionMode === 'slice') {
+      const alreadyDone = state.frames.length > 0
+        && state._lastSliceCols === state.cutCols
+        && state._lastSliceRows === state.cutRows;
+      if (alreadyDone) markRegenDone(); else markRegenPending();
+    }
   }
 
   function saveCutSettings() {
@@ -3777,6 +3807,32 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
   };
 
   // FRAMES
+
+  // High-quality step-down downsampling: halves dimensions iteratively to avoid bilinear blur.
+  function drawImageHQ(ctx, source, sx, sy, sw, sh, dx, dy, dw, dh) {
+    if (dw >= sw && dh >= sh) {
+      // No downscale needed
+      ctx.drawImage(source, sx, sy, sw, sh, dx, dy, dw, dh);
+      return;
+    }
+    // Step 1: crop to source rect into a temp canvas
+    let tmp = document.createElement('canvas');
+    tmp.width = sw; tmp.height = sh;
+    tmp.getContext('2d').drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
+    let curW = sw, curH = sh;
+    // Step 2: halve until within 2× of target
+    while (curW / 2 >= dw && curH / 2 >= dh) {
+      const nW = Math.max(dw, Math.round(curW / 2));
+      const nH = Math.max(dh, Math.round(curH / 2));
+      const tmp2 = document.createElement('canvas');
+      tmp2.width = nW; tmp2.height = nH;
+      tmp2.getContext('2d').drawImage(tmp, 0, 0, nW, nH);
+      tmp = tmp2; curW = nW; curH = nH;
+    }
+    // Final draw to destination
+    ctx.drawImage(tmp, 0, 0, curW, curH, dx, dy, dw, dh);
+  }
+
   async function generateFrames() {
     // Regenerate Grid should also reset drawings and caches, to avoid mismatched resolutions.
     hardClearAllDrawingsAndUndo();
@@ -3826,7 +3882,7 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
               tileCanvas.width = dsW;
               tileCanvas.height = dsH;
               tileCtx.clearRect(0, 0, dsW, dsH);
-              tileCtx.drawImage(img, sx, sy, sw, sh, 0, 0, dsW, dsH);
+              drawImageHQ(tileCtx, img, sx, sy, sw, sh, 0, 0, dsW, dsH);
 
               state.frames.push({ time: idx / state.videoFps, frameNumber: idx, dataUrl: tileCanvas.toDataURL('image/png') });
               if (idx === 0) {
@@ -3880,6 +3936,9 @@ state.imageUrls = state.imageFiles.map(f => URL.createObjectURL(f));
         gridColsInput.value = state.gridCols;
       }
 
+      state._lastSliceCols = state.cutCols;
+      state._lastSliceRows = state.cutRows;
+      markRegenDone();
       renderGrid();
       setViewMode(state.viewMode);
       updateGridHint();
@@ -4278,7 +4337,7 @@ for (let i = 0; i < times.length; i++) {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             try {
-              captureCtx.drawImage(v, 0, 0, captureCanvas.width, captureCanvas.height);
+              drawImageHQ(captureCtx, v, 0, 0, v.videoWidth || captureCanvas.width, v.videoHeight || captureCanvas.height, 0, 0, captureCanvas.width, captureCanvas.height);
               finish(captureCanvas.toDataURL('image/jpeg', 0.9));
             } catch (e) {
               // If drawImage fails (rare on iOS), resolve with null so caller can skip/retry.
@@ -4778,11 +4837,14 @@ function schedulePostGridSync() {
       framesGrid.appendChild(item);
     }
 
-    const cellCount = Math.ceil(state.frames.length / state.cellSize);
+    const _frameLimit = (state.frameTarget && state.frameTarget > 0)
+      ? Math.min(state.frames.length, state.frameTarget)
+      : state.frames.length;
+    const cellCount = Math.ceil(_frameLimit / state.cellSize);
 
     // ── Reusable cell-node builder ───────────────────────────────────────────
     function _buildCell(c) {
-      const displayFrameIdx = Math.floor(c * state.frames.length * state.gridLoops / cellCount) % state.frames.length;
+      const displayFrameIdx = Math.floor(c * _frameLimit * state.gridLoops / cellCount) % _frameLimit;
       const frame = state.frames[displayFrameIdx];
       if (!frame) return null;
       const item  = document.createElement('div');
@@ -4808,12 +4870,14 @@ function schedulePostGridSync() {
       tc.textContent = formatTimecode(frame, derivedIdx, cellCount, displayFrameIdx);
       wrap.appendChild(tc);
       item.appendChild(wrap);
+      if (state.viewMode === 'single' && c > 0) item.style.display = 'none';
       return item;
     }
 
     function _finalize() {
       updateTimecodeVisibility();
       framesGrid._cellCount = framesGrid.querySelectorAll('.frame-item').length;
+      setViewMode(state.viewMode);
       schedulePostGridSync();
     }
 
@@ -5245,6 +5309,27 @@ function fitToSingleFrame() {
     };
   }
 
+  const frameTargetInput = $('frameTargetInput');
+  const frameTargetMinus = $('frameTargetMinus'), frameTargetPlus = $('frameTargetPlus');
+  if (frameTargetInput) {
+    frameTargetInput.value = state.frameTarget || 0;
+    const applyFrameTarget = () => {
+      const v = Math.max(0, parseInt(frameTargetInput.value, 10) || 0);
+      state.frameTarget = v;
+      frameTargetInput.value = v;
+      if (state.frames.length) debouncedRenderGrid();
+    };
+    frameTargetInput.onchange = applyFrameTarget;
+    if (frameTargetMinus) frameTargetMinus.onclick = () => {
+      frameTargetInput.value = Math.max(0, (parseInt(frameTargetInput.value)||0) - 1);
+      applyFrameTarget();
+    };
+    if (frameTargetPlus) frameTargetPlus.onclick = () => {
+      frameTargetInput.value = Math.max(0, (parseInt(frameTargetInput.value)||0) + 1);
+      applyFrameTarget();
+    };
+  }
+
   if (gridLoopsInput) {
     gridLoopsInput.onchange = () => {
       state.gridLoops = resolveIntMenuValue(gridLoopsInput, state.gridLoops || 1, 1, 9999);
@@ -5276,13 +5361,29 @@ function fitToSingleFrame() {
   selectionModeSelect.onchange = () => {
     const prev = state.selectionMode;
     state.selectionMode = selectionModeSelect.value;
-    // Copy frame count → scene count when switching to scene mode
-    if (state.selectionMode === 'scene' && prev === 'count' && state.frameCount > 0) {
-      state.sceneCount = state.frameCount;
-      const scInput = document.getElementById('sceneCountInput');
-      if (scInput) scInput.value = state.sceneCount;
+
+    // Smart conversion when switching to/from scene mode
+    if (state.selectionMode === 'scene' && prev === 'count') {
+      // frames → scene: find optimal sceneCount + sceneDepth
+      const total = Math.max(1, state.frameCount || 24);
+      const depth = total >= 20 ? 4 : 3;          // prefer depth 4 for larger counts, 3 for small
+      const scenes = Math.max(1, Math.round(total / depth));
+      state.sceneDepth    = depth;
+      state.sceneCount    = scenes;
+      state.sceneDistance = 1;
+      if (sceneCountInput)    sceneCountInput.value    = state.sceneCount;
+      if (sceneDepthInput)    sceneDepthInput.value    = state.sceneDepth;
+      if (sceneDistanceInput) sceneDistanceInput.value = state.sceneDistance;
+
+    } else if (state.selectionMode === 'count' && prev === 'scene') {
+      // scene → frames: restore total frame count
+      const total = Math.max(1, (state.sceneCount || 5) * (state.sceneDepth || 4));
+      state.frameCount = total;
+      frameCountInput.value = total;
     }
-    updateIntervalUI(); markRegenPending(); };
+
+    updateIntervalUI(); markRegenPending();
+  };
 
   if (sceneCountInput) {
     const syncScene = () => {
@@ -5388,7 +5489,20 @@ function fitToSingleFrame() {
     generateFrames();
   };
   
-  qualitySelect.onchange = () => { state.quality = parseFloat(qualitySelect.value);   markRegenPending();
+  const updateQualityResHint = () => {
+    const el = document.getElementById('qualityResHint');
+    if (!el) return;
+    const q = parseFloat(state.quality) || 1;
+    const w = state.videoWidth || 0;
+    const h = state.videoHeight || 0;
+    if (!w || !h) { el.textContent = ''; return; }
+    el.textContent = `${Math.round(w * q)}×${Math.round(h * q)}`;
+  };
+
+  qualitySelect.onchange = () => {
+    state.quality = parseFloat(qualitySelect.value);
+    updateQualityResHint();
+    markRegenPending();
   };
 
   function updateIntervalUI() {
@@ -5625,6 +5739,33 @@ function fitToSingleFrame() {
       toggleChronoCascade.classList.toggle('active', state.chronoCascade);
       updateChronoUI();
     };
+    toggleChronoCascade.classList.toggle('active', !!state.chronoCascade);
+  }
+
+  const toggleChronoCascadeMirror = $('toggleChronoCascadeMirror');
+  if (toggleChronoCascadeMirror) {
+    toggleChronoCascadeMirror.classList.toggle('active', !!state.chronoCascadeMirror);
+    toggleChronoCascadeMirror.onclick = () => {
+      state.chronoCascadeMirror = !state.chronoCascadeMirror;
+      toggleChronoCascadeMirror.classList.toggle('active', state.chronoCascadeMirror);
+      updateChronoUI();
+    };
+  }
+
+  const cascadeConstInput = $('chronoCascadeConst');
+  const cascadeConstMinus = $('chronoCascadeConstMinus');
+  const cascadeConstPlus  = $('chronoCascadeConstPlus');
+  if (cascadeConstInput) {
+    cascadeConstInput.value = state.chronoCascadeConst || 1;
+    const updateConst = () => {
+      const v = Math.max(1, Math.min(24, parseInt(cascadeConstInput.value, 10) || 1));
+      state.chronoCascadeConst = v;
+      cascadeConstInput.value = v;
+      updateChronoUI();
+    };
+    cascadeConstInput.onchange = updateConst;
+    if (cascadeConstMinus) cascadeConstMinus.onclick = () => { cascadeConstInput.value = Math.max(1, (parseInt(cascadeConstInput.value)||1) - 1); updateConst(); };
+    if (cascadeConstPlus)  cascadeConstPlus.onclick  = () => { cascadeConstInput.value = Math.min(24, (parseInt(cascadeConstInput.value)||1) + 1); updateConst(); };
   }
 
   // ── Phase Stride ──────────────────────────────────────────────────────────
@@ -6389,6 +6530,30 @@ function fitToSingleFrame() {
   // Chronophoto DOM update
     // Build ghost frame indices for chronophoto using tick-based logic.
   // Works correctly for all directions (forward, pingpong, bounce, shuffle).
+  
+  // Shared cascade opacity calculator — used in both preview and export.
+  function computeCascadeOpacity(step, depth, alphaBase) {
+    const mirror   = window._fgState ? window._fgState.chronoCascadeMirror : false;
+    const constVal = Math.max(1, Math.min(depth, Math.round(
+      (window._fgState ? window._fgState.chronoCascadeConst : 1) || 1
+    )));
+
+    if (mirror) {
+      // Mirror mode: centre of stack is fully opaque, fades to both edges
+      const fadeCount = depth - constVal;         // how many frames actually fade
+      const cStart    = (depth - constVal) / 2;   // start of plateau (can be fractional)
+      const dist      = Math.abs(step - (depth - 1) / 2) - constVal / 2;  // distance outside plateau
+      const t         = fadeCount > 0 ? Math.max(0, dist / (fadeCount / 2)) : 0;
+      return alphaBase * (1 - Math.min(1, t));
+    } else {
+      // Normal mode: newest ghost fully opaque for constVal frames, then fades
+      const fadeCount = depth - constVal;
+      const fadeStep  = step - constVal;          // how far past the plateau
+      if (fadeStep < 0) return alphaBase;          // within constant zone
+      return alphaBase * (1 - (fadeStep + 1) / (fadeCount + 1));
+    }
+  }
+
   function buildChronoGhostIndices(tick, baseOffset, frameCount, dir, shuffle) {
     const depth     = state.chronoDepth  || 3;
     const stride    = Math.max(1, state.chronoStride || 1);
@@ -6440,7 +6605,7 @@ function fitToSingleFrame() {
 
       let finalOpacity = alphaBase;
       if (state.chronoCascade) {
-        finalOpacity = alphaBase * (1.0 - ((step + 1) / (depth + 1)));
+        finalOpacity = computeCascadeOpacity(step, depth, alphaBase);
       }
 
       let img = imgArr[slot];
@@ -7029,7 +7194,8 @@ function updateAllCells() {
     const endF   = Math.min(totalFrames, state.endFrame > 0 ? state.endFrame : totalFrames);
     const range  = Math.max(1, endF - startF);
     const mode   = state.selectionMode || 'count';
-    if (mode === 'count')   return Math.min(state.frameCount || 24, range);
+    const ft = state.frameTarget && state.frameTarget > 0 ? state.frameTarget : Infinity;
+    if (mode === 'count')   return Math.min(state.frameCount || 24, range, ft);
     if (mode === 'seconds') return Math.max(1, Math.floor(range / fps / (state.intervalValue || 3)) + 1);
     if (mode === 'frames')  return Math.max(1, Math.floor(range / (state.intervalValue || 1)) + 1);
     if (mode === 'scene')   return (state.sceneCount || 5) * (state.sceneDepth || 8);
@@ -11949,7 +12115,7 @@ function drawChronophotoStack(ctx, ghostIndices, x, y, w, h) {
 
     let finalOpacity = alphaBase;
     if (window._fgState.chronoCascade) {
-      finalOpacity = alphaBase * (1.0 - ((step + 1) / (depth + 1)));
+      finalOpacity = computeCascadeOpacity(step, depth, alphaBase);
     }
     ctx.globalAlpha = finalOpacity;
 
@@ -15186,11 +15352,7 @@ function audioInitUI() {
         btn.addEventListener('click', () => {
           if (!state.audioSeq) return;
 
-          // clear sample buffer + file input
-          if (state.audioSeq.samples && state.audioSeq.samples.length > i) state.audioSeq.samples[i] = null;
-          try { if (inputs && inputs[i]) inputs[i].value = ''; } catch (e) {}
-
-          // remove mappings pointing to this slot
+          // clear only mappings pointing to this slot
           const map = state.audioSeq.frameMap || {};
           Object.keys(map).forEach(k => {
             const mm = map[k];
@@ -15199,7 +15361,7 @@ function audioInitUI() {
           state.audioSeq.frameMap = map;
 
           audioUpdateChips();
-          audioSetStatus(`S${i+1} cleared`);
+          audioSetStatus(`S${i+1} mappings cleared`);
         });
       });
     }
