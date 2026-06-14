@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 ╔════════════════════════════════════════════════════════════════╗
-║      FRAMEGRID v0.27.29                                        ║
+║      FRAMEGRID v28.10                                        ║
 ╚════════════════════════════════════════════════════════════════╝
 -->
 
@@ -12,7 +12,7 @@
   <meta name="pinterest" content="nopin">
   <meta name="pinterest" content="nohover">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>FRAMEGRID v0.27.29</title>
+  <title>FRAMEGRID v28.10</title>
   <style>
     :root {
       --fg-accent: #35f2a3;
@@ -31,7 +31,7 @@
       width: 100%; height: 100%; overflow: hidden; background: #000;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #fff; user-select: none; -webkit-user-select: none;
-      touch-action: none; /* Prevent browser zoom gestures */
+      touch-action: none;
     }
 
     :root {
@@ -150,7 +150,7 @@
     }
 
     /* CANVAS AREA */
-    .canvas-area { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
+    .canvas-area { flex: 1; position: relative; overflow: hidden; cursor: crosshair; touch-action: none; }
     .canvas-area.panning { cursor: move; }
     .canvas-area.has-menu { margin-right: 0; }
     .bg-grid-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; display: none; }
@@ -394,7 +394,8 @@
 
     /* Quick Toolbar */
     .quick-toolbar {
-      position: absolute; top: 8px; left: 8px; display: flex; gap: 4px; z-index: 15;
+      position: absolute; top: 8px; left: 8px; display: flex; gap: 4px; z-index: 90;
+      pointer-events: auto;
     }
     /* Visual group separators */
     #qReset { margin-left: 6px; }
@@ -404,6 +405,8 @@
       border: 1px solid rgba(255,255,255,0.25); border-radius: 4px;
       color: rgba(255,255,255,0.8); font-size: 16px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation;
+      pointer-events: auto;
     }
     .quick-btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
     .quick-btn:active, .quick-btn.active { background: color-mix(in srgb, var(--fg-accent, #35f2a3) 30%, transparent); border-color: var(--fg-accent, #35f2a3); color: var(--fg-accent, #35f2a3); }
@@ -1274,7 +1277,7 @@
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell"></span>
             <span class="fg-logo-cell"></span><span class="fg-logo-cell"></span><span class="fg-logo-cell active2"></span>
           </span>
-          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v0.27.29</span>
+          <span class="metadata-logo-text" id="fgLogoText">FRAMEGRID v28.10</span>
         </div>
         <div class="metadata-gap"></div>
         <div class="metadata-group">
@@ -1344,6 +1347,7 @@
               <div class="draw-row-sep"></div>
               <input type="color" id="drawColorInput" value="#ffffff" class="draw-color-input" style="width:28px;height:28px;border:2px solid rgba(255,255,255,0.3);padding:0;cursor:pointer;border-radius:2px;background:none;">
               <button class="draw-btn" id="drawPaletteToggle" title="Hide palette (P)">▾</button>
+              <button class="draw-btn wide" id="drawBrushLock" title="Brush Off (A)">BRUSH OFF</button>
             </div>
 
             <!-- Row 2: Colors - Recent (circles) + Video palette (squares) -->
@@ -2194,6 +2198,21 @@
               </div>
             </div>
             <div class="menu-row">
+              <span class="menu-label">Plate Mode</span>
+              <select class="menu-select" id="frameDiffModeSelect">
+                <option value="static" selected>Static</option>
+                <option value="tick">Tick Driven</option>
+              </select>
+            </div>
+            <div class="menu-row" id="frameDiffStepRow">
+              <span class="menu-label">Step</span>
+              <div class="menu-input-group">
+                <button class="menu-input-btn" id="frameDiffStepMinus">−</button>
+                <input type="number" class="menu-input menu-input-narrow" id="frameDiffStepInput" value="1" min="1">
+                <button class="menu-input-btn" id="frameDiffStepPlus">+</button>
+              </div>
+            </div>
+            <div class="menu-row">
               <span class="menu-label">Blend Mode</span>
               <select class="menu-select" id="frameDiffBlendSelect">
                 <option value="difference" selected>Difference</option>
@@ -2704,7 +2723,7 @@
           <div class="about-toggle"></div>
         </div>
         <div class="about-content">
-          <div class="about-version">Version v0.27.29</div>
+          <div class="about-version">Version v28.10</div>
           <div class="about-description">Video frame extraction tool for contact sheets, storyboards, and AI analysis.</div>
           
                     <div class="menu-row" style="margin-bottom: 12px; justify-content: space-between; padding-right: 4px;">
@@ -2787,7 +2806,7 @@
 
   // Single source of truth
   const APP_NAME = 'FRAMEGRID';
-  const APP_VERSION = 'v0.27.29';
+  const APP_VERSION = 'v28.10';
   const APP_LABEL = `${APP_NAME} ${APP_VERSION}`;
 
   const EXPORT_CONF = {
@@ -2828,13 +2847,6 @@
   document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
   document.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
   
-  // Prevent double-tap zoom
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', e => {
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) e.preventDefault();
-    lastTouchEnd = now;
-  }, { passive: false });
 
   const state = {
     videoFile: null, filenameOverride: '', drawCanvasDpr: 1, videoUrl: null, videoDuration: 0,
@@ -2877,7 +2889,7 @@
     cc: { enabled: false, brightness: 1.0, contrast: 1.0, saturation: 1.0, hue: 0, invert: false, allLayers: true },
     colorama: { enabled: false, allLayers: true, colorA: '#0a0a2e', colorB: '#ff4400', colorC: '#ffee00', offset: 0, blend: 'normal', opacity: 1.0, speed: 0, cascade: false, cascadeAmt: 1.0 },
     chronoEnabled: false, chronoBlend: 'darken', chronoDepth: 5, chronoOpacity: 1.0, chronoCascade: false, chronoCascadeMirror: false, chronoCascadeConst: 1, chronoStride: 1, chronoCleanLoop: false,
-    frameDiffEnabled: false, frameDiffPlateIdx: 0, frameDiffBlend: 'difference', frameDiffOpacity: 1.0,
+    frameDiffEnabled: false, frameDiffPlateIdx: 0, frameDiffPlateMode: 'static', frameDiffPlateStep: 1, frameDiffBlend: 'difference', frameDiffOpacity: 1.0,
     frameImgFill: 'empty', // 'empty' or 'edge'
 
     frameBgColor: '#000000', frameBgOpacity: 1.0, // background behind scaled-down frame image
@@ -5071,78 +5083,115 @@ function renderGrid() {
   document.onmouseup = () => { state.isPanning = false; canvasArea.classList.remove('panning'); };
   canvasArea.oncontextmenu = e => { if (!e.target.closest('.side-menu')) e.preventDefault(); };
 
-  // Touch
-  let lastDist = 0;
-  let lastTouchCenter = null;
+  // Touch router (laptop touchscreen / iPad)
+  let navTouchMode = null;
+  let navTouchActive = false;
+  let navStartDist = 0;
+  let navLastCenter = null;
+  let navStartX = 0;
+  let navStartY = 0;
+  let navStartPanX = 0;
+  let navStartPanY = 0;
   let threeFingersStartY = null;
   let threeFingersStartSize = null;
-  
-  canvasArea.ontouchstart = e => {
-    if (e.target.closest('.drop-zone,.side-menu,.draw-palette')) return;
-    if (e.touches.length === 3 && state.drawMode) {
-      // Three fingers = brush size adjustment
+
+  function navStart(touches) {
+    if (!touches || !touches.length) return;
+    navTouchActive = true;
+    if (touches.length >= 2) {
+      navTouchMode = 'pinch';
+      navStartDist = Math.hypot(touches[1].clientX - touches[0].clientX, touches[1].clientY - touches[0].clientY);
+      navLastCenter = { x: (touches[0].clientX + touches[1].clientX) / 2, y: (touches[0].clientY + touches[1].clientY) / 2 };
+    } else {
+      navTouchMode = 'pan';
+      navStartX = touches[0].clientX;
+      navStartY = touches[0].clientY;
+    }
+    navStartPanX = state.panX;
+    navStartPanY = state.panY;
+  }
+
+  function navMove(touches) {
+    if (!navTouchActive) return;
+    if (touches.length >= 2) {
+      const dist = Math.hypot(touches[1].clientX - touches[0].clientX, touches[1].clientY - touches[0].clientY);
+      const rect = canvasArea.getBoundingClientRect();
+      const cx = (touches[0].clientX + touches[1].clientX) / 2;
+      const cy = (touches[0].clientY + touches[1].clientY) / 2;
+      if (navStartDist) {
+        const prevScale = Number.isFinite(state.scale) ? state.scale : 1;
+        zoomAt(cx - rect.left, cy - rect.top, prevScale * (dist / navStartDist));
+      }
+      if (navLastCenter) {
+        state.panX += cx - navLastCenter.x;
+        state.panY += cy - navLastCenter.y;
+      }
+      navStartDist = dist;
+      navLastCenter = { x: cx, y: cy };
+      updateTransform();
+      return;
+    }
+    if (navTouchMode === 'pan' && touches.length === 1) {
+      state.panX = navStartPanX + (touches[0].clientX - navStartX);
+      state.panY = navStartPanY + (touches[0].clientY - navStartY);
+      updateTransform();
+    }
+  }
+
+  function navEnd() {
+    navTouchMode = null;
+    navTouchActive = false;
+    navStartDist = 0;
+    navLastCenter = null;
+    threeFingersStartY = null;
+    threeFingersStartSize = null;
+  }
+
+  const touchOpts = { passive: false };
+  function isQuickUI(target) {
+    return !!(target && target.closest('.quick-toolbar, .quick-btn'));
+  }
+  canvasArea.addEventListener('touchstart', e => {
+    if (isQuickUI(e.target)) return;
+    if (e.target.closest('.side-menu,.draw-palette,.drop-zone')) return;
+    if (e.touches.length >= 2) {
+      e.preventDefault();
+      navStart(e.touches);
+      return;
+    }
+    if (!state.drawMode && e.touches.length === 1) {
+      e.preventDefault();
+      navStart(e.touches);
+      return;
+    }
+    if (state.drawMode && e.touches.length === 3) {
       e.preventDefault();
       threeFingersStartY = (e.touches[0].clientY + e.touches[1].clientY + e.touches[2].clientY) / 3;
       threeFingersStartSize = state.drawSize;
-    } else if (e.touches.length === 1 && !state.drawMode) {
-      // Single finger pan (only when not drawing)
-      state.isPanning = true;
-      state.startMouseX = e.touches[0].clientX; state.startMouseY = e.touches[0].clientY;
-      state.startPanX = state.panX; state.startPanY = state.panY;
-    } else if (e.touches.length === 2) {
-      // Two fingers = pan + zoom (works in draw mode too)
-      state.isPanning = true;
-      lastDist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
-      lastTouchCenter = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2
-      };
-      state.startPanX = state.panX; state.startPanY = state.panY;
     }
-  };
-  canvasArea.ontouchmove = e => {
-    if (e.target.closest('.drop-zone,.side-menu,.draw-palette')) return;
-    if (e.touches.length === 3 && threeFingersStartY !== null && state.drawMode) {
-      // Three fingers drag = change brush size
+  }, touchOpts);
+  canvasArea.addEventListener('touchmove', e => {
+    if (isQuickUI(e.target)) return;
+    if (e.target.closest('.side-menu,.draw-palette,.drop-zone')) return;
+    if (navTouchActive) {
+      e.preventDefault();
+      navMove(e.touches);
+      return;
+    }
+    if (state.drawMode && e.touches.length === 3 && threeFingersStartY !== null) {
       e.preventDefault();
       const currentY = (e.touches[0].clientY + e.touches[1].clientY + e.touches[2].clientY) / 3;
-      const deltaY = threeFingersStartY - currentY; // up = bigger
-      const newSize = Math.max(1, Math.min(120, threeFingersStartSize + Math.round(deltaY / 3)));
-      setDrawSize(newSize);
-    } else if (e.touches.length === 2) {
-      e.preventDefault();
-      const dist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
-      const rect = canvasArea.getBoundingClientRect();
-      const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      
-      // Zoom (pinch). Clamp first, then update pan using the clamped scale to avoid drift near limits.
-      if (lastDist) {
-        const px = cx - rect.left;
-        const py = cy - rect.top;
-        const prevScale = Number.isFinite(state.scale) ? state.scale : 1;
-        const desired = prevScale * (dist / lastDist);
-        zoomAt(px, py, desired);
-      }
-      
-      // Pan
-      if (lastTouchCenter) {
-        state.panX += cx - lastTouchCenter.x;
-        state.panY += cy - lastTouchCenter.y;
-      }
-      
-      lastDist = dist;
-      lastTouchCenter = { x: cx, y: cy };
-      updateTransform();
-    } else if (e.touches.length === 1 && state.isPanning && !state.drawMode) {
-      e.preventDefault();
-      state.panX = state.startPanX + (e.touches[0].clientX - state.startMouseX);
-      state.panY = state.startPanY + (e.touches[0].clientY - state.startMouseY);
-      updateTransform();
+      const deltaY = threeFingersStartY - currentY;
+      setDrawSize(Math.max(1, Math.min(120, threeFingersStartSize + Math.round(deltaY / 3))));
     }
-  };
-  canvasArea.ontouchend = () => { state.isPanning = false; lastDist = 0; lastTouchCenter = null; threeFingersStartY = null; threeFingersStartSize = null; };
+  }, touchOpts);
+  canvasArea.addEventListener('touchend', e => { navEnd(); }, touchOpts);
+  canvasArea.addEventListener('touchcancel', e => { navEnd(); }, touchOpts);
 
+  document.querySelectorAll('.quick-toolbar .quick-btn').forEach(btn => {
+    btn.addEventListener('touchstart', e => { e.stopPropagation(); }, { passive: true });
+    btn.addEventListener('touchmove', e => { e.stopPropagation(); }, { passive: true });
+  });
   function updateTransform() {
     // view scale is clamped globally
 
@@ -5915,6 +5964,9 @@ function fitToSingleFrame() {
       frameDiffPlateInput.max = Math.max(0, state.frames.length - 1);
       frameDiffPlateInput.value = state.frameDiffPlateIdx || 0;
     }
+    if (frameDiffModeSelect) frameDiffModeSelect.value = state.frameDiffPlateMode || 'static';
+    if (frameDiffStepRow) frameDiffStepRow.style.display = (state.frameDiffPlateMode === 'tick') ? '' : 'none';
+    if (frameDiffStepInput) frameDiffStepInput.value = state.frameDiffPlateStep || 1;
     if (frameDiffBlendSelect) frameDiffBlendSelect.value = state.frameDiffBlend || 'difference';
     if (frameDiffOpacityEl)  frameDiffOpacityEl.value  = (state.frameDiffOpacity !== undefined) ? state.frameDiffOpacity : 1.0;
     if (frameDiffOpacityNum) frameDiffOpacityNum.value = (state.frameDiffOpacity !== undefined) ? state.frameDiffOpacity : 1.0;
@@ -5933,6 +5985,33 @@ function fitToSingleFrame() {
       const max = Math.max(0, state.frames.length - 1);
       state.frameDiffPlateIdx = Math.max(0, Math.min(max, parseInt(frameDiffPlateInput.value) || 0));
       frameDiffPlateInput.value = state.frameDiffPlateIdx;
+      updateFrameDiffUI();
+    };
+  }
+  if (frameDiffModeSelect) {
+    frameDiffModeSelect.onchange = () => {
+      state.frameDiffPlateMode = frameDiffModeSelect.value || 'static';
+      updateFrameDiffUI();
+    };
+  }
+  if (frameDiffStepInput) {
+    frameDiffStepInput.onchange = () => {
+      state.frameDiffPlateStep = Math.max(1, parseInt(frameDiffStepInput.value) || 1);
+      frameDiffStepInput.value = state.frameDiffPlateStep;
+      updateFrameDiffUI();
+    };
+  }
+  if (frameDiffStepMinus) {
+    frameDiffStepMinus.onclick = () => {
+      state.frameDiffPlateStep = Math.max(1, (state.frameDiffPlateStep || 1) - 1);
+      if (frameDiffStepInput) frameDiffStepInput.value = state.frameDiffPlateStep;
+      updateFrameDiffUI();
+    };
+  }
+  if (frameDiffStepPlus) {
+    frameDiffStepPlus.onclick = () => {
+      state.frameDiffPlateStep = (state.frameDiffPlateStep || 1) + 1;
+      if (frameDiffStepInput) frameDiffStepInput.value = state.frameDiffPlateStep;
       updateFrameDiffUI();
     };
   }
@@ -6733,9 +6812,13 @@ function fitToSingleFrame() {
     }
 
     const n       = state.frames.length;
-    const pIdx    = Math.max(0, Math.min(n - 1, state.frameDiffPlateIdx || 0));
+    const baseIdx = Math.max(0, Math.min(n - 1, state.frameDiffPlateIdx || 0));
     const blend   = state.frameDiffBlend   || 'difference';
     const opacity = (state.frameDiffOpacity !== undefined) ? state.frameDiffOpacity : 1.0;
+    const step = Math.max(1, state.frameDiffPlateStep || 1);
+    const pIdx = state.frameDiffPlateMode === 'tick'
+      ? ((baseIdx + Math.floor(Math.max(0, state.currentTick || 0) / step)) % n)
+      : baseIdx;
     const frame   = state.frames[pIdx];
     if (!frame) { if (existing) existing.remove(); return; }
 
@@ -7509,6 +7592,7 @@ function updateAllCells() {
   const drawOneFrameBtn = $('drawOneFrameBtn');
   const drawColorInput = $('drawColorInput');
   const drawPaletteToggleBtn = $('drawPaletteToggle');
+  const drawBrushLockBtn = $('drawBrushLock');
   const drawSizeSlider = $('drawSizeSlider');
   const drawSizeMinus = $('drawSizeMinus');
   const drawSizePlus = $('drawSizePlus');
@@ -7911,7 +7995,20 @@ let isDrawing = false;
     paletteDragging = false;
   });
   
-  function toggleDrawMode() {
+  
+  let brushLocked = false;
+  function syncBrushLockUI() {
+    if (drawBrushLockBtn) drawBrushLockBtn.classList.toggle('brush-off', !!brushLocked);
+  }
+  function setBrushLocked(on) {
+    brushLocked = !!on;
+    syncBrushLockUI();
+  }
+  function toggleBrushLocked() {
+    setBrushLocked(!brushLocked);
+  }
+
+function toggleDrawMode() {
     state.drawMode = !state.drawMode;
     drawCanvas.classList.toggle('active', state.drawMode);
     drawPalette.classList.toggle('visible', state.drawMode);
@@ -7927,11 +8024,14 @@ let isDrawing = false;
       }
 
       drawCanvas.style.touchAction = 'none';
+      drawCanvas.style.pointerEvents = 'auto';
       resizeDrawCanvas();
       compositeAllLayers();
       brushCursor.classList.toggle('eraser', state.drawEraser);
     } else {
+      setBrushLocked(false);
       drawCanvas.style.touchAction = '';
+      drawCanvas.style.pointerEvents = 'none';
       showTemplateFrame(false);
       brushCursor.classList.remove('visible');
     }
@@ -9730,6 +9830,7 @@ function stampLongStrokeFrame(frameIdx) {
   // Touch support
   drawCanvas.ontouchstart = e => {
     if (!state.drawMode) return;
+    if (brushLocked) return;
     // If Pointer Events already handling this touch, skip to avoid double-fire
     if (_pointerEventsActive) { e.preventDefault(); return; }
 
@@ -9838,6 +9939,7 @@ function stampLongStrokeFrame(frameIdx) {
   
   drawCanvas.ontouchmove = e => {
     if (!state.drawMode) return;
+    if (brushLocked) return;
     if (_pointerEventsActive) { e.preventDefault(); return; }
 
     // If this becomes a multi-touch gesture mid-stroke, stop drawing immediately.
@@ -9963,6 +10065,7 @@ function stampLongStrokeFrame(frameIdx) {
   // Mouse is handled by existing onmousedown/move/up — we skip it here to avoid double-fire.
   drawCanvas.addEventListener('pointerdown', e => {
     if (!state.drawMode) return;
+    if (brushLocked) return;
     if (e.pointerType === 'mouse') return; // mouse already handled by onmousedown
     if (_activePointerId !== null) return; // already tracking a pointer
 
@@ -10037,6 +10140,7 @@ function stampLongStrokeFrame(frameIdx) {
 
   drawCanvas.addEventListener('pointermove', e => {
     if (!state.drawMode) return;
+    if (brushLocked) return;
     if (e.pointerType === 'mouse') return;
     if (_activePointerId !== e.pointerId) return;
     if (!isDrawing || !lastPoint) return;
@@ -10539,6 +10643,10 @@ function renderVideoPalette() {
       drawPalette.classList.remove('visible');
       syncBrushPanelToggleUI();
     };
+  }
+
+  if (drawBrushLockBtn) {
+    drawBrushLockBtn.onclick = () => toggleBrushLocked();
   }
 
   // Sync "Brush Panel" toggle in side menu with floating palette visibility
@@ -11133,6 +11241,7 @@ function updateEdgeSoftness(val) {
 
     templateFrameCanvas.onmousedown = ev => {
       if (!state.drawMode) return;
+    if (brushLocked) return;
       state.drawTarget = 'template';
       drawTargetBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === 'template'));
       beginUndoCaptureForDrawTarget('template');
@@ -11156,6 +11265,7 @@ function updateEdgeSoftness(val) {
 
     templateFrameCanvas.ontouchstart = ev => {
       if (!state.drawMode) return;
+    if (brushLocked) return;
       state.drawTarget = 'template';
       drawTargetBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.target === 'template'));
       beginUndoCaptureForDrawTarget('template');
@@ -14324,7 +14434,9 @@ const canvas = document.createElement('canvas');
     if (btn) btn.textContent = anyOpen ? '▶' : '◀';
   }
 
-  window.addEventListener('keydown', (e) => {
+  
+
+window.addEventListener('keydown', (e) => {
     const code = e.code; // Physical key (works with any language)
 
     // Allow Cmd/Ctrl+Z for draw undo. Also use Ctrl/Cmd + [ ] for opacity.
@@ -14439,6 +14551,12 @@ const canvas = document.createElement('canvas');
     else if (code === 'KeyE') { e.preventDefault(); if (!state.drawMode) setDrawMode(true); setDrawTarget('frame'); }
     else if (code === 'KeyZ') { e.preventDefault(); undoDraw(); }
     else if (code === 'KeyC') { e.preventDefault(); clearDrawTarget(); }
+    else if (code === 'KeyA') {
+      const t = e.target;
+      const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
+      const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || (t && t.isContentEditable);
+      if (!typing) { e.preventDefault(); toggleBrushLocked(); }
+    }
     else if (code === 'KeyP') { e.preventDefault(); togglePalette(); }
     else if (code === 'KeyL') { e.preventDefault(); toggleLongStroke(); }
     else if (code === 'KeyT') { e.preventDefault(); toggleTemplateVisibility(); }
@@ -14645,6 +14763,7 @@ const canvas = document.createElement('canvas');
   // iPad: show cursor for Pencil / pointer events (mouse is not always emitted)
   document.addEventListener('pointermove', e => {
     if (!state.drawMode) return;
+    if (brushLocked) return;
     // Show for pen and mouse, avoid noisy finger cursor
     if (e.pointerType === 'pen' || e.pointerType === 'mouse') updateBrushCursor(e);
   }, { passive: true });
